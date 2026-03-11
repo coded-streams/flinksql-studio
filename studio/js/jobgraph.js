@@ -560,36 +560,20 @@ async function showJobGraphNodeDetail(nid, nodes, vertices, vertexMetrics) {
       </div>`;
   }
 
-  // ── Tab 2: All metrics (fetch live from JobManager) ──
+  // ── Tab 2: All metrics ── fetch full list then individual values ──
   el('nd-all-metrics-table').innerHTML =
     `<tr><td colspan="2" style="color:var(--text3);font-size:11px;padding:8px 0;">Loading all metrics…</td></tr>`;
   if (jid && nid) {
-    jmApi(`/jobs/${jid}/vertices/${nid}/metrics?get=numRecordsIn,numRecordsOut,numRecordsInPerSecond,numRecordsOutPerSecond,numBytesIn,numBytesOut,numBytesInPerSecond,numBytesOutPerSecond,backPressuredTimeMsPerSecond,idleTimeMsPerSecond,busyTimeMsPerSecond,currentInputWatermark,numBuffersIn,numBuffersOut`)
-      .then(metrics => {
-        if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
-          el('nd-all-metrics-table').innerHTML =
-            `<tr><td colspan="2" style="color:var(--text3);font-size:11px;">No metrics available — job may not be RUNNING.</td></tr>`;
-          return;
-        }
-        _ndState.allMetrics = metrics;
-        // Combine with static vertex info
-        const rows = [
-          ['Vertex ID',        nid],
-          ['Status',           vertex.status || '—'],
-          ['Parallelism',      par || '—'],
-          ['Duration',         vertex.duration ? Math.round(vertex.duration/1000) + 's' : '—'],
-          ['Start Time',       vertex['start-time'] ? new Date(vertex['start-time']).toLocaleTimeString() : '—'],
-          ['End Time',         vertex['end-time']   ? new Date(vertex['end-time']).toLocaleTimeString()   : '—'],
-          ...metrics.map(m => [m.id, m.value ?? '—']),
-        ];
+    _fetchAllNodeMetrics(jid, nid, vertex, par).then(rows => {
+      if (!rows || rows.length === 0) {
         el('nd-all-metrics-table').innerHTML =
-          rows.map(([k, v]) =>
-            `<tr><td>${escHtml(String(k))}</td><td>${escHtml(String(v))}</td></tr>`
-          ).join('');
-      }).catch(() => {
-        el('nd-all-metrics-table').innerHTML =
-          `<tr><td colspan="2" style="color:var(--text3);font-size:11px;">Could not fetch metrics from JobManager.</td></tr>`;
-      });
+          `<tr><td colspan="2" style="color:var(--text3);font-size:11px;">No metrics available — job may not be RUNNING or vertex not yet reporting.</td></tr>`;
+        return;
+      }
+      el('nd-all-metrics-table').innerHTML = rows.map(([k, v]) =>
+        `<tr><td>${escHtml(String(k))}</td><td>${escHtml(String(v))}</td></tr>`
+      ).join('');
+    });
   }
 
   // ── Open modal ──
@@ -614,13 +598,92 @@ async function showJobGraphNodeDetail(nid, nodes, vertices, vertexMetrics) {
   }
 }
 
-// ── Event Stream ─────────────────────────────────────────────────────────────
+// ── All Metrics fetcher: list available metrics then bulk-fetch values ──────────
+async function _fetchAllNodeMetrics(jid, nid, vertex, par) {
+  // Step 1: get list of available metric names for this vertex
+  let metricNames = [];
+  try {
+    const listResp = await jmApi(`/jobs/${jid}/vertices/${nid}/metrics`);
+    if (listResp && Array.isArray(listResp)) {
+      metricNames = listResp.map(m => m.id).filter(Boolean);
+    }
+  } catch(_) {}
 
+  // Build static rows first
+  const staticRows = [
+    ['Vertex ID',       nid],
+    ['Status',          vertex.status || '—'],
+    ['Parallelism',     par || '—'],
+    ['Duration',        vertex.duration ? Math.round(vertex.duration/1000) + 's' : '—'],
+    ['Start Time',      vertex['start-time'] ? new Date(vertex['start-time']).toLocaleTimeString() : '—'],
+    ['End Time',        vertex['end-time']   ? new Date(vertex['end-time']).toLocaleTimeString()   : '—'],
+  ];
+
+  if (metricNames.length === 0) {
+    return [...staticRows, ['Note', 'No live metrics available — vertex may not be running yet']];
+  }
+
+  // Step 2: fetch all metric values in one request (Flink allows comma-separated get= param)
+  // Flink caps at ~100 metrics per request; chunk to be safe
+  const CHUNK = 80;
+  const metricRows = [];
+  for (let i = 0; i < metricNames.length; i += CHUNK) {
+    const chunk = metricNames.slice(i, i + CHUNK);
+    try {
+      const vals = await jmApi(
+        `/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(chunk.join(','))}`
+      );
+      if (vals && Array.isArray(vals)) {
+        vals.forEach(m => {
+          const v = m.value ?? m.sum ?? m.min ?? m.max ?? m.avg ?? '—';
+          metricRows.push([m.id, String(v)]);
+        });
+      }
+    } catch(_) {}
+  }
+
+  return [...staticRows, ...metricRows];
+}
+
+// ── Mini throughput chart in node modal ────────────────────────────────────────
+const _ndChartData = { recIn: [], recOut: [], bytIn: [], bytOut: [] };
+
+function _drawNdChart() {
+  const canvas = document.getElementById('nd-throughput-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const drawLine = (data, color) => {
+    if (data.length < 2) return;
+    const mn = 0, mx = Math.max(...data, 1);
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    data.forEach((v, i) => {
+      const x = (i / (data.length - 1)) * (W - 4) + 2;
+      const y = H - 4 - ((v - mn) / (mx - mn)) * (H - 8);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    // fill
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = color;
+    ctx.lineTo((data.length - 1) / (data.length - 1) * (W - 4) + 2, H);
+    ctx.lineTo(2, H);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  };
+  drawLine(_ndChartData.recIn,  '#4fa3e0');
+  drawLine(_ndChartData.recOut, '#7ee8d0');
+}
+
+// ── Event Stream — polls JobManager metrics for live operator throughput ──────
 function toggleEventStream() {
   if (_ndState.streamRunning) {
     _stopEventStream();
-    document.getElementById('nd-btn-start-stream').textContent = '▶ Start Stream';
-    document.getElementById('nd-btn-start-stream').classList.remove('active');
   } else {
     _startEventStream();
   }
@@ -628,28 +691,30 @@ function toggleEventStream() {
 
 function clearEventStream() {
   _ndState.eventCount = 0;
-  document.getElementById('nd-events-stream').innerHTML =
+  _ndChartData.recIn = []; _ndChartData.recOut = [];
+  _ndChartData.bytIn = []; _ndChartData.bytOut = [];
+  _drawNdChart();
+  const stream = document.getElementById('nd-events-stream');
+  if (stream) stream.innerHTML =
     `<div class="nd-event-empty">
       <span style="font-size:22px;opacity:0.3;">⚡</span>
-      <span>Stream cleared. Click Start Stream to resume.</span>
+      <span>Stream cleared.</span>
     </div>`;
-  document.getElementById('nd-events-count').textContent = '0 events';
-  document.getElementById('nd-events-badge').textContent = '0';
+  const count = document.getElementById('nd-events-count');
+  const badge = document.getElementById('nd-events-badge');
+  if (count) count.textContent = '0 events';
+  if (badge) badge.textContent = '0';
 }
 
 function _startEventStream() {
   if (_ndState.streamRunning) return;
   _ndState.streamRunning = true;
+  _ndState.eventCount = 0;
+  _ndChartData.recIn = []; _ndChartData.recOut = [];
   const btn = document.getElementById('nd-btn-start-stream');
-  if (btn) {
-    btn.innerHTML = '<span class="nd-live-dot"></span>Streaming';
-    btn.classList.add('active');
-  }
-  // Clear placeholder
+  if (btn) { btn.innerHTML = '<span class="nd-live-dot"></span>Streaming'; btn.classList.add('active'); }
   const stream = document.getElementById('nd-events-stream');
-  if (stream && stream.querySelector('.nd-event-empty')) {
-    stream.innerHTML = '';
-  }
+  if (stream && stream.querySelector('.nd-event-empty')) stream.innerHTML = '';
   _pollEventStream();
 }
 
@@ -666,86 +731,111 @@ async function _pollEventStream() {
   if (!jid || !nid) return;
 
   try {
-    // Fetch current throughput metrics as a proxy for activity
-    const metrics = await jmApi(
-      `/jobs/${jid}/vertices/${nid}/metrics?get=numRecordsIn,numRecordsOut,numRecordsInPerSecond,numRecordsOutPerSecond,numBytesInPerSecond,numBytesOutPerSecond`
-    );
+    // Fetch all available metrics for this vertex using the two-step list+fetch pattern
+    // First get the metric name list if we don't have it
+    if (!_ndState._metricNames) {
+      const listResp = await jmApi(`/jobs/${jid}/vertices/${nid}/metrics`);
+      _ndState._metricNames = (listResp && Array.isArray(listResp))
+        ? listResp.map(m => m.id).filter(Boolean)
+        : [];
+    }
 
-    if (metrics && Array.isArray(metrics)) {
+    // Always fetch the key throughput metrics
+    const keyMetrics = [
+      'numRecordsIn','numRecordsOut',
+      'numRecordsInPerSecond','numRecordsOutPerSecond',
+      'numBytesInPerSecond','numBytesOutPerSecond',
+      'backPressuredTimeMsPerSecond','idleTimeMsPerSecond','busyTimeMsPerSecond'
+    ].filter(m => _ndState._metricNames.length === 0 || _ndState._metricNames.includes(m));
+
+    if (keyMetrics.length === 0 && _ndState._metricNames.length > 0) {
+      // Vertex is reporting metrics but none of our key ones — show what's available
+      keyMetrics.push(..._ndState._metricNames.slice(0, 20));
+    }
+
+    const getParam = keyMetrics.join(',');
+    const metrics = getParam
+      ? await jmApi(`/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(getParam)}`)
+      : null;
+
+    if (metrics && Array.isArray(metrics) && metrics.length > 0) {
       const get = key => {
         const m = metrics.find(m => m.id === key);
         return m ? parseFloat(m.value || 0) : 0;
       };
+
       const recInPs  = get('numRecordsInPerSecond');
       const recOutPs = get('numRecordsOutPerSecond');
       const bytInPs  = get('numBytesInPerSecond');
       const bytOutPs = get('numBytesOutPerSecond');
       const totalIn  = Math.round(get('numRecordsIn'));
       const totalOut = Math.round(get('numRecordsOut'));
+      const bp       = Math.round(get('backPressuredTimeMsPerSecond') / 10);
+      const busy     = Math.round(get('busyTimeMsPerSecond') / 10);
 
-      // Only emit an event row if there's activity
-      if (recInPs > 0 || recOutPs > 0 || totalIn > 0 || totalOut > 0) {
-        _addEventRow({
-          recInPs:  Math.round(recInPs),
-          recOutPs: Math.round(recOutPs),
-          bytInPs:  Math.round(bytInPs),
-          bytOutPs: Math.round(bytOutPs),
-          totalIn, totalOut,
-          isSink, isSource,
+      // Accumulate chart data
+      _ndChartData.recIn.push(recInPs);
+      _ndChartData.recOut.push(recOutPs);
+      if (_ndChartData.recIn.length > 60) { _ndChartData.recIn.shift(); _ndChartData.recOut.shift(); }
+      _drawNdChart();
+
+      // Update live metric cards in Metrics tab
+      const updCard = (label, val) => {
+        const cards = document.querySelectorAll('#nd-metrics-grid .nd-metric-card');
+        cards.forEach(c => {
+          if (c.querySelector('.nd-metric-label')?.textContent === label) {
+            c.querySelector('.nd-metric-val').textContent = val;
+          }
         });
+      };
+      updCard('Records In/s',  recInPs  > 0 ? Math.round(recInPs)  : '—');
+      updCard('Records Out/s', recOutPs > 0 ? Math.round(recOutPs) : '—');
+      if (bp > 0) updCard('Backpressure', bp + '%');
+
+      _addEventRow({ recInPs: Math.round(recInPs), recOutPs: Math.round(recOutPs),
+                     bytInPs: Math.round(bytInPs), bytOutPs: Math.round(bytOutPs),
+                     totalIn, totalOut, bp, busy, isSink, isSource, allMetrics: metrics });
+    } else {
+      // Metrics not yet available — show a waiting message once
+      const stream = document.getElementById('nd-events-stream');
+      if (stream && stream.innerHTML.trim() === '') {
+        stream.innerHTML = `<div class="nd-event-empty"><span style="font-size:16px;opacity:0.3;">⏳</span><span>Waiting for operator metrics… operator must be RUNNING.</span></div>`;
       }
     }
-  } catch(_) {}
+  } catch(e) {}
 
-  // Poll every 800ms while stream is running
   if (_ndState.streamRunning) {
     _ndState.streamTimer = setTimeout(_pollEventStream, 800);
   }
 }
 
-function _addEventRow({ recInPs, recOutPs, bytInPs, bytOutPs, totalIn, totalOut, isSink, isSource }) {
+function _addEventRow({ recInPs, recOutPs, bytInPs, bytOutPs, totalIn, totalOut, bp, busy, allMetrics }) {
   const stream = document.getElementById('nd-events-stream');
   if (!stream) return;
 
+  // Remove placeholder if present
+  if (stream.querySelector('.nd-event-empty')) stream.innerHTML = '';
+
   _ndState.eventCount++;
   const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
-
-  // Format bytes
   const fmtBytes = b => b > 1048576 ? (b/1048576).toFixed(1)+'MB/s' : b > 1024 ? (b/1024).toFixed(1)+'KB/s' : b+'B/s';
 
-  // Build rows for IN and OUT if relevant
-  const rows = [];
-  if (recInPs > 0 || totalIn > 0) {
-    rows.push(
-      `<div class="nd-event-row">
-        <span class="nd-event-ts">${ts}</span>
-        <span class="nd-event-dir in">← IN</span>
-        <span class="nd-event-val">${recInPs} rec/s &nbsp;·&nbsp; ${fmtBytes(bytInPs)} &nbsp;·&nbsp; ${totalIn.toLocaleString()} total</span>
-      </div>`
-    );
-  }
-  if (recOutPs > 0 || totalOut > 0) {
-    rows.push(
-      `<div class="nd-event-row">
-        <span class="nd-event-ts">${ts}</span>
-        <span class="nd-event-dir out">→ OUT</span>
-        <span class="nd-event-val">${recOutPs} rec/s &nbsp;·&nbsp; ${fmtBytes(bytOutPs)} &nbsp;·&nbsp; ${totalOut.toLocaleString()} total</span>
-      </div>`
-    );
-  }
+  const parts = [];
+  if (recInPs > 0 || totalIn > 0)
+    parts.push(`<span class="nd-event-dir in">← IN</span><span class="nd-event-val">${recInPs}/s  ${fmtBytes(bytInPs)}  total:${totalIn.toLocaleString()}</span>`);
+  if (recOutPs > 0 || totalOut > 0)
+    parts.push(`<span class="nd-event-dir out">→ OUT</span><span class="nd-event-val">${recOutPs}/s  ${fmtBytes(bytOutPs)}  total:${totalOut.toLocaleString()}</span>`);
+  if (bp > 0)
+    parts.push(`<span class="nd-event-dir" style="color:var(--red)">⚠ BP</span><span class="nd-event-val" style="color:var(--red)">${bp}% backpressure  busy:${busy}%</span>`);
 
-  if (rows.length === 0) return;
+  if (parts.length === 0) return;
 
-  // Prepend to stream (newest at top) — cap at 200 rows
-  const tmp = document.createElement('div');
-  tmp.innerHTML = rows.join('');
-  Array.from(tmp.children).reverse().forEach(row => {
-    stream.insertBefore(row, stream.firstChild);
-  });
-  // Trim old rows
+  const row = document.createElement('div');
+  row.className = 'nd-event-row';
+  row.innerHTML = `<span class="nd-event-ts">${ts}</span>${parts.join('<span style="color:var(--border2);margin:0 6px;">|</span>')}`;
+  stream.insertBefore(row, stream.firstChild);
   while (stream.children.length > 200) stream.removeChild(stream.lastChild);
 
-  // Update counters
   const count = document.getElementById('nd-events-count');
   const badge = document.getElementById('nd-events-badge');
   if (count) count.textContent = _ndState.eventCount + ' events';

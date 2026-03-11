@@ -451,6 +451,55 @@
     animation: pulse 1.2s infinite;
   }
 
+
+  /* ── Collapsible perf sections ───────────────────────────────── */
+  .perf-section {
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .perf-section-hdr {
+    width: 100%; display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    background: var(--bg1); border: none; cursor: pointer;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase;
+    transition: background 0.12s, color 0.12s;
+    text-align: left;
+  }
+  .perf-section-hdr:hover { background: var(--bg3); color: var(--text0); }
+  .perf-section-arrow {
+    font-size: 11px; color: var(--text3); flex-shrink: 0;
+    transition: transform 0.18s;
+    display: inline-block;
+  }
+  .perf-section.collapsed .perf-section-arrow { transform: rotate(-90deg); }
+  .perf-section-body {
+    overflow: hidden;
+    transition: max-height 0.22s ease-out, opacity 0.18s;
+    max-height: 1200px;
+    opacity: 1;
+    padding: 10px 14px 12px;
+  }
+  .perf-section.collapsed .perf-section-body {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .perf-section-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+  .perf-section-badge {
+    margin-left: auto; font-size: 9px; font-weight: 700;
+    color: var(--accent); font-family: var(--mono);
+    background: rgba(0,212,170,0.08);
+    border: 1px solid rgba(0,212,170,0.18);
+    padding: 1px 6px; border-radius: 3px;
+  }
+  .perf-section-badge:empty { display: none; }
+
   /* Tab rename input */
   .tab-rename-input {
     background: var(--bg0); border: 1.5px solid var(--accent);

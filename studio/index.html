@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FlinkSQL Studio</title>
+  <!-- Favicon: SVG logo inline -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23090c12'/%3E%3Cpolyline points='20 24 28 16 20 8' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='12 8 4 16 12 24' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="shortcut icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23090c12'/%3E%3Cpolyline points='20 24 28 16 20 8' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='12 8 4 16 12 24' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -337,115 +340,144 @@ SHOW CATALOGS;"
                   <div class="perf-kpi-delta" id="kpi-state-delta"></div>
                 </div>
               </div>
-              <!-- Charts body -->
+              <!-- Charts body — each card is a collapsible section -->
               <div class="perf-body" id="perf-body">
-                <!-- Sparkline: Records In/s -->
-                <div class="perf-card">
-                  <div class="perf-card-title"><span class="dot" style="background:var(--blue)"></span>Records In / Second</div>
-                  <div class="sparkline-wrap"><svg id="spark-rec-in" viewBox="0 0 300 52" preserveAspectRatio="none"></svg></div>
-                  <div class="spark-label-row"><span id="spark-rec-in-min">min —</span><span id="spark-rec-in-max">max —</span></div>
-                </div>
-                <!-- Sparkline: Records Out/s -->
-                <div class="perf-card">
-                  <div class="perf-card-title"><span class="dot" style="background:var(--accent3)"></span>Records Out / Second</div>
-                  <div class="sparkline-wrap"><svg id="spark-rec-out" viewBox="0 0 300 52" preserveAspectRatio="none"></svg></div>
-                  <div class="spark-label-row"><span id="spark-rec-out-min">min —</span><span id="spark-rec-out-max">max —</span></div>
-                </div>
-                <!-- Gauges: Backpressure -->
-                <div class="perf-card">
-                  <div class="perf-card-title"><span class="dot" style="background:var(--red)"></span>Backpressure &amp; Task Slots</div>
-                  <div class="gauge-row" id="gauge-row">
-                    <div class="gauge-wrap">
-                      <svg class="gauge-svg" width="90" height="58" viewBox="0 0 90 58">
-                        <path class="gauge-bg"  d="M 10 50 A 35 35 0 0 1 80 50" />
-                        <path class="gauge-arc" id="gauge-bp-arc" d="M 10 50 A 35 35 0 0 1 80 50" stroke="var(--red)" stroke-dasharray="110" stroke-dashoffset="110"/>
-                        <text class="gauge-val" id="gauge-bp-val" x="45" y="44" text-anchor="middle">—</text>
-                        <text class="gauge-sub" x="45" y="54" text-anchor="middle">BACKPRESSURE</text>
-                      </svg>
-                      <div class="gauge-name" style="font-size:9px;color:var(--text3);">0% = healthy</div>
-                    </div>
-                    <div class="gauge-wrap">
-                      <svg class="gauge-svg" width="90" height="58" viewBox="0 0 90 58">
-                        <path class="gauge-bg"  d="M 10 50 A 35 35 0 0 1 80 50" />
-                        <path class="gauge-arc" id="gauge-slots-arc" d="M 10 50 A 35 35 0 0 1 80 50" stroke="var(--accent)" stroke-dasharray="110" stroke-dashoffset="55"/>
-                        <text class="gauge-val" id="gauge-slots-val" x="45" y="44" text-anchor="middle">—</text>
-                        <text class="gauge-sub" x="45" y="54" text-anchor="middle">SLOT USAGE</text>
-                      </svg>
-                      <div class="gauge-name" style="font-size:9px;color:var(--text3);">% slots in use</div>
+
+                <!-- Section: Throughput sparklines -->
+                <div class="perf-section" id="ps-throughput">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-throughput')">
+                    <span class="perf-section-arrow" id="ps-throughput-arrow">▾</span>
+                    <span class="dot" style="background:var(--blue)"></span>
+                    Throughput
+                    <span class="perf-section-badge" id="ps-throughput-badge"></span>
+                  </button>
+                  <div class="perf-section-body" id="ps-throughput-body">
+                    <div class="perf-section-grid">
+                      <div class="perf-card">
+                        <div class="perf-card-title"><span class="dot" style="background:var(--blue)"></span>Records In / Second</div>
+                        <div class="sparkline-wrap"><svg id="spark-rec-in" viewBox="0 0 300 52" preserveAspectRatio="none"></svg></div>
+                        <div class="spark-label-row"><span id="spark-rec-in-min">min —</span><span id="spark-rec-in-max">max —</span></div>
+                      </div>
+                      <div class="perf-card">
+                        <div class="perf-card-title"><span class="dot" style="background:var(--accent3)"></span>Records Out / Second</div>
+                        <div class="sparkline-wrap"><svg id="spark-rec-out" viewBox="0 0 300 52" preserveAspectRatio="none"></svg></div>
+                        <div class="spark-label-row"><span id="spark-rec-out-min">min —</span><span id="spark-rec-out-max">max —</span></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <!-- Query timing bars -->
-                <div class="perf-card">
-                  <div class="perf-card-title"><span class="dot" style="background:var(--accent)"></span>Query Execution History</div>
-                  <div class="timing-list" id="timing-list">
-                    <div style="font-size:11px;color:var(--text3);text-align:center;padding:12px;">Run queries to see timing comparison</div>
+
+                <!-- Section: Backpressure & Slots -->
+                <div class="perf-section" id="ps-health">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-health')">
+                    <span class="perf-section-arrow" id="ps-health-arrow">▾</span>
+                    <span class="dot" style="background:var(--red)"></span>
+                    Backpressure &amp; Slot Health
+                    <span class="perf-section-badge" id="ps-health-badge"></span>
+                  </button>
+                  <div class="perf-section-body" id="ps-health-body">
+                    <div class="perf-section-grid">
+                      <div class="perf-card">
+                        <div class="perf-card-title"><span class="dot" style="background:var(--red)"></span>Backpressure &amp; Task Slots</div>
+                        <div class="gauge-row" id="gauge-row">
+                          <div class="gauge-wrap">
+                            <svg class="gauge-svg" width="90" height="58" viewBox="0 0 90 58">
+                              <path class="gauge-bg"  d="M 10 50 A 35 35 0 0 1 80 50" />
+                              <path class="gauge-arc" id="gauge-bp-arc" d="M 10 50 A 35 35 0 0 1 80 50" stroke="var(--red)" stroke-dasharray="110" stroke-dashoffset="110"/>
+                              <text class="gauge-val" id="gauge-bp-val" x="45" y="44" text-anchor="middle">—</text>
+                              <text class="gauge-sub" x="45" y="54" text-anchor="middle">BACKPRESSURE</text>
+                            </svg>
+                            <div class="gauge-name" style="font-size:9px;color:var(--text3);">0% = healthy</div>
+                          </div>
+                          <div class="gauge-wrap">
+                            <svg class="gauge-svg" width="90" height="58" viewBox="0 0 90 58">
+                              <path class="gauge-bg"  d="M 10 50 A 35 35 0 0 1 80 50" />
+                              <path class="gauge-arc" id="gauge-slots-arc" d="M 10 50 A 35 35 0 0 1 80 50" stroke="var(--accent)" stroke-dasharray="110" stroke-dashoffset="55"/>
+                              <text class="gauge-val" id="gauge-slots-val" x="45" y="44" text-anchor="middle">—</text>
+                              <text class="gauge-sub" x="45" y="54" text-anchor="middle">SLOT USAGE</text>
+                            </svg>
+                            <div class="gauge-name" style="font-size:9px;color:var(--text3);">% slots in use</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <!-- Checkpoint metrics card -->
-                <div class="perf-card" id="checkpoint-card">
-                  <div class="perf-card-title" style="display:flex;align-items:center;justify-content:space-between;">
-                    <span><span class="dot" style="background:var(--yellow)"></span>Checkpoint Metrics</span>
-                    <span id="cp-status-badge" class="cp-badge cp-badge-none">NO JOB</span>
-                  </div>
-                  <!-- Summary row -->
-                  <div class="cp-summary-row">
-                    <div class="cp-stat">
-                      <div class="cp-stat-val" id="cp-total">—</div>
-                      <div class="cp-stat-lbl">Total</div>
+
+                <!-- Section: Query History -->
+                <div class="perf-section" id="ps-queries">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-queries')">
+                    <span class="perf-section-arrow" id="ps-queries-arrow">▾</span>
+                    <span class="dot" style="background:var(--accent)"></span>
+                    Query Execution History
+                    <span class="perf-section-badge" id="ps-queries-badge"></span>
+                  </button>
+                  <div class="perf-section-body" id="ps-queries-body">
+                    <div class="perf-card" style="border:none;padding:8px 0 0;">
+                      <div class="timing-list" id="timing-list">
+                        <div style="font-size:11px;color:var(--text3);text-align:center;padding:12px;">Run queries to see timing comparison</div>
+                      </div>
                     </div>
-                    <div class="cp-stat">
-                      <div class="cp-stat-val" id="cp-completed" style="color:var(--green)">—</div>
-                      <div class="cp-stat-lbl">Completed</div>
-                    </div>
-                    <div class="cp-stat">
-                      <div class="cp-stat-val" id="cp-failed" style="color:var(--red)">—</div>
-                      <div class="cp-stat-lbl">Failed</div>
-                    </div>
-                    <div class="cp-stat">
-                      <div class="cp-stat-val" id="cp-in-progress" style="color:var(--yellow)">—</div>
-                      <div class="cp-stat-lbl">In Progress</div>
-                    </div>
-                    <div class="cp-stat">
-                      <div class="cp-stat-val" id="cp-duration">—</div>
-                      <div class="cp-stat-lbl">Last Duration</div>
-                    </div>
-                    <div class="cp-stat">
-                      <div class="cp-stat-val" id="cp-size">—</div>
-                      <div class="cp-stat-lbl">State Size</div>
-                    </div>
-                  </div>
-                  <!-- Latest checkpoint detail -->
-                  <div id="cp-latest-wrap" style="display:none;">
-                    <div class="cp-section-label">LATEST COMPLETED</div>
-                    <div class="cp-detail-grid" id="cp-detail-grid"></div>
-                  </div>
-                  <!-- Checkpoint history sparkline -->
-                  <div id="cp-history-wrap" style="display:none;">
-                    <div class="cp-section-label" style="display:flex;align-items:center;justify-content:space-between;">
-                      <span>CHECKPOINT DURATION HISTORY</span>
-                      <span id="cp-avg-label" style="color:var(--text2);font-size:9px;"></span>
-                    </div>
-                    <div class="sparkline-wrap" style="margin-top:4px;">
-                      <svg id="spark-cp-dur" viewBox="0 0 300 52" preserveAspectRatio="none"></svg>
-                    </div>
-                    <div class="spark-label-row">
-                      <span id="spark-cp-min">min —</span>
-                      <span id="spark-cp-max">max —</span>
-                    </div>
-                  </div>
-                  <!-- No checkpoint message -->
-                  <div id="cp-empty-msg" style="font-size:11px;color:var(--text3);text-align:center;padding:14px 0;">
-                    No checkpoints recorded yet. Checkpoints appear once a streaming job has been running and checkpointing is enabled.
                   </div>
                 </div>
-              </div>
-              <!-- Jobs list (full width below) -->
-              <div class="perf-card" style="border-top:1px solid var(--border);flex-shrink:0;max-height:160px;">
-                <div class="perf-card-title"><span class="dot" style="background:var(--green)"></span>Running &amp; Recent Jobs</div>
-                <div class="job-list" id="perf-job-list">
-                  <div style="font-size:11px;color:var(--text3);">Click Refresh to load jobs from JobManager</div>
+
+                <!-- Section: Checkpoints -->
+                <div class="perf-section" id="ps-checkpoints">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-checkpoints')">
+                    <span class="perf-section-arrow" id="ps-checkpoints-arrow">▾</span>
+                    <span class="dot" style="background:var(--yellow)"></span>
+                    Checkpoint Metrics
+                    <span id="cp-status-badge" class="cp-badge cp-badge-none" style="margin-left:auto;margin-right:0;">NO JOB</span>
+                  </button>
+                  <div class="perf-section-body" id="ps-checkpoints-body">
+                    <div id="checkpoint-card">
+                      <div class="cp-summary-row">
+                        <div class="cp-stat"><div class="cp-stat-val" id="cp-total">—</div><div class="cp-stat-lbl">Total</div></div>
+                        <div class="cp-stat"><div class="cp-stat-val" id="cp-completed" style="color:var(--green)">—</div><div class="cp-stat-lbl">Completed</div></div>
+                        <div class="cp-stat"><div class="cp-stat-val" id="cp-failed" style="color:var(--red)">—</div><div class="cp-stat-lbl">Failed</div></div>
+                        <div class="cp-stat"><div class="cp-stat-val" id="cp-in-progress" style="color:var(--yellow)">—</div><div class="cp-stat-lbl">In Progress</div></div>
+                        <div class="cp-stat"><div class="cp-stat-val" id="cp-duration">—</div><div class="cp-stat-lbl">Last Duration</div></div>
+                        <div class="cp-stat"><div class="cp-stat-val" id="cp-size">—</div><div class="cp-stat-lbl">State Size</div></div>
+                      </div>
+                      <div id="cp-latest-wrap" style="display:none;">
+                        <div class="cp-section-label">LATEST COMPLETED</div>
+                        <div class="cp-detail-grid" id="cp-detail-grid"></div>
+                      </div>
+                      <div id="cp-history-wrap" style="display:none;">
+                        <div class="cp-section-label" style="display:flex;align-items:center;justify-content:space-between;">
+                          <span>CHECKPOINT DURATION HISTORY</span>
+                          <span id="cp-avg-label" style="color:var(--text2);font-size:9px;"></span>
+                        </div>
+                        <div class="sparkline-wrap" style="margin-top:4px;">
+                          <svg id="spark-cp-dur" viewBox="0 0 300 52" preserveAspectRatio="none"></svg>
+                        </div>
+                        <div class="spark-label-row">
+                          <span id="spark-cp-min">min —</span>
+                          <span id="spark-cp-max">max —</span>
+                        </div>
+                      </div>
+                      <div id="cp-empty-msg" style="font-size:11px;color:var(--text3);text-align:center;padding:14px 0;">
+                        No checkpoints recorded yet. Checkpoints appear once a streaming job has been running and checkpointing is enabled.
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                <!-- Section: Jobs -->
+                <div class="perf-section" id="ps-jobs">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-jobs')">
+                    <span class="perf-section-arrow" id="ps-jobs-arrow">▾</span>
+                    <span class="dot" style="background:var(--green)"></span>
+                    Running &amp; Recent Jobs
+                    <span class="perf-section-badge" id="ps-jobs-badge"></span>
+                  </button>
+                  <div class="perf-section-body" id="ps-jobs-body">
+                    <div class="job-list" id="perf-job-list">
+                      <div style="font-size:11px;color:var(--text3);">Click Refresh to load jobs from JobManager</div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
             <!-- Job Graph tab -->
@@ -746,11 +778,20 @@ SHOW CATALOGS;"
             <button class="nd-events-btn" onclick="clearEventStream()">Clear</button>
             <span id="nd-events-count" style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3);">0 events</span>
           </div>
-          <div id="nd-events-stream">
+          <!-- Mini throughput chart -->
+          <div style="padding:10px 20px 0;display:flex;gap:10px;align-items:flex-end;">
+            <div style="flex:1;background:var(--bg0);border:1px solid var(--border);border-radius:5px;padding:6px 8px;">
+              <div style="font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:4px;">
+                <span style="color:var(--blue);">— In</span>&nbsp;&nbsp;<span style="color:var(--accent3);">— Out</span>&nbsp;&nbsp;Records/s
+              </div>
+              <canvas id="nd-throughput-canvas" width="600" height="52" style="width:100%;height:52px;display:block;"></canvas>
+            </div>
+          </div>
+          <div id="nd-events-stream" style="margin-top:8px;">
             <div class="nd-event-empty">
               <span style="font-size:22px;opacity:0.3;">⚡</span>
-              <span>Event stream will appear here when the operator is running.</span>
-              <span style="font-size:10px;color:var(--text3);">Events are sampled from the JobManager metrics API.</span>
+              <span>Operator throughput will stream here when the operator is running.</span>
+              <span style="font-size:10px;color:var(--text3);">Polls JobManager metrics API every 800ms.</span>
             </div>
           </div>
         </div>

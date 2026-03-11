@@ -1,14 +1,18 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # .github/workflows/publish.yml
-# Two jobs:
+# Three jobs:
 #   1. build-and-push  — builds multi-arch Docker image, pushes to Docker Hub
-#   2. deploy-docs     — deploys docs/index.html to GitHub Pages
+#   2. build-docs      — prepares and uploads the Pages artifact
+#   3. deploy-docs     — deploys the artifact to GitHub Pages
+#
+# Splitting upload and deploy into separate jobs prevents the "duplicate
+# artifact" error when re-running only failed jobs.
 #
 # Required GitHub secrets:
 #   DOCKERHUB_USERNAME  = codedstreams
 #   DOCKERHUB_TOKEN     = dckr_pat_xxxx...
 #
-# Required GitHub Pages config (one-time, do this in repo Settings):
+# Required GitHub Pages config (one-time):
 #   Settings → Pages → Source → GitHub Actions
 # ─────────────────────────────────────────────────────────────────────────────
 name: Build, Publish & Deploy Docs
@@ -16,8 +20,8 @@ name: Build, Publish & Deploy Docs
 on:
   push:
     tags:
-      - "v*.*.*"        # triggers on v1.0.0, v1.2.3, etc.
-  workflow_dispatch:    # manual trigger from GitHub UI
+      - "v*.*.*"
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: codedstreams/flinksql-studio
@@ -36,7 +40,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up QEMU (for ARM64 cross-compilation)
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
@@ -78,19 +82,15 @@ jobs:
           repository: ${{ env.IMAGE_NAME }}
           readme-filepath: ./README.md
 
-  # ── JOB 2: Deploy docs to GitHub Pages ────────────────────────────────────
-  deploy-docs:
-    name: Deploy docs to GitHub Pages
+  # ── JOB 2: Build and upload the Pages artifact ────────────────────────────
+  build-docs:
+    name: Build docs site
     runs-on: ubuntu-latest
-    needs: build-and-push     # only deploy docs if Docker build succeeded
+    needs: build-and-push
     permissions:
       contents: read
-      pages: write            # required to deploy to GitHub Pages
-      id-token: write         # required for OIDC token (Pages deployment)
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      pages: write
+      id-token: write
 
     steps:
       - name: Checkout source
@@ -98,14 +98,10 @@ jobs:
 
       - name: Prepare docs site
         run: |
-          mkdir -p _site
-          # Copy the full docs folder as the Pages root
-          cp -r docs/. _site/
-          # Also copy the IDE itself so docs links to ../studio/index.html work
           mkdir -p _site/studio
+          cp -r docs/. _site/
           cp studio/index.html _site/studio/index.html
-          # Copy logo assets if present
-          cp -r docs/architecture.svg _site/ 2>/dev/null || true
+          cp docs/architecture.svg _site/ 2>/dev/null || true
           echo "Site contents:"
           find _site -type f | sort
 
@@ -114,6 +110,21 @@ jobs:
         with:
           path: _site
 
+  # ── JOB 3: Deploy the uploaded artifact to GitHub Pages ───────────────────
+  deploy-docs:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-docs        # depends on build-docs, not build-and-push
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v4
