@@ -1,192 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FlinkSQL Studio — Documentation</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<style>
-:root {
-  --bg0:#090c12; --bg1:#0d1117; --bg2:#131920; --bg3:#1a2130;
-  --border:#1e2d3d; --border2:#253348;
-  --accent:#00d4aa; --accent2:#00a884; --accent3:#7ee8d0;
-  --blue:#4fa3e0; --purple:#9b72cf; --orange:#f0a500; --red:#e05c5c; --green:#3fb950;
-  --text0:#f0f6fc; --text1:#c9d1d9; --text2:#8b949e; --text3:#4a5568;
-  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
-  --logo-bg:#0c1018; --logo-clip:polygon(0 0,80% 0,100% 20%,100% 100%,20% 100%,0 80%);
-  --radius:8px; --nav-h:58px;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{font-family:var(--sans);background:var(--bg1);color:var(--text1);line-height:1.7;font-size:15px}
-a{color:var(--accent);text-decoration:none}
-a:hover{color:var(--accent3);text-decoration:underline}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg1)}
-::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlinkSQL Studio — Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg0:#090c12; --bg1:#0d1117; --bg2:#131920; --bg3:#1a2130;
+      --border:#1e2d3d; --border2:#253348;
+      --accent:#00d4aa; --accent2:#00a884; --accent3:#7ee8d0;
+      --blue:#4fa3e0; --purple:#9b72cf; --orange:#f0a500; --red:#e05c5c; --green:#3fb950;
+      --text0:#f0f6fc; --text1:#c9d1d9; --text2:#8b949e; --text3:#4a5568;
+      --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+      --logo-bg:#0c1018; --logo-clip:polygon(0 0,80% 0,100% 20%,100% 100%,20% 100%,0 80%);
+      --radius:8px; --nav-h:58px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:var(--sans);background:var(--bg1);color:var(--text1);line-height:1.7;font-size:15px}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{color:var(--accent3);text-decoration:underline}
+    ::-webkit-scrollbar{width:6px;height:6px}
+    ::-webkit-scrollbar-track{background:var(--bg1)}
+    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
-/* NAV */
-.nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
-.nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}
-.logo-mark{width:26px;height:26px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.35);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo-text{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text0);letter-spacing:-0.2px}
-.logo-ver{font-size:9px;color:var(--text3);margin-left:4px;font-weight:400}
-.nav-links{display:flex;align-items:center;gap:2px;list-style:none;flex:1}
-.nav-links a{font-size:13px;color:var(--text2);padding:6px 11px;border-radius:5px;transition:color .15s,background .15s;white-space:nowrap}
-.nav-links a:hover{color:var(--text0);background:var(--bg3);text-decoration:none}
-.nav-links a.active{color:var(--accent)}
-.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto}
-.nav-btn{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text1);cursor:pointer;transition:all .15s;text-decoration:none}
-.nav-btn:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
-.nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
-.nav-btn.primary:hover{background:var(--accent3);color:#000}
+    /* NAV */
+    .nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
+    .nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}
+    .logo-mark{width:26px;height:26px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.35);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .logo-text{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text0);letter-spacing:-0.2px}
+    .logo-ver{font-size:9px;color:var(--text3);margin-left:4px;font-weight:400}
+    .nav-links{display:flex;align-items:center;gap:2px;list-style:none;flex:1}
+    .nav-links a{font-size:13px;color:var(--text2);padding:6px 11px;border-radius:5px;transition:color .15s,background .15s;white-space:nowrap}
+    .nav-links a:hover{color:var(--text0);background:var(--bg3);text-decoration:none}
+    .nav-links a.active{color:var(--accent)}
+    .nav-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+    .nav-btn{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text1);cursor:pointer;transition:all .15s;text-decoration:none}
+    .nav-btn:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+    .nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+    .nav-btn.primary:hover{background:var(--accent3);color:#000}
 
-/* HERO */
-.hero{background:var(--bg0);padding:88px 32px 72px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(0,212,170,0.07) 0%,transparent 70%);pointer-events:none}
-.hero-logo{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:24px}
-.hero-logo-mark{width:52px;height:52px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.4);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center}
-.hero-title{font-family:var(--mono);font-size:46px;font-weight:700;color:var(--text0);letter-spacing:-2px;line-height:1.1}
-.hero-title span{color:var(--accent)}
-.hero-sub{font-size:17px;color:var(--text2);max-width:580px;margin:16px auto 0;line-height:1.8}
-.hero-badges{display:flex;gap:8px;justify-content:center;margin-top:26px;flex-wrap:wrap}
-.badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--mono);color:var(--text2)}
-.badge.green{border-color:rgba(63,185,80,0.4);color:var(--green);background:rgba(63,185,80,0.06)}
-.badge.teal{border-color:rgba(0,212,170,0.4);color:var(--accent);background:rgba(0,212,170,0.06)}
-.badge.blue{border-color:rgba(79,163,224,0.4);color:var(--blue);background:rgba(79,163,224,0.06)}
-.hero-cta{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-decoration:none;border:1px solid transparent}
-.btn-primary{background:var(--accent);color:#000}
-.btn-primary:hover{background:var(--accent3);text-decoration:none;color:#000}
-.btn-outline{background:transparent;border-color:var(--border2);color:var(--text1)}
-.btn-outline:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+    /* HERO */
+    .hero{background:var(--bg0);padding:88px 32px 72px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+    .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(0,212,170,0.07) 0%,transparent 70%);pointer-events:none}
+    .hero-logo{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:24px}
+    .hero-logo-mark{width:52px;height:52px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.4);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center}
+    .hero-title{font-family:var(--mono);font-size:46px;font-weight:700;color:var(--text0);letter-spacing:-2px;line-height:1.1}
+    .hero-title span{color:var(--accent)}
+    .hero-sub{font-size:17px;color:var(--text2);max-width:580px;margin:16px auto 0;line-height:1.8}
+    .hero-badges{display:flex;gap:8px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--mono);color:var(--text2)}
+    .badge.green{border-color:rgba(63,185,80,0.4);color:var(--green);background:rgba(63,185,80,0.06)}
+    .badge.teal{border-color:rgba(0,212,170,0.4);color:var(--accent);background:rgba(0,212,170,0.06)}
+    .badge.blue{border-color:rgba(79,163,224,0.4);color:var(--blue);background:rgba(79,163,224,0.06)}
+    .hero-cta{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-decoration:none;border:1px solid transparent}
+    .btn-primary{background:var(--accent);color:#000}
+    .btn-primary:hover{background:var(--accent3);text-decoration:none;color:#000}
+    .btn-outline{background:transparent;border-color:var(--border2);color:var(--text1)}
+    .btn-outline:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
 
-/* LAYOUT */
-.page{display:flex;max-width:1280px;margin:0 auto}
+    /* LAYOUT */
+    .page{display:flex;max-width:1280px;margin:0 auto}
 
-/* TOC */
-.toc{width:232px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:28px 0 28px 20px;border-right:1px solid var(--border)}
-.toc-section{margin-bottom:20px}
-.toc-label{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:5px;display:block}
-.toc a{display:block;font-size:13px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}
-.toc a:hover{color:var(--text0);text-decoration:none;border-left-color:var(--border2)}
-.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
+    /* TOC */
+    .toc{width:232px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:28px 0 28px 20px;border-right:1px solid var(--border)}
+    .toc-section{margin-bottom:20px}
+    .toc-label{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:5px;display:block}
+    .toc a{display:block;font-size:13px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}
+    .toc a:hover{color:var(--text0);text-decoration:none;border-left-color:var(--border2)}
+    .toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
 
-/* CONTENT */
-.content{flex:1;min-width:0;padding:44px 52px 96px}
-.doc-section{margin-bottom:68px}
-h2{font-size:24px;font-weight:700;color:var(--text0);letter-spacing:-0.5px;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-h2 .si{width:30px;height:30px;border-radius:7px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-h3{font-size:16px;font-weight:600;color:var(--text0);margin:28px 0 10px}
-h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 7px}
-p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
-ul.doc-ul{margin:6px 0 14px 20px}
-ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}
-ul.doc-ul li strong{color:var(--text1)}
+    /* CONTENT */
+    .content{flex:1;min-width:0;padding:44px 52px 96px}
+    .doc-section{margin-bottom:68px}
+    h2{font-size:24px;font-weight:700;color:var(--text0);letter-spacing:-0.5px;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+    h2 .si{width:30px;height:30px;border-radius:7px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    h3{font-size:16px;font-weight:600;color:var(--text0);margin:28px 0 10px}
+    h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 7px}
+    p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
+    ul.doc-ul{margin:6px 0 14px 20px}
+    ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}
+    ul.doc-ul li strong{color:var(--text1)}
 
-/* CODE */
-code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
-pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:18px 22px;overflow-x:auto;margin:14px 0;position:relative}
-pre code{background:none;border:none;padding:0;font-size:13px;color:var(--text1);line-height:1.7}
-.pre-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block}
+    /* CODE */
+    code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
+    pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:18px 22px;overflow-x:auto;margin:14px 0;position:relative}
+    pre code{background:none;border:none;padding:0;font-size:13px;color:var(--text1);line-height:1.7}
+    .pre-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block}
 
-/* CALLOUTS */
-.callout{border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13px;line-height:1.7;display:flex;gap:11px;align-items:flex-start}
-.callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
-.callout-body{flex:1}
-.callout-body strong{display:block;margin-bottom:3px;font-size:13px}
-.callout.tip{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--text1)}
-.callout.tip strong{color:var(--accent)}
-.callout.warn{background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2);color:var(--text1)}
-.callout.warn strong{color:var(--orange)}
-.callout.info{background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2);color:var(--text1)}
-.callout.info strong{color:var(--blue)}
-.callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2);color:var(--text1)}
-.callout.danger strong{color:var(--red)}
+    /* CALLOUTS */
+    .callout{border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13px;line-height:1.7;display:flex;gap:11px;align-items:flex-start}
+    .callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+    .callout-body{flex:1}
+    .callout-body strong{display:block;margin-bottom:3px;font-size:13px}
+    .callout.tip{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--text1)}
+    .callout.tip strong{color:var(--accent)}
+    .callout.warn{background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2);color:var(--text1)}
+    .callout.warn strong{color:var(--orange)}
+    .callout.info{background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2);color:var(--text1)}
+    .callout.info strong{color:var(--blue)}
+    .callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2);color:var(--text1)}
+    .callout.danger strong{color:var(--red)}
 
-/* FEATURE GRID */
-.feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:13px;margin:18px 0}
-.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .15s,transform .15s;position:relative;overflow:hidden}
-.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .15s}
-.feature-card:hover{border-color:var(--border2);transform:translateY(-1px)}
-.feature-card:hover::before{opacity:1}
-.fci{font-size:20px;margin-bottom:8px;display:block}
-.feature-card h3{margin:0 0 5px;color:var(--text0);font-size:14px}
-.feature-card p{font-size:13px;margin:0;color:var(--text2);line-height:1.6}
+    /* FEATURE GRID */
+    .feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:13px;margin:18px 0}
+    .feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .15s,transform .15s;position:relative;overflow:hidden}
+    .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .15s}
+    .feature-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+    .feature-card:hover::before{opacity:1}
+    .fci{font-size:20px;margin-bottom:8px;display:block}
+    .feature-card h3{margin:0 0 5px;color:var(--text0);font-size:14px}
+    .feature-card p{font-size:13px;margin:0;color:var(--text2);line-height:1.6}
 
-/* TABLES */
-.table-wrap{overflow-x:auto;margin:14px 0;border-radius:var(--radius);border:1px solid var(--border)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead tr{background:var(--bg2)}
-th{text-align:left;padding:9px 13px;color:var(--text0);font-weight:600;font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
-td{padding:8px 13px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,0.02)}
-td code{font-size:11px}
+    /* TABLES */
+    .table-wrap{overflow-x:auto;margin:14px 0;border-radius:var(--radius);border:1px solid var(--border)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead tr{background:var(--bg2)}
+    th{text-align:left;padding:9px 13px;color:var(--text0);font-weight:600;font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+    td{padding:8px 13px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,0.02)}
+    td code{font-size:11px}
 
-/* TABS */
-.tab-group{margin:18px 0}
-.tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}
-.tab-btn{font-family:var(--mono);font-size:12px;padding:7px 15px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
-.tab-btn.active{background:var(--bg0);border-color:var(--border);color:var(--accent);border-bottom-color:var(--bg0)}
-.tab-btn:hover:not(.active){color:var(--text1);background:var(--bg3)}
-.tab-pane{display:none}
-.tab-pane.active{display:block}
+    /* TABS */
+    .tab-group{margin:18px 0}
+    .tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}
+    .tab-btn{font-family:var(--mono);font-size:12px;padding:7px 15px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
+    .tab-btn.active{background:var(--bg0);border-color:var(--border);color:var(--accent);border-bottom-color:var(--bg0)}
+    .tab-btn:hover:not(.active){color:var(--text1);background:var(--bg3)}
+    .tab-pane{display:none}
+    .tab-pane.active{display:block}
 
-/* MERMAID */
-.mermaid-wrap{background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin:14px 0;overflow-x:auto;display:flex;justify-content:center}
-.mermaid{max-width:100%}
+    /* MERMAID */
+    .mermaid-wrap{background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin:14px 0;overflow-x:auto;display:flex;justify-content:center}
+    .mermaid{max-width:100%}
 
-/* STEPS */
-.steps{margin:18px 0}
-.step{display:flex;gap:15px;margin-bottom:26px;position:relative}
-.step::before{content:'';position:absolute;left:16px;top:38px;width:2px;bottom:-6px;background:var(--border)}
-.step:last-child::before{display:none}
-.step-num{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;z-index:1}
-.step-body{flex:1;padding-top:5px}
-.step-body h4{margin-top:0;margin-bottom:5px}
+    /* STEPS */
+    .steps{margin:18px 0}
+    .step{display:flex;gap:15px;margin-bottom:26px;position:relative}
+    .step::before{content:'';position:absolute;left:16px;top:38px;width:2px;bottom:-6px;background:var(--border)}
+    .step:last-child::before{display:none}
+    .step-num{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;z-index:1}
+    .step-body{flex:1;padding-top:5px}
+    .step-body h4{margin-top:0;margin-bottom:5px}
 
-/* TAGS */
-.tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-right:4px}
-.tag.setup{background:rgba(79,163,224,0.1);color:var(--blue);border:1px solid rgba(79,163,224,0.25)}
-.tag.config{background:rgba(155,114,207,0.1);color:var(--purple);border:1px solid rgba(155,114,207,0.25)}
-.tag.ddl{background:rgba(0,212,170,0.1);color:var(--accent);border:1px solid rgba(0,212,170,0.25)}
-.tag.window{background:rgba(240,165,0,0.1);color:var(--orange);border:1px solid rgba(240,165,0,0.25)}
-.tag.connector{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
-.tag.pattern{background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.25)}
-.tag.perf{background:rgba(240,165,0,0.08);color:var(--orange);border:1px solid rgba(240,165,0,0.2)}
-.tag.debug{background:rgba(224,92,92,0.08);color:var(--red);border:1px solid rgba(224,92,92,0.2)}
+    /* TAGS */
+    .tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-right:4px}
+    .tag.setup{background:rgba(79,163,224,0.1);color:var(--blue);border:1px solid rgba(79,163,224,0.25)}
+    .tag.config{background:rgba(155,114,207,0.1);color:var(--purple);border:1px solid rgba(155,114,207,0.25)}
+    .tag.ddl{background:rgba(0,212,170,0.1);color:var(--accent);border:1px solid rgba(0,212,170,0.25)}
+    .tag.window{background:rgba(240,165,0,0.1);color:var(--orange);border:1px solid rgba(240,165,0,0.25)}
+    .tag.connector{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
+    .tag.pattern{background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.25)}
+    .tag.perf{background:rgba(240,165,0,0.08);color:var(--orange);border:1px solid rgba(240,165,0,0.2)}
+    .tag.debug{background:rgba(224,92,92,0.08);color:var(--red);border:1px solid rgba(224,92,92,0.2)}
 
-/* DEPLOY */
-.deploy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:13px;margin:18px 0}
-.deploy-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-.deploy-card-icon{font-size:26px;margin-bottom:9px;display:block}
-.deploy-card h3{margin:0 0 7px;font-size:15px;color:var(--text0)}
-.deploy-card p{font-size:13px;margin-bottom:11px;color:var(--text2)}
+    /* DEPLOY */
+    .deploy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:13px;margin:18px 0}
+    .deploy-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+    .deploy-card-icon{font-size:26px;margin-bottom:9px;display:block}
+    .deploy-card h3{margin:0 0 7px;font-size:15px;color:var(--text0)}
+    .deploy-card p{font-size:13px;margin-bottom:11px;color:var(--text2)}
 
-/* VERSION */
-.version-list{display:flex;flex-direction:column;gap:11px;margin:14px 0}
-.version-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
-.version-header{display:flex;align-items:center;gap:11px;margin-bottom:11px}
-.version-tag{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);padding:2px 9px;border-radius:4px}
-.version-date{font-size:12px;color:var(--text3);font-family:var(--mono)}
-.version-label{font-size:11px;font-family:var(--mono);font-weight:600;padding:2px 8px;border-radius:4px;margin-left:auto}
-.version-label.current{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
-.version-card ul{margin-left:17px}
-.version-card li{font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.6}
-.version-card li strong{color:var(--text1)}
+    /* VERSION */
+    .version-list{display:flex;flex-direction:column;gap:11px;margin:14px 0}
+    .version-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+    .version-header{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+    .version-tag{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);padding:2px 9px;border-radius:4px}
+    .version-date{font-size:12px;color:var(--text3);font-family:var(--mono)}
+    .version-label{font-size:11px;font-family:var(--mono);font-weight:600;padding:2px 8px;border-radius:4px;margin-left:auto}
+    .version-label.current{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
+    .version-card ul{margin-left:17px}
+    .version-card li{font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.6}
+    .version-card li strong{color:var(--text1)}
 
-/* FOOTER */
-footer{border-top:1px solid var(--border);background:var(--bg0);padding:36px 32px;text-align:center}
-.footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
-footer p{font-size:13px;color:var(--text3);margin-bottom:5px}
-footer a{color:var(--text2)}
-footer a:hover{color:var(--accent)}
+    /* FOOTER */
+    footer{border-top:1px solid var(--border);background:var(--bg0);padding:36px 32px;text-align:center}
+    .footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
+    footer p{font-size:13px;color:var(--text3);margin-bottom:5px}
+    footer a{color:var(--text2)}
+    footer a:hover{color:var(--accent)}
 
-@media(max-width:900px){.toc{display:none}.content{padding:28px 20px 64px}.hero-title{font-size:32px}}
-</style>
+    @media(max-width:900px){.toc{display:none}.content{padding:28px 20px 64px}.hero-title{font-size:32px}}
+  </style>
 </head>
 <body>
 
@@ -208,6 +208,7 @@ footer a:hover{color:var(--accent)}
     <li><a href="#pipeline">Pipeline Demo</a></li>
     <li><a href="#operator">Kube Operator</a></li>
     <li><a href="#changelog">Changelog</a></li>
+    <li><a href="#about">About</a></li>
   </ul>
   <div class="nav-right">
     <a href="https://github.com/coded-streams/flinksql-studio" target="_blank" class="nav-btn">
@@ -231,7 +232,7 @@ footer a:hover{color:var(--accent)}
   <div class="hero-badges">
     <span class="badge teal">Single HTML file</span>
     <span class="badge green">MIT License</span>
-    <span class="badge blue">Flink 1.19+</span>
+    <span class="badge blue">Flink 1.16+</span>
     <span class="badge teal">Live Kafka results</span>
     <span class="badge blue">Kubernetes Operator</span>
     <span class="badge green">Docker ready</span>
@@ -272,10 +273,14 @@ footer a:hover{color:var(--accent)}
       <span class="toc-label">Deployment</span>
       <a href="#operator">Kubernetes Operator</a>
       <a href="#deploy">Deploy Options</a>
+      <a href="#deploy-docker-run">↳ docker run</a>
+      <a href="#deploy-docker-desktop">↳ Docker Desktop</a>
+      <a href="#deploy-compose">↳ Docker Compose</a>
     </div>
     <div class="toc-section">
       <span class="toc-label">Reference</span>
       <a href="#changelog">Changelog</a>
+      <a href="#about">About</a>
     </div>
   </aside>
 
@@ -337,8 +342,8 @@ EOF</code></pre>
         <table>
           <thead><tr><th>Mode</th><th>Best For</th><th>Authentication</th></tr></thead>
           <tbody>
-            <tr><td><strong>Proxy Mode</strong></td><td>Local Docker or Kubernetes clusters. Routes through the nginx reverse proxy — zero config required.</td><td>None</td></tr>
-            <tr><td><strong>Direct Gateway Mode</strong></td><td>Remote clusters, Confluent Cloud Flink, Ververica Cloud, AWS Managed Flink. Enter gateway URL directly.</td><td>Bearer token, Username/Password, or None</td></tr>
+          <tr><td><strong>Proxy Mode</strong></td><td>Local Docker or Kubernetes clusters. Routes through the nginx reverse proxy — zero config required.</td><td>None</td></tr>
+          <tr><td><strong>Direct Gateway Mode</strong></td><td>Remote clusters, Confluent Cloud Flink, Ververica Cloud, AWS Managed Flink. Enter gateway URL directly.</td><td>Bearer token, Username/Password, or None</td></tr>
           </tbody>
         </table>
       </div>
@@ -357,33 +362,33 @@ EOF</code></pre>
       <p>FlinkSQL Studio is a static HTML file served by nginx. All SQL execution happens via the Flink SQL Gateway REST API. The browser manages all session state client-side.</p>
       <div class="mermaid-wrap">
         <div class="mermaid">
-flowchart TD
-  B["🌐 Browser\nlocalhost:3030"]
-  N["nginx\nflink-studio container"]
-  GW["Flink SQL Gateway :8083"]
-  JM["Flink JobManager :8081"]
-  TM1["TaskManager 1 · 10 slots"]
-  TM2["TaskManager 2 · 10 slots"]
-  K["Apache Kafka"]
-  S["MinIO / S3"]
-  B-->|"/flink-api/"|N
-  B-->|"/jobmanager-api/"|N
-  N-->|"proxy"|GW
-  N-->|"proxy"|JM
-  GW-->JM
-  JM-->TM1
-  JM-->TM2
-  TM1-->K
-  TM2-->K
-  TM1-->S
-  style B fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-  style N fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-  style GW fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-  style JM fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-  style TM1 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
-  style TM2 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
-  style K fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-  style S fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+          flowchart TD
+          B["🌐 Browser\nlocalhost:3030"]
+          N["nginx\nflink-studio container"]
+          GW["Flink SQL Gateway :8083"]
+          JM["Flink JobManager :8081"]
+          TM1["TaskManager 1 · 10 slots"]
+          TM2["TaskManager 2 · 10 slots"]
+          K["Apache Kafka"]
+          S["MinIO / S3"]
+          B-->|"/flink-api/"|N
+          B-->|"/jobmanager-api/"|N
+          N-->|"proxy"|GW
+          N-->|"proxy"|JM
+          GW-->JM
+          JM-->TM1
+          JM-->TM2
+          TM1-->K
+          TM2-->K
+          TM1-->S
+          style B fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style N fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+          style GW fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+          style JM fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+          style TM1 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+          style TM2 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+          style K fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+          style S fill:#1a2130,stroke:#f0a500,color:#f0f6fc
         </div>
       </div>
       <p>nginx proxies <code>/flink-api/</code> to the SQL Gateway and <code>/jobmanager-api/</code> to the JobManager REST API, solving browser CORS without touching Flink configuration.</p>
@@ -393,13 +398,13 @@ flowchart TD
         <table>
           <thead><tr><th>State</th><th>Storage</th><th>Survives Reload?</th></tr></thead>
           <tbody>
-            <tr><td>Editor tabs &amp; SQL content</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
-            <tr><td>Query history</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
-            <tr><td>Theme preference</td><td><code>localStorage</code></td><td>✅ Yes</td></tr>
-            <tr><td>SQL Gateway session handle</td><td>In-memory only</td><td>❌ Reconnect required</td></tr>
-            <tr><td>Result rows</td><td>In-memory only</td><td>❌ Re-run query</td></tr>
-            <tr><td>Performance timings</td><td>In-memory (exportable)</td><td>❌ Export before reload</td></tr>
-            <tr><td>Full workspace</td><td>JSON file (export/import)</td><td>✅ Via import</td></tr>
+          <tr><td>Editor tabs &amp; SQL content</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
+          <tr><td>Query history</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
+          <tr><td>Theme preference</td><td><code>localStorage</code></td><td>✅ Yes</td></tr>
+          <tr><td>SQL Gateway session handle</td><td>In-memory only</td><td>❌ Reconnect required</td></tr>
+          <tr><td>Result rows</td><td>In-memory only</td><td>❌ Re-run query</td></tr>
+          <tr><td>Performance timings</td><td>In-memory (exportable)</td><td>❌ Export before reload</td></tr>
+          <tr><td>Full workspace</td><td>JSON file (export/import)</td><td>✅ Via import</td></tr>
           </tbody>
         </table>
       </div>
@@ -473,14 +478,14 @@ flowchart TD
         <table>
           <thead><tr><th>Tag</th><th>Snippets</th></tr></thead>
           <tbody>
-            <tr><td><span class="tag setup">SETUP</span></td><td>⚠ Common Flink SQL Mistakes, Use Default Catalog, Create In-Memory Catalog, Use Hive Catalog</td></tr>
-            <tr><td><span class="tag config">CONFIG</span></td><td>⚡ Recommended Streaming Config (all-in-one), Set Runtime Mode, Set Parallelism, Set State TTL</td></tr>
-            <tr><td><span class="tag ddl">DDL</span></td><td>Show Catalogs, Show Databases, Show Tables, Show Full Tables, Describe Table, Show Create Table, Check If Table Exists, Show Jobs</td></tr>
-            <tr><td><span class="tag window">WINDOW</span></td><td>Tumble Window, Hop Window (sliding), Session Window, Cumulate Window</td></tr>
-            <tr><td><span class="tag connector">CONNECTOR</span></td><td>Kafka Source, Datagen Source, Elasticsearch Sink, MinIO / S3 Sink, Print Sink</td></tr>
-            <tr><td><span class="tag perf">PERF</span></td><td>Enable MiniBatch, Local-Global Aggregation, Idle Source Timeout</td></tr>
-            <tr><td><span class="tag pattern">PATTERN</span></td><td>Top-N per Group (ROW_NUMBER), Deduplication, Temporal Join, Interval Join</td></tr>
-            <tr><td><span class="tag debug">DEBUG</span></td><td>EXPLAIN Plan, EXPLAIN CHANGELOG MODE</td></tr>
+          <tr><td><span class="tag setup">SETUP</span></td><td>⚠ Common Flink SQL Mistakes, Use Default Catalog, Create In-Memory Catalog, Use Hive Catalog</td></tr>
+          <tr><td><span class="tag config">CONFIG</span></td><td>⚡ Recommended Streaming Config (all-in-one), Set Runtime Mode, Set Parallelism, Set State TTL</td></tr>
+          <tr><td><span class="tag ddl">DDL</span></td><td>Show Catalogs, Show Databases, Show Tables, Show Full Tables, Describe Table, Show Create Table, Check If Table Exists, Show Jobs</td></tr>
+          <tr><td><span class="tag window">WINDOW</span></td><td>Tumble Window, Hop Window (sliding), Session Window, Cumulate Window</td></tr>
+          <tr><td><span class="tag connector">CONNECTOR</span></td><td>Kafka Source, Datagen Source, Elasticsearch Sink, MinIO / S3 Sink, Print Sink</td></tr>
+          <tr><td><span class="tag perf">PERF</span></td><td>Enable MiniBatch, Local-Global Aggregation, Idle Source Timeout</td></tr>
+          <tr><td><span class="tag pattern">PATTERN</span></td><td>Top-N per Group (ROW_NUMBER), Deduplication, Temporal Join, Interval Join</td></tr>
+          <tr><td><span class="tag debug">DEBUG</span></td><td>EXPLAIN Plan, EXPLAIN CHANGELOG MODE</td></tr>
           </tbody>
         </table>
       </div>
@@ -500,11 +505,11 @@ flowchart TD
         <table>
           <thead><tr><th>Flink Version</th><th>Kafka Connector JAR</th></tr></thead>
           <tbody>
-            <tr><td><code>1.20.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.20.jar</code></td></tr>
-            <tr><td><code>1.19.x</code> ← recommended</td><td><code>flink-sql-connector-kafka-3.3.0-1.19.jar</code></td></tr>
-            <tr><td><code>1.18.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.18.jar</code></td></tr>
-            <tr><td><code>1.17.x</code></td><td><code>flink-sql-connector-kafka-3.2.0-1.17.jar</code></td></tr>
-            <tr><td><code>1.16.x</code></td><td><code>flink-sql-connector-kafka-3.1.0-1.16.jar</code></td></tr>
+          <tr><td><code>1.20.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.20.jar</code></td></tr>
+          <tr><td><code>1.19.x</code> ← recommended</td><td><code>flink-sql-connector-kafka-3.3.0-1.19.jar</code></td></tr>
+          <tr><td><code>1.18.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.18.jar</code></td></tr>
+          <tr><td><code>1.17.x</code></td><td><code>flink-sql-connector-kafka-3.2.0-1.17.jar</code></td></tr>
+          <tr><td><code>1.16.x</code></td><td><code>flink-sql-connector-kafka-3.1.0-1.16.jar</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -539,30 +544,30 @@ USER flink</code></pre>
       <p>A complete multi-stage streaming pipeline built and monitored entirely in FlinkSQL Studio: datagen source, Kafka enrichment, branching routing, windowed aggregation, and live result preview.</p>
       <div class="mermaid-wrap">
         <div class="mermaid">
-flowchart LR
-  DG["⚙ datagen"]
-  TE["trade-events\nKafka"]
-  EN["enrich + route\nJob 2"]
-  ET["enriched-trades\nKafka"]
-  AL["risk-alerts\nKafka"]
-  AG["TUMBLE 10s\nJob 3"]
-  TS["trade-summary\nKafka"]
-  PR["print\nstdout"]
-  DG-->|"INSERT\nJob 1"|TE
-  TE-->EN
-  EN-->|"Branch A"|ET
-  EN-->|"Branch B\nHIGH+CRITICAL"|AL
-  ET-->AG
-  AG-->TS
-  AG-->PR
-  style DG fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-  style TE fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-  style EN fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-  style ET fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-  style AL fill:#1a2130,stroke:#e05c5c,color:#f0f6fc
-  style AG fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-  style TS fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-  style PR fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+          flowchart LR
+          DG["⚙ datagen"]
+          TE["trade-events\nKafka"]
+          EN["enrich + route\nJob 2"]
+          ET["enriched-trades\nKafka"]
+          AL["risk-alerts\nKafka"]
+          AG["TUMBLE 10s\nJob 3"]
+          TS["trade-summary\nKafka"]
+          PR["print\nstdout"]
+          DG-->|"INSERT\nJob 1"|TE
+          TE-->EN
+          EN-->|"Branch A"|ET
+          EN-->|"Branch B\nHIGH+CRITICAL"|AL
+          ET-->AG
+          AG-->TS
+          AG-->PR
+          style DG fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+          style TE fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+          style EN fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style ET fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+          style AL fill:#1a2130,stroke:#e05c5c,color:#f0f6fc
+          style AG fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style TS fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+          style PR fill:#1a2130,stroke:#3fb950,color:#f0f6fc
         </div>
       </div>
       <div class="steps">
@@ -663,27 +668,27 @@ FROM enriched_trades_view;</code></pre>
 
       <div class="mermaid-wrap">
         <div class="mermaid">
-flowchart TD
-  CR["FlinkSQLStudio CR\nkubectl apply"]
-  OP["Kube Operator\nKopf controller"]
-  DEP["Deployment\nnginx pods"]
-  SVC["Service\nClusterIP/NodePort/LB"]
-  POD["nginx Pod\nIDE + reverse proxy"]
-  GW["Flink SQL Gateway"]
-  JM["Flink JobManager"]
-  CR-->|"reconcile"|OP
-  OP-->|"creates / owns"|DEP
-  OP-->|"creates / owns"|SVC
-  DEP-->POD
-  POD-->GW
-  POD-->JM
-  style CR fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-  style OP fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-  style DEP fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-  style SVC fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-  style POD fill:#1a2130,stroke:#3fb950,color:#f0f6fc
-  style GW fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-  style JM fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+          flowchart TD
+          CR["FlinkSQLStudio CR\nkubectl apply"]
+          OP["Kube Operator\nKopf controller"]
+          DEP["Deployment\nnginx pods"]
+          SVC["Service\nClusterIP/NodePort/LB"]
+          POD["nginx Pod\nIDE + reverse proxy"]
+          GW["Flink SQL Gateway"]
+          JM["Flink JobManager"]
+          CR-->|"reconcile"|OP
+          OP-->|"creates / owns"|DEP
+          OP-->|"creates / owns"|SVC
+          DEP-->POD
+          POD-->GW
+          POD-->JM
+          style CR fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style OP fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+          style DEP fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+          style SVC fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+          style POD fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+          style GW fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+          style JM fill:#1a2130,stroke:#f0a500,color:#f0f6fc
         </div>
       </div>
 
@@ -709,18 +714,18 @@ flowchart TD
         <table>
           <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><code>spec.gateway.host</code></td><td>string</td><td>✅</td><td>—</td><td>Flink SQL Gateway hostname</td></tr>
-            <tr><td><code>spec.gateway.port</code></td><td>integer</td><td>—</td><td><code>8083</code></td><td>SQL Gateway port</td></tr>
-            <tr><td><code>spec.jobmanager.host</code></td><td>string</td><td>—</td><td><code>localhost</code></td><td>JobManager REST hostname</td></tr>
-            <tr><td><code>spec.jobmanager.port</code></td><td>integer</td><td>—</td><td><code>8081</code></td><td>JobManager REST port</td></tr>
-            <tr><td><code>spec.image</code></td><td>string</td><td>—</td><td><code>codedstreams/flinksql-studio:latest</code></td><td>IDE Docker image</td></tr>
-            <tr><td><code>spec.replicas</code></td><td>integer</td><td>—</td><td><code>1</code></td><td>Pod count (1–10)</td></tr>
-            <tr><td><code>spec.service.type</code></td><td>string</td><td>—</td><td><code>ClusterIP</code></td><td><code>ClusterIP</code>, <code>NodePort</code>, or <code>LoadBalancer</code></td></tr>
-            <tr><td><code>spec.service.port</code></td><td>integer</td><td>—</td><td><code>80</code></td><td>Service port</td></tr>
-            <tr><td><code>spec.service.nodePort</code></td><td>integer</td><td>—</td><td>—</td><td>NodePort (30000–32767)</td></tr>
-            <tr><td><code>spec.resources.requests</code></td><td>object</td><td>—</td><td><code>{cpu:50m, memory:64Mi}</code></td><td>Pod resource requests</td></tr>
-            <tr><td><code>spec.resources.limits</code></td><td>object</td><td>—</td><td><code>{cpu:200m, memory:128Mi}</code></td><td>Pod resource limits</td></tr>
-            <tr><td><code>spec.extraEnv</code></td><td>array</td><td>—</td><td><code>[]</code></td><td>Extra env vars for the pod</td></tr>
+          <tr><td><code>spec.gateway.host</code></td><td>string</td><td>✅</td><td>—</td><td>Flink SQL Gateway hostname</td></tr>
+          <tr><td><code>spec.gateway.port</code></td><td>integer</td><td>—</td><td><code>8083</code></td><td>SQL Gateway port</td></tr>
+          <tr><td><code>spec.jobmanager.host</code></td><td>string</td><td>—</td><td><code>localhost</code></td><td>JobManager REST hostname</td></tr>
+          <tr><td><code>spec.jobmanager.port</code></td><td>integer</td><td>—</td><td><code>8081</code></td><td>JobManager REST port</td></tr>
+          <tr><td><code>spec.image</code></td><td>string</td><td>—</td><td><code>codedstreams/flinksql-studio:latest</code></td><td>IDE Docker image</td></tr>
+          <tr><td><code>spec.replicas</code></td><td>integer</td><td>—</td><td><code>1</code></td><td>Pod count (1–10)</td></tr>
+          <tr><td><code>spec.service.type</code></td><td>string</td><td>—</td><td><code>ClusterIP</code></td><td><code>ClusterIP</code>, <code>NodePort</code>, or <code>LoadBalancer</code></td></tr>
+          <tr><td><code>spec.service.port</code></td><td>integer</td><td>—</td><td><code>80</code></td><td>Service port</td></tr>
+          <tr><td><code>spec.service.nodePort</code></td><td>integer</td><td>—</td><td>—</td><td>NodePort (30000–32767)</td></tr>
+          <tr><td><code>spec.resources.requests</code></td><td>object</td><td>—</td><td><code>{cpu:50m, memory:64Mi}</code></td><td>Pod resource requests</td></tr>
+          <tr><td><code>spec.resources.limits</code></td><td>object</td><td>—</td><td><code>{cpu:200m, memory:128Mi}</code></td><td>Pod resource limits</td></tr>
+          <tr><td><code>spec.extraEnv</code></td><td>array</td><td>—</td><td><code>[]</code></td><td>Extra env vars for the pod</td></tr>
           </tbody>
         </table>
       </div>
@@ -807,30 +812,187 @@ spec:
     <!-- DEPLOY OPTIONS -->
     <section class="doc-section" id="deploy">
       <h2><span class="si">🚀</span>Deployment Options</h2>
+
+      <p>FlinkSQL Studio is distributed as a Docker image — <code>codedstreams/flinksql-studio</code> — available on Docker Hub. It runs as a self-contained nginx container that serves the IDE and proxies API traffic to your Flink cluster. Choose the method that fits your workflow below.</p>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <strong>Network access is required</strong>
+          The Studio container must be able to resolve the hostnames of your Flink SQL Gateway and JobManager. If those services are running in Docker, the Studio container must be on the <strong>same Docker network</strong> as them — otherwise hostname resolution fails and nginx will not start.
+        </div>
+      </div>
+
+      <!-- Environment variables reference -->
+      <h3>Environment Variables</h3>
+      <p>All four variables below must point to services reachable from inside the container. Use the internal Docker network hostnames (not <code>localhost</code>) when your Flink services are running in other containers.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+          <tbody>
+          <tr><td><code>FLINK_GATEWAY_HOST</code></td><td><code>localhost</code></td><td>Hostname of your Flink SQL Gateway container or service</td></tr>
+          <tr><td><code>FLINK_GATEWAY_PORT</code></td><td><code>8083</code></td><td>Port the SQL Gateway listens on (8084 if using a CORS proxy)</td></tr>
+          <tr><td><code>JOBMANAGER_HOST</code></td><td><code>localhost</code></td><td>Hostname of your Flink JobManager container or service</td></tr>
+          <tr><td><code>JOBMANAGER_PORT</code></td><td><code>8081</code></td><td>Port of the JobManager REST API</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Option 1: docker run -->
+      <h3 id="deploy-docker-run">Option 1 — <code>docker run</code> (command line)</h3>
+      <p>The most direct method. Pass all four environment variables and attach the container to the same Docker network as your Flink services in a single command.</p>
+      <span class="pre-label">bash</span>
+      <pre><code>docker run -d \
+  --name flinksql-studio \
+  --network &lt;your-docker-network&gt; \
+  -p 3030:80 \
+  -e FLINK_GATEWAY_HOST=&lt;your-gateway-hostname&gt; \
+  -e FLINK_GATEWAY_PORT=8083 \
+  -e JOBMANAGER_HOST=&lt;your-jobmanager-hostname&gt; \
+  -e JOBMANAGER_PORT=8081 \
+  codedstreams/flinksql-studio:latest</code></pre>
+
+      <p>Replace the placeholder values with the actual hostnames of your containers. For example, if your SQL Gateway container is named <code>flink-sql-gateway</code> and it runs on the network <code>flink-net</code>:</p>
+      <span class="pre-label">example</span>
+      <pre><code>docker run -d \
+  --name flinksql-studio \
+  --network flink-net \
+  -p 3030:80 \
+  -e FLINK_GATEWAY_HOST=flink-sql-gateway \
+  -e FLINK_GATEWAY_PORT=8083 \
+  -e JOBMANAGER_HOST=flink-jobmanager \
+  -e JOBMANAGER_PORT=8081 \
+  codedstreams/flinksql-studio:latest</code></pre>
+
+      <p>Then open <a href="http://localhost:3030" target="_blank">http://localhost:3030</a> and click <strong>Via Studio (Proxy Mode)</strong> → <strong>Connect &amp; Open Studio</strong>. No additional configuration needed.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <strong>Find your network name</strong>
+          Run <code>docker network ls</code> to list all networks, or <code>docker inspect &lt;container-name&gt;</code> to see which network an existing Flink container is on.
+        </div>
+      </div>
+
+      <!-- Option 2: Docker Desktop -->
+      <h3 id="deploy-docker-desktop">Option 2 — Docker Desktop GUI</h3>
+      <p>If you prefer a graphical interface, you can pull and configure the container entirely within Docker Desktop — no terminal required. Follow these steps:</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Pull the image</h4>
+            <p>In Docker Desktop, go to <strong>Images → My Hub</strong> (or search in the top bar), search for <code>codedstreams/flinksql-studio</code> and pull the <code>latest</code> tag. Alternatively pull from the terminal:</p>
+            <pre><code>docker pull codedstreams/flinksql-studio:latest</code></pre>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Run with environment variables</h4>
+            <p>Click the <strong>▷ Run</strong> button next to the image. In the dialog that appears, expand <strong>Optional settings</strong> and fill in the following fields:</p>
+            <div class="table-wrap" style="margin-top:10px">
+              <table>
+                <thead><tr><th>Field</th><th>Value</th></tr></thead>
+                <tbody>
+                <tr><td>Container name</td><td>Any name, e.g. <code>flinksql-studio</code></td></tr>
+                <tr><td>Host port</td><td><code>3030</code> → container port <code>80</code></td></tr>
+                <tr><td>Env — <code>FLINK_GATEWAY_HOST</code></td><td>Hostname of your SQL Gateway container</td></tr>
+                <tr><td>Env — <code>FLINK_GATEWAY_PORT</code></td><td><code>8083</code> (or <code>8084</code> if using a CORS proxy)</td></tr>
+                <tr><td>Env — <code>JOBMANAGER_HOST</code></td><td>Hostname of your JobManager container</td></tr>
+                <tr><td>Env — <code>JOBMANAGER_PORT</code></td><td><code>8081</code></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p style="margin-top:10px">Click <strong>Run</strong> to start the container.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Connect to the Docker network</h4>
+            <p>Docker Desktop does not expose a network selector in the Run dialog. After the container starts, run this one command in your terminal to attach it to the same network as your Flink services:</p>
+            <pre><code>docker network connect &lt;your-docker-network&gt; flinksql-studio</code></pre>
+            <p>Then restart the container so nginx re-resolves the upstream hostnames:</p>
+            <pre><code>docker restart flinksql-studio</code></pre>
+            <div class="callout info" style="margin-top:10px">
+              <span class="callout-icon">ℹ️</span>
+              <div class="callout-body">
+                <strong>Why is this step needed?</strong>
+                nginx resolves upstream hostnames at startup. If the container isn't on the same network as your Flink services when it starts, hostname resolution fails and nginx exits immediately. Attaching the network and restarting fixes this.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Open the IDE</h4>
+            <p>Navigate to <a href="http://localhost:3030" target="_blank">http://localhost:3030</a>, select <strong>Via Studio (Proxy Mode)</strong>, and click <strong>Connect &amp; Open Studio</strong>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Option 3: Docker Compose -->
+      <h3 id="deploy-compose">Option 3 — Docker Compose (recommended for full stack)</h3>
+      <p>The cleanest approach for local development. Add the Studio as a service in your existing <code>docker-compose.yml</code> alongside your Flink cluster. All services share the same network automatically — no manual <code>network connect</code> step needed.</p>
+      <span class="pre-label">docker-compose.yml — add this service</span>
+      <pre><code>services:
+
+  flinksql-studio:
+    image: codedstreams/flinksql-studio:latest
+    container_name: flinksql-studio
+    ports:
+      - "3030:80"
+    environment:
+      FLINK_GATEWAY_HOST: &lt;your-gateway-service-name&gt;
+      FLINK_GATEWAY_PORT: "8083"
+      JOBMANAGER_HOST:    &lt;your-jobmanager-service-name&gt;
+      JOBMANAGER_PORT:    "8081"
+    networks:
+      - &lt;your-network-name&gt;
+    depends_on:
+      - &lt;your-gateway-service-name&gt;
+      - &lt;your-jobmanager-service-name&gt;</code></pre>
+
+      <p>The <code>environment</code> values must match the service names defined elsewhere in your Compose file — those names are the DNS hostnames Docker assigns to each container on the shared network. Then start everything together:</p>
+      <pre><code>docker compose up -d
+# Studio available at http://localhost:3030</code></pre>
+
+      <!-- Summary card grid -->
+      <h3>Summary</h3>
       <div class="deploy-grid">
+        <div class="deploy-card">
+          <span class="deploy-card-icon">⌨️</span>
+          <h3>docker run</h3>
+          <p>One command, full control. Pass <code>--network</code> and all four <code>-e</code> flags. Best when you want to add Studio to an existing running stack.</p>
+        </div>
+        <div class="deploy-card">
+          <span class="deploy-card-icon">🖥️</span>
+          <h3>Docker Desktop</h3>
+          <p>No terminal required for setup. Run via the GUI, then run one <code>docker network connect</code> command and restart. Best for quick local testing.</p>
+        </div>
         <div class="deploy-card">
           <span class="deploy-card-icon">🐳</span>
           <h3>Docker Compose</h3>
-          <p>Full stack in one command — Studio, Flink cluster, SQL Gateway, Kafka. Best for local development.</p>
-          <pre style="margin:0"><code>docker compose up -d</code></pre>
-        </div>
-        <div class="deploy-card">
-          <span class="deploy-card-icon">📄</span>
-          <h3>Standalone HTML</h3>
-          <p>Serve <code>studio/index.html</code> from any static web server. Connect via Direct Gateway mode.</p>
-          <pre style="margin:0"><code>python3 -m http.server 8080</code></pre>
+          <p>Cleanest for full-stack local dev. All services share a network automatically. One <code>docker compose up -d</code> starts everything.</p>
         </div>
         <div class="deploy-card">
           <span class="deploy-card-icon">☸️</span>
           <h3>Kubernetes Operator</h3>
-          <p>CRD-based deployment via Helm. GitOps-friendly status conditions. No PVC required.</p>
-          <pre style="margin:0"><code>helm install flinksql-operator \
-  flinksql/flinksql-operator</code></pre>
+          <p>CRD-based deployment via Helm. GitOps-friendly. No PVC needed. See the <a href="#operator">Operator section</a> above.</p>
+        </div>
+        <div class="deploy-card">
+          <span class="deploy-card-icon">📄</span>
+          <h3>Standalone HTML</h3>
+          <p>Serve <code>studio/index.html</code> from any static web server. Use Direct Gateway mode to connect to a remote Flink cluster.</p>
+          <pre style="margin:0"><code>python3 -m http.server 8080</code></pre>
         </div>
         <div class="deploy-card">
           <span class="deploy-card-icon">☁️</span>
-          <h3>Cloud Flink (Remote)</h3>
-          <p>Run Studio anywhere. Direct Gateway mode connects to Confluent, Ververica Cloud, or AWS Managed Flink with bearer token auth.</p>
+          <h3>Cloud Flink</h3>
+          <p>Direct Gateway mode with bearer token auth connects to Confluent Cloud Flink, Ververica Cloud, or AWS Managed Flink — no proxy needed.</p>
         </div>
       </div>
     </section>
@@ -839,48 +1001,150 @@ spec:
     <section class="doc-section" id="changelog">
       <h2><span class="si">📝</span>Changelog</h2>
       <div class="version-list">
+
         <div class="version-card">
           <div class="version-header">
-            <span class="version-tag">v8</span>
+            <span class="version-tag">v1.0.5</span>
             <span class="version-date">March 2026</span>
             <span class="version-label current">current</span>
           </div>
           <ul>
-            <li><strong>Results display fixed</strong> — <code>NOT_READY</code> / <code>EOS</code> handling in the poll loop; Kafka SELECT rows reliably stream into the Results tab</li>
-            <li><strong>Mouse wheel zoom</strong> on Job Graph (20%–300%) with zoom-toward-cursor and % indicator</li>
-            <li><strong>Node detail close button</strong> — × to dismiss the detail panel</li>
-            <li><strong>Catalog context fix</strong> — sidebar refresh no longer hijacks active <code>USE CATALOG</code> context</li>
-            <li><strong>catalog.database statusbar</strong> — tracks USE CATALOG / USE statements live</li>
-            <li>Branching pipeline example using <code>EXECUTE STATEMENT SET</code></li>
-            <li>Named workspace export, session isolation, Cancel Job button, full session export</li>
-            <li>⚡ Recommended Streaming Config snippet, INSERT auto-redirect to Job Graph</li>
+            <li><strong>Node detail modal</strong> — double-clicking any Job Graph node now opens a full modal with three tabs: Metrics (8 colour-coded cards + subtask table), All Metrics (full live metric list fetched from the JobManager API), and Live Events (source/sink nodes only — streams IN/OUT throughput rows every 800ms while the operator is running)</li>
+            <li><strong>Modal header</strong> — shows operator name from the pipeline, type icon, status badge, vertex ID, and parallelism</li>
+            <li>Close modal via × button, backdrop click, or Escape key</li>
           </ul>
         </div>
+
         <div class="version-card">
-          <div class="version-header"><span class="version-tag">v7</span><span class="version-date">February 2026</span></div>
+          <div class="version-header">
+            <span class="version-tag">v1.0.4</span>
+            <span class="version-date">March 2026</span>
+          </div>
+          <ul>
+            <li><strong>Docker image fix</strong> — Dockerfile now copies the full <code>studio/</code> directory; previously only <code>index.html</code> was included, leaving all CSS and JS modules out of the image</li>
+            <li><strong>nginx upstream resolver fix</strong> — removed <code>upstream{}</code> blocks that caused nginx to crash on startup with "host not found" when containers were not yet reachable; replaced with Docker internal DNS resolver (<code>127.0.0.11</code>) and per-request variable-based <code>proxy_pass</code></li>
+          </ul>
+        </div>
+
+        <div class="version-card">
+          <div class="version-header">
+            <span class="version-tag">v1.0.0 – v1.0.3</span>
+            <span class="version-date">March 2026</span>
+          </div>
+          <ul>
+            <li><strong>Results display fixed</strong> — <code>NOT_READY</code> / <code>EOS</code> handling in the poll loop; Kafka SELECT rows reliably stream into the Results tab</li>
+            <li><strong>Mouse wheel zoom</strong> on Job Graph (20%–300%) with zoom-toward-cursor and % indicator</li>
+            <li><strong>Session expiry detection</strong> — heartbeat detects 404 responses and shows a warning banner with one-click session renewal</li>
+            <li><strong>Performance metrics fix</strong> — Task Managers, slots, running/finished jobs now populate correctly; cluster stats row expanded to 6 metrics</li>
+            <li><strong>Job Graph null guard</strong> — graceful message when a completed job has been evicted from JobManager memory</li>
+            <li><strong>Catalog context fix</strong> — sidebar refresh no longer hijacks active <code>USE CATALOG</code> context; <code>catalog.database</code> tracked live in statusbar</li>
+            <li>Branching pipeline demo using <code>EXECUTE STATEMENT SET</code>; datagen connector corrected to use <code>random</code> fields instead of <code>sequence</code></li>
+            <li>Named workspace export, session isolation, Cancel Job button, full session export</li>
+            <li>Recommended Streaming Config snippet, INSERT auto-redirect to Job Graph</li>
+          </ul>
+        </div>
+
+        <div class="version-card">
+          <div class="version-header"><span class="version-tag">v0.7 – v0.9</span><span class="version-date">February 2026</span></div>
           <ul>
             <li>Job Graph DAG — drag-to-pan, animated edges, fault highlighting, node double-click detail</li>
             <li>Tab rename (double-click, 20-char limit with live counter)</li>
             <li>Per-session workspace isolation on session switch</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header"><span class="version-tag">v6</span><span class="version-date">January 2026</span></div>
-          <ul>
             <li>Job Graph tab — first visual pipeline monitoring</li>
             <li>+ Catalog and + Database buttons in sidebar</li>
             <li>Multi-session panel with session switching</li>
           </ul>
         </div>
+
         <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1–v5</span><span class="version-date">December 2025 – January 2026</span></div>
+          <div class="version-header"><span class="version-tag">v0.1 – v0.5</span><span class="version-date">December 2025 – January 2026</span></div>
           <ul>
             <li>Initial build: SQL editor, session management, Results / Log / Operations tabs</li>
             <li>Snippet library, query history, catalog browser</li>
             <li>Performance tracking panel, dark/light theme toggle, workspace export/import</li>
           </ul>
         </div>
+
       </div>
+    </section>
+
+
+    <!-- ABOUT -->
+    <section class="doc-section" id="about">
+      <h2><span class="si">◈</span>About</h2>
+
+      <p>FlinkSQL Studio was built out of a need that existing tooling didn't fill: a lightweight, zero-dependency SQL IDE that works directly against any Flink cluster without requiring a full platform installation. The project started as a personal productivity tool and grew into a fully-featured IDE through iterative development against real streaming workloads.</p>
+
+      <h3>Creator & Designer</h3>
+      <div class="feature-card" style="margin-bottom:18px;max-width:520px;">
+        <h3 style="margin:0 0 4px;">Nestor Abiangang A.</h3>
+        <p style="margin:0 0 10px;">Streaming data engineer with a focus on Apache Flink, Kafka, and real-time pipeline architecture. Based in Bahrain.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <a href="https://github.com/martourez21" target="_blank" class="nav-btn" style="font-size:11px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.69c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+            GitHub
+          </a>
+          <a href="https://www.linkedin.com/in/nestor-abiangang/" target="_blank" class="nav-btn" style="font-size:11px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+          </a>
+          <a href="mailto:nestorabiawuh@gmail.com" class="nav-btn" style="font-size:11px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            Email
+          </a>
+        </div>
+      </div>
+
+      <h3>Contributing</h3>
+      <p>FlinkSQL Studio is open source under the MIT license and actively welcoming contributions. Whether you want to fix a bug, add a connector snippet, improve the UI, or extend the Kubernetes operator — all contributions are appreciated.</p>
+
+      <div class="feature-grid" style="margin-bottom:18px;">
+        <div class="feature-card">
+          <h3>Bug Reports</h3>
+          <p>Open an issue on GitHub with steps to reproduce, your Flink version, and any relevant error output from the browser console or Flink logs.</p>
+          <a href="https://github.com/coded-streams/flinksql-studio/issues" target="_blank" class="nav-btn" style="margin-top:10px;display:inline-flex;font-size:11px;text-decoration:none;">Open an Issue</a>
+        </div>
+        <div class="feature-card">
+          <h3>Feature Requests</h3>
+          <p>Ideas for new connectors, SQL patterns, graph improvements, or IDE ergonomics are welcome. Start a GitHub Discussion or open an issue tagged <code>enhancement</code>.</p>
+          <a href="https://github.com/coded-streams/flinksql-studio/discussions" target="_blank" class="nav-btn" style="margin-top:10px;display:inline-flex;font-size:11px;text-decoration:none;">Start a Discussion</a>
+        </div>
+        <div class="feature-card">
+          <h3>Pull Requests</h3>
+          <p>Fork the repo, create a branch from <code>main</code>, make your changes, and open a PR with a clear description. The codebase is intentionally modular — each JS file is a self-contained concern.</p>
+          <a href="https://github.com/coded-streams/flinksql-studio/pulls" target="_blank" class="nav-btn" style="margin-top:10px;display:inline-flex;font-size:11px;text-decoration:none;">View Pull Requests</a>
+        </div>
+        <div class="feature-card">
+          <h3>Kube Operator</h3>
+          <p>The Kubernetes operator lives in a separate repo. Contributions to the Helm chart, CRD schema, or the Kopf controller are equally welcome.</p>
+          <a href="https://github.com/coded-streams/flinksql-kube-operator" target="_blank" class="nav-btn" style="margin-top:10px;display:inline-flex;font-size:11px;text-decoration:none;">Operator Repo</a>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">◈</span>
+        <div class="callout-body">
+          <strong>Project structure is intentionally simple</strong>
+          The IDE is plain HTML, CSS, and vanilla JavaScript — no build step, no bundler, no framework. Each <code>js/*.js</code> file maps to one concern. New contributors can read a single file and immediately understand its scope. Reviewing a PR is a diff on a module, not a compiled bundle.
+        </div>
+      </div>
+
+      <h3>Roadmap</h3>
+      <p>The following areas are open for contribution or planned for future releases:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Area</th><th>Description</th><th>Status</th></tr></thead>
+          <tbody>
+          <tr><td>Savepoint management</td><td>Trigger, list, and restore savepoints from the IDE</td><td>Planned</td></tr>
+          <tr><td>SQL history search</td><td>Full-text search across the query history log</td><td>Planned</td></tr>
+          <tr><td>Schema Registry integration</td><td>Browse Confluent Schema Registry subjects and inject Avro/Protobuf DDL</td><td>Open</td></tr>
+          <tr><td>Additional connector snippets</td><td>Iceberg, Hudi, Pulsar, JDBC, OpenSearch</td><td>Open</td></tr>
+          <tr><td>Operator Helm chart improvements</td><td>Ingress support, TLS, HPA, RBAC hardening</td><td>Open</td></tr>
+          <tr><td>Tutorial series</td><td>Lessons 4–7: window aggregations, joins, MATCH_RECOGNIZE, Elasticsearch</td><td>In progress</td></tr>
+          </tbody>
+        </table>
+      </div>
+
     </section>
 
   </main>
@@ -899,39 +1163,40 @@ spec:
   <p>
     <a href="https://github.com/coded-streams/flinksql-studio" target="_blank">GitHub</a> ·
     <a href="https://github.com/coded-streams/flinksql-kube-operator" target="_blank">Kube Operator</a> ·
+    <a href="https://github.com/nestorabiaw" target="_blank">Nestor A. Abiawuh</a> ·
     MIT License · Powered by <a href="https://flink.apache.org" target="_blank">Apache Flink</a>
   </p>
   <p style="margin-top:6px;font-size:11px">Apache Flink is a trademark of the Apache Software Foundation. Originally created by <a href="https://www.ververica.com" target="_blank">Ververica</a>.</p>
 </footer>
 
 <script>
-function switchTab(btn, paneId) {
-  const g = btn.closest('.tab-group');
-  g.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  g.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById(paneId).classList.add('active');
-}
-const obs = new IntersectionObserver(entries => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      document.querySelectorAll('.toc a').forEach(l => l.classList.remove('active'));
-      const link = document.querySelector(`.toc a[href="#${e.target.id}"]`);
-      if (link) link.classList.add('active');
-    }
+  function switchTab(btn, paneId) {
+    const g = btn.closest('.tab-group');
+    g.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    g.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(paneId).classList.add('active');
+  }
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.toc a').forEach(l => l.classList.remove('active'));
+        const link = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -60% 0px' });
+  document.querySelectorAll('.doc-section').forEach(s => obs.observe(s));
+  mermaid.initialize({
+    startOnLoad: true, theme: 'dark',
+    themeVariables: {
+      background: '#090c12', primaryColor: '#1a2130',
+      primaryTextColor: '#f0f6fc', primaryBorderColor: '#00d4aa',
+      lineColor: '#4a5568', edgeLabelBackground: '#131920',
+      tertiaryColor: '#1a2130', fontSize: '13px'
+    },
+    flowchart: { curve: 'basis', padding: 18 }
   });
-}, { rootMargin: '-15% 0px -60% 0px' });
-document.querySelectorAll('.doc-section').forEach(s => obs.observe(s));
-mermaid.initialize({
-  startOnLoad: true, theme: 'dark',
-  themeVariables: {
-    background: '#090c12', primaryColor: '#1a2130',
-    primaryTextColor: '#f0f6fc', primaryBorderColor: '#00d4aa',
-    lineColor: '#4a5568', edgeLabelBackground: '#131920',
-    tertiaryColor: '#1a2130', fontSize: '13px'
-  },
-  flowchart: { curve: 'basis', padding: 18 }
-});
 </script>
 </body>
 </html>

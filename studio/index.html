@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-
   <!-- Stylesheets — split by concern -->
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/layout.css">
@@ -658,7 +657,6 @@ SHOW CATALOGS;"
 <!-- ═══════════════════════════════════════════════════ -->
 <!--  JAVASCRIPT                                         -->
 <!-- ═══════════════════════════════════════════════════ -->
-
   <!-- ── JavaScript modules — load order matters ── -->
   <!-- 1. Global state, constants, snippets, API helper -->
   <script src="js/state.js"></script>
@@ -690,6 +688,76 @@ SHOW CATALOGS;"
   <script src="js/jobgraph.js"></script>
   <!-- 15. Misc: perf filter, ensureDefaultCatalog, togglePerfLive, init -->
   <script src="js/misc.js"></script>
+
+
+  <!-- ── Node Detail Modal ─────────────────────────────────────────────── -->
+  <div id="nd-modal-backdrop" onclick="if(event.target===this)closeNodeModal()">
+    <div id="nd-modal">
+
+      <!-- Header -->
+      <div id="nd-modal-header">
+        <div id="nd-modal-icon">⚙</div>
+        <div id="nd-modal-titles">
+          <div id="nd-modal-name">Operator</div>
+          <div id="nd-modal-meta">
+            <span id="nd-modal-status-badge">—</span>
+            <span id="nd-modal-id-label"></span>
+            <span id="nd-modal-parallelism-label"></span>
+          </div>
+        </div>
+        <button id="nd-modal-close" onclick="closeNodeModal()" title="Close (Esc)">×</button>
+      </div>
+
+      <!-- Tab bar -->
+      <div id="nd-modal-tabs">
+        <button class="nd-tab-btn active" onclick="switchNodeTab(this,'nd-pane-metrics')">
+          📊 Metrics
+        </button>
+        <button class="nd-tab-btn" onclick="switchNodeTab(this,'nd-pane-all')">
+          🗂 All Metrics
+        </button>
+        <button class="nd-tab-btn" id="nd-tab-events" onclick="switchNodeTab(this,'nd-pane-events')" style="display:none;">
+          ⚡ Live Events <span class="nd-tab-badge" id="nd-events-badge">0</span>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div id="nd-modal-body">
+
+        <!-- Tab 1: Key metrics cards -->
+        <div class="nd-pane active" id="nd-pane-metrics">
+          <div class="nd-metrics-grid" id="nd-metrics-grid"></div>
+          <div class="nd-section-title">Subtask Overview</div>
+          <div id="nd-subtask-table-wrap"></div>
+        </div>
+
+        <!-- Tab 2: All raw metrics as key-value -->
+        <div class="nd-pane" id="nd-pane-all">
+          <div class="nd-section-title">All Available Metrics</div>
+          <table class="nd-kv-table" id="nd-all-metrics-table"></table>
+        </div>
+
+        <!-- Tab 3: Live events stream (sink/source nodes only) -->
+        <div class="nd-pane" id="nd-pane-events">
+          <div style="padding:12px 20px 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button class="nd-events-btn active" id="nd-btn-start-stream" onclick="toggleEventStream()">
+              <span class="nd-live-dot"></span>Streaming
+            </button>
+            <button class="nd-events-btn" onclick="clearEventStream()">Clear</button>
+            <span id="nd-events-count" style="margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3);">0 events</span>
+          </div>
+          <div id="nd-events-stream">
+            <div class="nd-event-empty">
+              <span style="font-size:22px;opacity:0.3;">⚡</span>
+              <span>Event stream will appear here when the operator is running.</span>
+              <span style="font-size:10px;color:var(--text3);">Events are sampled from the JobManager metrics API.</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>
