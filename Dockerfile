@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 RUN apk add --no-cache gettext wget
 
 # Copy static assets
-COPY studio/index.html /usr/share/nginx/html/index.html
+COPY studio/ /usr/share/nginx/html/
 COPY nginx/studio.conf /etc/nginx/templates/default.conf.template
 
 # Remove default nginx config — we supply our own via template
