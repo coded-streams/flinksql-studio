@@ -18,7 +18,6 @@
  *    works even if id casing differs across builds.
  */
 
-// ── SQL splitting ─────────────────────────────────────────────────────────────
 function splitSQL(raw) {
   const stmts = [];
   let cur = '', inStr = false, strChar = '', i = 0;
@@ -45,7 +44,6 @@ function splitSQL(raw) {
   return stmts;
 }
 
-// ── Catalog statusbar update ───────────────────────────────────────────────────
 function updateCatalogStatus(catalog, database) {
   if (catalog !== null) state.activeCatalog = catalog;
   if (database !== null) state.activeDatabase = database;
@@ -53,7 +51,6 @@ function updateCatalogStatus(catalog, database) {
   if (el) el.textContent = `${state.activeCatalog || '—'}.${state.activeDatabase || '—'}`;
 }
 
-// ── Main entry points ─────────────────────────────────────────────────────────
 async function executeSQL() {
   const el = document.getElementById('sql-editor');
   const sql = el?.value?.trim();
@@ -76,15 +73,9 @@ async function explainSQL() {
   await runSQL(`EXPLAIN ${sql}`);
 }
 
-// ── Core runner ───────────────────────────────────────────────────────────────
 async function runSQL(sql) {
+
   if (!state.activeSession) { toast('No active session', 'err'); return; }
-  if (!state.gateway) {
-    try {
-      state.gateway = { host: window.location.hostname, port: window.location.port || '80', baseUrl: getBaseUrl() };
-    } catch(_) {}
-  }
-  if (!state.gateway) { toast('Not connected — please reconnect', 'err'); return; }
 
   const statements = splitSQL(sql);
   if (statements.length === 0) return;
@@ -92,16 +83,10 @@ async function runSQL(sql) {
   setExecuting(true);
   clearResults();
   perfQueryStart();
-  addLog('INFO', `Running ${statements.length} statement${statements.length > 1 ? 's' : ''} on session ${shortHandle(state.activeSession)}`);
 
   for (let i = 0; i < statements.length; i++) {
-    const stmt = statements[i];
-    addLog('SQL', `[${i+1}/${statements.length}] ${stmt.replace(/\s+/g,' ').slice(0,120)}${stmt.length>120?'…':''}`);
 
-    const useCatalogMatch = stmt.match(/^\s*USE\s+CATALOG\s+[`"]?(\S+?)[`"]?\s*;?\s*$/i);
-    const useDbMatch      = stmt.match(/^\s*USE\s+(?!CATALOG\b)[`"]?(\S+?)[`"]?\s*;?\s*$/i);
-    if (useCatalogMatch) updateCatalogStatus(useCatalogMatch[1].replace(/`/g,''), null);
-    if (useDbMatch)      updateCatalogStatus(null, useDbMatch[1].replace(/`/g,''));
+    const stmt = statements[i];
 
     try {
       await submitStatement(stmt);
@@ -112,14 +97,15 @@ async function runSQL(sql) {
       break;
     }
   }
+
   setExecuting(false);
 }
 
 async function submitStatement(sql) {
-  const cleanSql = sql.trim().replace(/;+$/, '');
-  const sessionHandle = state.activeSession;
 
-  const resp = await api('POST', `/v1/sessions/${sessionHandle}/statements`, {
+  const cleanSql = sql.trim().replace(/;+$/, '');
+
+  const resp = await api('POST', `/v1/sessions/${state.activeSession}/statements`, {
     statement: cleanSql,
     executionTimeout: 0,
   });
@@ -129,33 +115,20 @@ async function submitStatement(sql) {
   addToHistory(sql, 'running', opHandle);
   addOperation(opHandle, sql);
 
-  await pollOperation(opHandle, sql, sessionHandle);
+  await pollOperation(opHandle, sql, state.activeSession);
 }
 
-// ── Poll loop ────────────────────────────────────────────────────────────────
 async function pollOperation(opHandle, sql, sessionHandle) {
 
   const mySession = sessionHandle || state.activeSession;
+
   let token = 0;
-  const maxPolls = 3600;
   let polls = 0;
   let firstRows = true;
-  let emptyRunningPolls = 0;
+
+  const maxPolls = 3600;
 
   state.currentOp = { opHandle, sessionHandle: mySession };
-  state._maxRowsWarned = false;
-
-  const stopBtn = document.getElementById('stop-btn');
-  if (stopBtn) stopBtn.style.display = 'flex';
-
-  function showResultsTab() {
-    const btn =
-        document.getElementById('results-tab-btn') ||
-        document.querySelector('[data-tab="data"]') ||
-        document.querySelector('.result-tab');
-
-    if (btn) switchResultTab('data', btn);
-  }
 
   while (polls < maxPolls) {
 
@@ -163,14 +136,12 @@ async function pollOperation(opHandle, sql, sessionHandle) {
 
     await sleep(500);
 
-    // ── status ─────────────────────────────────────────────
     let status;
 
     try {
-      status = await api('GET',
-          `/v1/sessions/${mySession}/operations/${opHandle}/status`);
+      status = await api('GET', `/v1/sessions/${mySession}/operations/${opHandle}/status`);
     } catch (e) {
-      addLog('ERR', `Status check failed: ${parseFlinkError(e.message)}`);
+      addLog('ERR', `Status check failed: ${parseFlinkError(e.message)}`, e.message);
       break;
     }
 
@@ -178,99 +149,119 @@ async function pollOperation(opHandle, sql, sessionHandle) {
 
     updateOperationStatus(opHandle, opStatus);
 
-    // ── terminal error ─────────────────────────────────────
     if (opStatus === 'ERROR') {
 
-      let rawError = status.errorMessage || status.message || null;
+      let rawError = status.errorMessage || status.error || status.message
+          || (status.errors && status.errors[0]) || null;
 
       if (!rawError) {
         try {
-          const errResult = await api('GET',
-              `/v1/sessions/${mySession}/operations/${opHandle}/result/0?rowFormat=JSON`);
 
-          rawError =
-              errResult.errors?.join('\n') ||
-              errResult.message ||
-              errResult.results?.data?.[0]?.fields?.[0] ||
-              JSON.stringify(errResult);
+          const errResult = await api(
+              'GET',
+              `/v1/sessions/${mySession}/operations/${opHandle}/result/0?rowFormat=JSON`
+          );
 
-        } catch {}
+          if (errResult.errors && errResult.errors.length > 0) {
+            rawError = errResult.errors.join('\n');
+          } else if (errResult.message) {
+            rawError = errResult.message;
+          }
+
+        } catch (fetchErr) {
+
+          const m = fetchErr.message?.match(/HTTP \d+: ([\s\S]+)/);
+
+          if (m) rawError = m[1];
+        }
       }
 
-      const friendly = parseFlinkError(rawError);
+      if (!rawError) rawError = JSON.stringify(status, null, 2);
 
-      addLog('ERR', friendly, rawError);
+      state.lastErrorRaw = typeof rawError === 'string'
+          ? rawError
+          : JSON.stringify(rawError, null, 2);
+
+      const friendly = parseFlinkError(state.lastErrorRaw);
+
+      addLog('ERR', friendly, state.lastErrorRaw);
 
       updateHistoryStatus(opHandle, 'err');
 
-      toast(friendly.slice(0,90),'err');
+      toast(friendly.slice(0, 90), 'err');
 
       break;
     }
 
-    if (['NOT_READY','PENDING','INITIALIZED','ACCEPTED'].includes(opStatus))
-      continue;
-
-    // ── fetch results ──────────────────────────────────────
     if (opStatus === 'RUNNING' || opStatus === 'FINISHED') {
 
       let result;
 
       try {
 
-        result = await api('GET',
-            `/v1/sessions/${mySession}/operations/${opHandle}/result/${token}?rowFormat=JSON&maxFetchSize=1000`);
+        result = await api(
+            'GET',
+            `/v1/sessions/${mySession}/operations/${opHandle}/result/${token}?rowFormat=JSON&maxFetchSize=1000`
+        );
 
       } catch (e) {
 
-        if (e.message.includes('404')) {
+        if (e.message && e.message.includes('404')) {
+
           const rowCount = state.results.length;
-          addLog('OK',`Stream ended — ${rowCount} rows`);
+
+          addLog('OK', `Stream ended — ${rowCount} rows.`);
+
+          updateHistoryStatus(opHandle, 'ok');
+
           break;
         }
 
-        addLog('ERR', parseFlinkError(e.message));
+        addLog('ERR', parseFlinkError(e.message), e.message);
+
         break;
       }
 
-      // token advance
       if (result.nextResultUri) {
-        const parsed = extractToken(result.nextResultUri);
-        if (parsed !== null) token = parsed;
-      } else token++;
 
-      // ── EOS ──────────────────────────────────────────────
+        const parsed = extractToken(result.nextResultUri);
+
+        if (parsed !== null) token = parsed;
+
+      } else {
+
+        token++;
+      }
+
       if (result.resultType === 'EOS' || result.resultType === 'PAYLOAD_EOS') {
 
         const rowCount = state.results.length;
 
-        addLog('OK',`Query complete — ${rowCount} rows`);
+        addLog('OK', `Query complete — ${rowCount} rows.`);
 
-        updateHistoryStatus(opHandle,'ok');
+        updateHistoryStatus(opHandle, 'ok');
 
-        perfQueryEnd(rowCount);
+        toast(`Done — ${rowCount} rows`, 'ok');
 
         break;
       }
 
-      // ── schema capture (FIX) ─────────────────────────────
-      if (result.results?.columns?.length) {
-        state.resultColumns = result.results.columns;
+      if (result.results?.columns) {
 
-      } else if (result.schema?.columns?.length) {
-        state.resultColumns = result.schema.columns;
+        state.resultColumns = result.results.columns;
       }
 
-      // ── rows ─────────────────────────────────────────────
       const rawData = result.results?.data || [];
 
       const newRows = rawData.map(row => {
 
-        if (row?.fields !== undefined) {
-          return { fields: Array.isArray(row.fields) ? row.fields : Object.values(row.fields) };
+        if (row && typeof row === 'object' && !Array.isArray(row) && row.fields !== undefined) {
+
+          return { fields: row.fields };
+
         }
 
-        return { fields: Array.isArray(row) ? row : Object.values(row) };
+        return { fields: row };
       });
 
       if (newRows.length > 0) {
@@ -279,50 +270,27 @@ async function pollOperation(opHandle, sql, sessionHandle) {
 
           firstRows = false;
 
-          showResultsTab();
+          const btn =
+              document.getElementById('results-tab-btn')
+              || document.querySelector('[data-tab="data"]');
 
-          addLog('INFO','Data arriving — streaming rows…');
+          if (btn) switchResultTab('data', btn);
         }
 
-        emptyRunningPolls = 0;
+        state.results.push(...newRows);
 
-        const remaining = MAX_ROWS - state.results.length;
-
-        if (remaining > 0) {
-
-          state.results.push(...newRows.slice(0,remaining));
-
-          // PERF improvement
-          if (state.resultColumns?.length) {
-            renderResults();
-          }
-
-          const badge = document.getElementById('result-row-badge');
-
-          if (badge) badge.textContent = state.results.length;
-        }
-
-      } else {
-
-        if (opStatus === 'RUNNING') {
-
-          emptyRunningPolls++;
-
-          if (emptyRunningPolls % 20 === 0) {
-            addLog('INFO',`Streaming… ${state.results.length} rows so far`);
-          }
-        }
+        renderResults();
       }
 
       if (opStatus === 'FINISHED') {
 
         const rowCount = state.results.length;
 
-        addLog('OK',`Query finished — ${rowCount} rows`);
+        addLog('OK', `Query finished — ${rowCount} rows`);
 
-        updateHistoryStatus(opHandle,'ok');
+        updateHistoryStatus(opHandle, 'ok');
 
-        perfQueryEnd(rowCount);
+        toast(`Done — ${rowCount} rows`, 'ok');
 
         break;
       }
@@ -332,18 +300,14 @@ async function pollOperation(opHandle, sql, sessionHandle) {
   }
 
   state.currentOp = null;
-
-  if (stopBtn) stopBtn.style.display = 'none';
 }
 
-// ── token extraction ─────────────────────────────────────────────────────────
 function extractToken(uri) {
   if (!uri) return null;
   const m = uri.match(/\/result\/(\d+)/);
-  return m ? parseInt(m[1],10) : null;
+  return m ? parseInt(m[1], 10) : null;
 }
 
-// ── cancel ───────────────────────────────────────────────────────────────────
 async function cancelOperation() {
 
   if (!state.currentOp) return;
@@ -354,74 +318,46 @@ async function cancelOperation() {
 
   try {
 
-    await api('DELETE',
-        `/v1/sessions/${state.activeSession}/operations/${opHandle}/cancel`);
+    await api('DELETE', `/v1/sessions/${state.activeSession}/operations/${opHandle}/cancel`);
 
-    addLog('WARN',`Operation ${shortHandle(opHandle)} cancelled`);
-
-    toast('Operation cancelled','info');
+    addLog('WARN', `Operation ${shortHandle(opHandle)} cancelled`);
 
   } catch (e) {
 
-    addLog('WARN',`Cancel request sent (${e.message})`);
+    addLog('WARN', `Cancel request sent (${e.message})`);
   }
-
-  const stopBtn = document.getElementById('stop-btn');
-
-  if (stopBtn) stopBtn.style.display='none';
 
   setExecuting(false);
 }
 
 function setExecuting(val) {
+
   const el = document.getElementById('status-exec');
-  if (el) el.style.display = val ? 'flex':'none';
+
+  if (el) el.style.display = val ? 'flex' : 'none';
 }
 
-// ── internal data fetch ──────────────────────────────────────────────────────
+// ── executeForData — used by catalog browser for internal queries ──────────────
 async function executeForData(sql) {
-
-  const resp = await api('POST',
-      `/v1/sessions/${state.activeSession}/statements`,
-      { statement: sql });
-
+  const resp = await api('POST', `/v1/sessions/${state.activeSession}/statements`, { statement: sql });
   const opHandle = resp.operationHandle;
-
   let retries = 60;
-
   while (retries-- > 0) {
-
     await sleep(400);
-
-    const status = await api('GET',
-        `/v1/sessions/${state.activeSession}/operations/${opHandle}/status`);
-
+    const status = await api('GET', `/v1/sessions/${state.activeSession}/operations/${opHandle}/status`);
     const s = (status.operationStatus || status.status || '').toUpperCase();
-
-    if (s === 'ERROR')
-      throw new Error(status.errorMessage || 'Query error');
-
-    if (['NOT_READY','PENDING','INITIALIZED','ACCEPTED'].includes(s))
-      continue;
-
+    if (s === 'ERROR') throw new Error(status.errorMessage || 'Query error');
+    if (['NOT_READY','PENDING','INITIALIZED','ACCEPTED'].includes(s)) continue;
     if (s === 'FINISHED' || s === 'RUNNING') {
-
       const result = await api('GET',
-          `/v1/sessions/${state.activeSession}/operations/${opHandle}/result/0?rowFormat=JSON`);
-
-      const cols = (result.results?.columns || result.schema?.columns || [])
-          .map(c => c.name);
-
+          `/v1/sessions/${state.activeSession}/operations/${opHandle}/result/0?rowFormat=JSON&maxFetchSize=200`);
+      const cols = (result.results?.columns || []).map(c => c.name);
       const rows = (result.results?.data || []).map(r => {
-
         const f = r?.fields ?? r;
-
         return Array.isArray(f) ? f : Object.values(f);
       });
-
       return { cols, rows };
     }
   }
-
   return { cols: [], rows: [] };
 }
