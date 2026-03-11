@@ -403,38 +403,353 @@ function selectJobGraphNode(id) {
   if (g) g.querySelector('.jg-node-rect')?.classList.add('selected');
 }
 
-function showJobGraphNodeDetail(nid, nodes, vertices, vertexMetrics) {
+// ── Node Detail Modal ─────────────────────────────────────────────────────────
+
+// State kept outside the modal so event stream survives tab switches
+let _ndState = {
+  jid: null, nid: null, node: null, vertex: null,
+  isSource: false, isSink: false,
+  streamTimer: null, streamRunning: false,
+  eventCount: 0,
+  allMetrics: [],
+};
+
+function closeNodeModal() {
+  _stopEventStream();
+  document.getElementById('nd-modal-backdrop').classList.remove('open');
+  selectJobGraphNode(null);
+}
+
+function switchNodeTab(btn, paneId) {
+  document.querySelectorAll('.nd-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nd-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(paneId).classList.add('active');
+}
+
+// Escape key closes modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const backdrop = document.getElementById('nd-modal-backdrop');
+    if (backdrop && backdrop.classList.contains('open')) closeNodeModal();
+  }
+});
+
+async function showJobGraphNodeDetail(nid, nodes, vertices, vertexMetrics) {
   const node    = nodes.find(n => n.id === nid) || {};
   const vertex  = vertices.find(v => v.id === nid) || {};
-  const vm      = vertexMetrics[nid] || {};
-  const detail  = document.getElementById('jg-detail');
-  const title   = document.getElementById('jg-detail-title');
-  const grid    = document.getElementById('jg-detail-grid');
 
-  title.textContent = (node.description || nid || 'Vertex')
+  // Classify node type
+  const isSource = (node.inputs || []).length === 0;
+  const isSink   = !nodes.some(other =>
+    (other.inputs || []).some(inp => inp.id === nid)
+  );
+
+  // Store state for event stream
+  const jid = (document.getElementById('jg-job-select') || {}).value || '';
+  _ndState = { jid, nid, node, vertex, isSource, isSink,
+               streamTimer: _ndState.streamTimer,
+               streamRunning: _ndState.streamRunning,
+               eventCount: 0, allMetrics: [] };
+
+  // ── Header ──
+  const cleanName = (raw => (raw || nid || 'Operator')
     .replace(/<br\s*\/?>/gi,' ').replace(/<[^>]+>/g,' ')
     .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
     .replace(/\+\-\s*/g,'').replace(/\[.*?\]/g,'')
-    .replace(/\s+/g,' ').trim().slice(0, 80);
+    .replace(/\s+/g,' ').trim())(node.description);
 
-  const kv = (k, v) => `<div class="jg-detail-kv"><div class="jg-detail-key">${k}</div><div class="jg-detail-val">${v}</div></div>`;
-  const recIn  = vm['numRecordsInPerSecond']  ? Math.round(parseFloat(vm['numRecordsInPerSecond'])) + '/s'  : '—';
-  const recOut = vm['numRecordsOutPerSecond'] ? Math.round(parseFloat(vm['numRecordsOutPerSecond'])) + '/s' : '—';
-  const bp     = vm['backPressuredTimeMsPerSecond'] ? Math.round(parseFloat(vm['backPressuredTimeMsPerSecond'])) + 'ms' : '—';
+  const nodeIcon = isSource ? '▶' : isSink ? '⬛' : '⚙';
+  const nodeIconColor = isSource ? 'var(--blue)' : isSink ? 'var(--accent3)' : 'var(--green)';
+  const el = id => document.getElementById(id);
 
-  grid.innerHTML = [
-    kv('Status',        vertex.status || '—'),
-    kv('Parallelism',   node.parallelism || vertex.parallelism || '—'),
-    kv('Records In/s',  recIn),
-    kv('Records Out/s', recOut),
-    kv('Backpressure',  bp),
-    kv('Duration',      vertex.duration ? Math.round(vertex.duration/1000) + 's' : '—'),
-    kv('Write Records', vertex.metrics?.['write-records'] ?? '—'),
-    kv('Read Records',  vertex.metrics?.['read-records']  ?? '—'),
+  el('nd-modal-icon').textContent = nodeIcon;
+  el('nd-modal-icon').style.borderColor = nodeIconColor.replace('var(','').replace(')','');
+  el('nd-modal-icon').style.color = nodeIconColor;
+  el('nd-modal-name').textContent = cleanName.slice(0, 100);
+
+  const st = vertex.status || 'UNKNOWN';
+  const badge = el('nd-modal-status-badge');
+  badge.textContent = st;
+  const stColors = { RUNNING:'var(--green)', FINISHED:'var(--text2)',
+                     FAILED:'var(--red)', CANCELED:'var(--yellow)',
+                     CREATED:'var(--yellow)', INITIALIZING:'var(--yellow)' };
+  badge.style.background = `rgba(0,0,0,0.2)`;
+  badge.style.color  = stColors[st] || 'var(--text2)';
+  badge.style.border = `1px solid ${stColors[st] || 'var(--border2)'}`;
+  el('nd-modal-id-label').textContent = 'ID: ' + nid.slice(0,8);
+  const par = node.parallelism || vertex.parallelism;
+  el('nd-modal-parallelism-label').textContent = par ? 'Parallelism: ' + par : '';
+
+  // ── Show / hide Live Events tab (only for source and sink nodes) ──
+  const evTab = el('nd-tab-events');
+  if (isSource || isSink) {
+    evTab.style.display = 'flex';
+  } else {
+    evTab.style.display = 'none';
+    // If on events tab, switch back to metrics
+    if (el('nd-pane-events').classList.contains('active')) {
+      switchNodeTab(document.querySelector('.nd-tab-btn'), 'nd-pane-metrics');
+    }
+  }
+
+  // Reset tab to Metrics
+  document.querySelectorAll('.nd-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nd-pane').forEach(p => p.classList.remove('active'));
+  document.querySelector('.nd-tab-btn').classList.add('active');
+  el('nd-pane-metrics').classList.add('active');
+
+  // ── Tab 1: Metrics grid ──
+  const vm = vertexMetrics[nid] || {};
+  const recIn   = vm['numRecordsInPerSecond']         ? parseFloat(vm['numRecordsInPerSecond'])         : null;
+  const recOut  = vm['numRecordsOutPerSecond']        ? parseFloat(vm['numRecordsOutPerSecond'])        : null;
+  const bpRaw   = vm['backPressuredTimeMsPerSecond']  ? parseFloat(vm['backPressuredTimeMsPerSecond'])  : null;
+  const bpPct   = bpRaw !== null ? Math.min(100, Math.round(bpRaw / 10)) : null;
+
+  const mkCard = (label, val, unit, cls = '') =>
+    `<div class="nd-metric-card ${cls}">
+      <div class="nd-metric-label">${label}</div>
+      <div class="nd-metric-val">${val}</div>
+      <div class="nd-metric-unit">${unit}</div>
+    </div>`;
+
+  const durSec  = vertex.duration ? Math.round(vertex.duration / 1000) : null;
+  const writeRec = vertex.metrics?.['write-records'] ?? null;
+  const readRec  = vertex.metrics?.['read-records']  ?? null;
+
+  el('nd-metrics-grid').innerHTML = [
+    mkCard('Status',        st,                                 '',         st==='RUNNING'?'highlight':st==='FAILED'?'danger':''),
+    mkCard('Parallelism',   par || '—',                         'subtasks'),
+    mkCard('Records In/s',  recIn  !== null ? Math.round(recIn)  : '—',     'rec/s',  recIn  !== null && recIn  > 0 ? 'highlight' : ''),
+    mkCard('Records Out/s', recOut !== null ? Math.round(recOut) : '—',     'rec/s',  recOut !== null && recOut > 0 ? 'highlight' : ''),
+    mkCard('Backpressure',  bpPct  !== null ? bpPct + '%'        : '—',     '',       bpPct !== null ? (bpPct > 70 ? 'danger' : bpPct > 30 ? 'warn' : '') : ''),
+    mkCard('Duration',      durSec !== null ? durSec             : '—',     durSec !== null ? 's' : ''),
+    mkCard('Records Written', writeRec !== null ? writeRec : '—',           'total',  writeRec !== null && writeRec > 0 ? 'highlight' : ''),
+    mkCard('Records Read',    readRec  !== null ? readRec  : '—',           'total',  readRec  !== null && readRec  > 0 ? 'highlight' : ''),
   ].join('');
 
-  detail.classList.add('open');
+  // Subtask table (if vertex has subtask data)
+  const subtasks = vertex.subtasks || [];
+  if (subtasks.length > 0) {
+    const rows = subtasks.map((s, i) =>
+      `<tr>
+        <td>${i}</td>
+        <td>${s.status || '—'}</td>
+        <td>${s['read-records'] ?? '—'}</td>
+        <td>${s['write-records'] ?? '—'}</td>
+        <td>${s.host || '—'}</td>
+        <td>${s.duration ? Math.round(s.duration/1000)+'s' : '—'}</td>
+      </tr>`
+    ).join('');
+    el('nd-subtask-table-wrap').innerHTML =
+      `<table class="nd-kv-table">
+        <thead><tr>
+          <th style="font-size:9px;padding:5px 8px;color:var(--text3);">#</th>
+          <th style="font-size:9px;padding:5px 8px;color:var(--text3);">Status</th>
+          <th style="font-size:9px;padding:5px 8px;color:var(--text3);">Rec Read</th>
+          <th style="font-size:9px;padding:5px 8px;color:var(--text3);">Rec Written</th>
+          <th style="font-size:9px;padding:5px 8px;color:var(--text3);">Host</th>
+          <th style="font-size:9px;padding:5px 8px;color:var(--text3);">Duration</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } else {
+    el('nd-subtask-table-wrap').innerHTML =
+      `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:8px 0;">
+        Subtask data not available — job may not be RUNNING.
+      </div>`;
+  }
+
+  // ── Tab 2: All metrics (fetch live from JobManager) ──
+  el('nd-all-metrics-table').innerHTML =
+    `<tr><td colspan="2" style="color:var(--text3);font-size:11px;padding:8px 0;">Loading all metrics…</td></tr>`;
+  if (jid && nid) {
+    jmApi(`/jobs/${jid}/vertices/${nid}/metrics?get=numRecordsIn,numRecordsOut,numRecordsInPerSecond,numRecordsOutPerSecond,numBytesIn,numBytesOut,numBytesInPerSecond,numBytesOutPerSecond,backPressuredTimeMsPerSecond,idleTimeMsPerSecond,busyTimeMsPerSecond,currentInputWatermark,numBuffersIn,numBuffersOut`)
+      .then(metrics => {
+        if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
+          el('nd-all-metrics-table').innerHTML =
+            `<tr><td colspan="2" style="color:var(--text3);font-size:11px;">No metrics available — job may not be RUNNING.</td></tr>`;
+          return;
+        }
+        _ndState.allMetrics = metrics;
+        // Combine with static vertex info
+        const rows = [
+          ['Vertex ID',        nid],
+          ['Status',           vertex.status || '—'],
+          ['Parallelism',      par || '—'],
+          ['Duration',         vertex.duration ? Math.round(vertex.duration/1000) + 's' : '—'],
+          ['Start Time',       vertex['start-time'] ? new Date(vertex['start-time']).toLocaleTimeString() : '—'],
+          ['End Time',         vertex['end-time']   ? new Date(vertex['end-time']).toLocaleTimeString()   : '—'],
+          ...metrics.map(m => [m.id, m.value ?? '—']),
+        ];
+        el('nd-all-metrics-table').innerHTML =
+          rows.map(([k, v]) =>
+            `<tr><td>${escHtml(String(k))}</td><td>${escHtml(String(v))}</td></tr>`
+          ).join('');
+      }).catch(() => {
+        el('nd-all-metrics-table').innerHTML =
+          `<tr><td colspan="2" style="color:var(--text3);font-size:11px;">Could not fetch metrics from JobManager.</td></tr>`;
+      });
+  }
+
+  // ── Open modal ──
+  el('nd-modal-backdrop').classList.add('open');
   selectJobGraphNode(nid);
+
+  // Auto-start event stream if node is RUNNING and is source/sink
+  if (st === 'RUNNING' && (isSource || isSink)) {
+    _ndState.streamRunning = false; // reset
+    _startEventStream();
+  } else {
+    _stopEventStream();
+    // Reset stream UI
+    el('nd-events-stream').innerHTML =
+      `<div class="nd-event-empty">
+        <span style="font-size:22px;opacity:0.3;">⚡</span>
+        <span>Event stream will appear here when the operator is running.</span>
+        <span style="font-size:10px;color:var(--text3);">Events are sampled from the JobManager metrics API.</span>
+      </div>`;
+    el('nd-events-count').textContent = '0 events';
+    el('nd-events-badge').textContent = '0';
+  }
+}
+
+// ── Event Stream ─────────────────────────────────────────────────────────────
+
+function toggleEventStream() {
+  if (_ndState.streamRunning) {
+    _stopEventStream();
+    document.getElementById('nd-btn-start-stream').textContent = '▶ Start Stream';
+    document.getElementById('nd-btn-start-stream').classList.remove('active');
+  } else {
+    _startEventStream();
+  }
+}
+
+function clearEventStream() {
+  _ndState.eventCount = 0;
+  document.getElementById('nd-events-stream').innerHTML =
+    `<div class="nd-event-empty">
+      <span style="font-size:22px;opacity:0.3;">⚡</span>
+      <span>Stream cleared. Click Start Stream to resume.</span>
+    </div>`;
+  document.getElementById('nd-events-count').textContent = '0 events';
+  document.getElementById('nd-events-badge').textContent = '0';
+}
+
+function _startEventStream() {
+  if (_ndState.streamRunning) return;
+  _ndState.streamRunning = true;
+  const btn = document.getElementById('nd-btn-start-stream');
+  if (btn) {
+    btn.innerHTML = '<span class="nd-live-dot"></span>Streaming';
+    btn.classList.add('active');
+  }
+  // Clear placeholder
+  const stream = document.getElementById('nd-events-stream');
+  if (stream && stream.querySelector('.nd-event-empty')) {
+    stream.innerHTML = '';
+  }
+  _pollEventStream();
+}
+
+function _stopEventStream() {
+  _ndState.streamRunning = false;
+  if (_ndState.streamTimer) { clearTimeout(_ndState.streamTimer); _ndState.streamTimer = null; }
+  const btn = document.getElementById('nd-btn-start-stream');
+  if (btn) { btn.innerHTML = '▶ Start Stream'; btn.classList.remove('active'); }
+}
+
+async function _pollEventStream() {
+  if (!_ndState.streamRunning) return;
+  const { jid, nid, isSink, isSource } = _ndState;
+  if (!jid || !nid) return;
+
+  try {
+    // Fetch current throughput metrics as a proxy for activity
+    const metrics = await jmApi(
+      `/jobs/${jid}/vertices/${nid}/metrics?get=numRecordsIn,numRecordsOut,numRecordsInPerSecond,numRecordsOutPerSecond,numBytesInPerSecond,numBytesOutPerSecond`
+    );
+
+    if (metrics && Array.isArray(metrics)) {
+      const get = key => {
+        const m = metrics.find(m => m.id === key);
+        return m ? parseFloat(m.value || 0) : 0;
+      };
+      const recInPs  = get('numRecordsInPerSecond');
+      const recOutPs = get('numRecordsOutPerSecond');
+      const bytInPs  = get('numBytesInPerSecond');
+      const bytOutPs = get('numBytesOutPerSecond');
+      const totalIn  = Math.round(get('numRecordsIn'));
+      const totalOut = Math.round(get('numRecordsOut'));
+
+      // Only emit an event row if there's activity
+      if (recInPs > 0 || recOutPs > 0 || totalIn > 0 || totalOut > 0) {
+        _addEventRow({
+          recInPs:  Math.round(recInPs),
+          recOutPs: Math.round(recOutPs),
+          bytInPs:  Math.round(bytInPs),
+          bytOutPs: Math.round(bytOutPs),
+          totalIn, totalOut,
+          isSink, isSource,
+        });
+      }
+    }
+  } catch(_) {}
+
+  // Poll every 800ms while stream is running
+  if (_ndState.streamRunning) {
+    _ndState.streamTimer = setTimeout(_pollEventStream, 800);
+  }
+}
+
+function _addEventRow({ recInPs, recOutPs, bytInPs, bytOutPs, totalIn, totalOut, isSink, isSource }) {
+  const stream = document.getElementById('nd-events-stream');
+  if (!stream) return;
+
+  _ndState.eventCount++;
+  const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+  // Format bytes
+  const fmtBytes = b => b > 1048576 ? (b/1048576).toFixed(1)+'MB/s' : b > 1024 ? (b/1024).toFixed(1)+'KB/s' : b+'B/s';
+
+  // Build rows for IN and OUT if relevant
+  const rows = [];
+  if (recInPs > 0 || totalIn > 0) {
+    rows.push(
+      `<div class="nd-event-row">
+        <span class="nd-event-ts">${ts}</span>
+        <span class="nd-event-dir in">← IN</span>
+        <span class="nd-event-val">${recInPs} rec/s &nbsp;·&nbsp; ${fmtBytes(bytInPs)} &nbsp;·&nbsp; ${totalIn.toLocaleString()} total</span>
+      </div>`
+    );
+  }
+  if (recOutPs > 0 || totalOut > 0) {
+    rows.push(
+      `<div class="nd-event-row">
+        <span class="nd-event-ts">${ts}</span>
+        <span class="nd-event-dir out">→ OUT</span>
+        <span class="nd-event-val">${recOutPs} rec/s &nbsp;·&nbsp; ${fmtBytes(bytOutPs)} &nbsp;·&nbsp; ${totalOut.toLocaleString()} total</span>
+      </div>`
+    );
+  }
+
+  if (rows.length === 0) return;
+
+  // Prepend to stream (newest at top) — cap at 200 rows
+  const tmp = document.createElement('div');
+  tmp.innerHTML = rows.join('');
+  Array.from(tmp.children).reverse().forEach(row => {
+    stream.insertBefore(row, stream.firstChild);
+  });
+  // Trim old rows
+  while (stream.children.length > 200) stream.removeChild(stream.lastChild);
+
+  // Update counters
+  const count = document.getElementById('nd-events-count');
+  const badge = document.getElementById('nd-events-badge');
+  if (count) count.textContent = _ndState.eventCount + ' events';
+  if (badge) badge.textContent = _ndState.eventCount;
 }
 
 // ──────────────────────────────────────────────

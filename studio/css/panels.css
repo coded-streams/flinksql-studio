@@ -247,20 +247,209 @@
     50%      { stroke-opacity: 0.4; }
   }
 
-  /* Detail panel */
-  .jg-detail {
-    flex-shrink: 0; background: var(--bg1);
-    border-top: 1px solid var(--border);
-    padding: 10px 14px; display: none;
-    max-height: 130px; overflow-y: auto;
-    font-size: 11px;
+  /* ── Node Detail Modal ───────────────────────────────── */
+  /* Keep the old .jg-detail hidden — we replaced it with the modal */
+  .jg-detail { display: none !important; }
+
+  /* Backdrop */
+  #nd-modal-backdrop {
+    display: none;
+    position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(3px);
+    align-items: center; justify-content: center;
   }
-  .jg-detail.open { display: block; }
-  .jg-detail-title { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-  .jg-detail-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
-  .jg-detail-kv { display: flex; flex-direction: column; gap: 2px; }
-  .jg-detail-key { font-size: 9px; color: var(--text3); letter-spacing: 0.5px; }
-  .jg-detail-val { font-size: 12px; color: var(--text0); font-weight: 600; }
+  #nd-modal-backdrop.open { display: flex; }
+
+  /* Modal box */
+  #nd-modal {
+    background: var(--bg1);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,170,0.08);
+    width: min(780px, 94vw);
+    max-height: 82vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: ndSlideIn 0.18s ease-out;
+  }
+  @keyframes ndSlideIn {
+    from { opacity: 0; transform: translateY(-14px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0)     scale(1); }
+  }
+
+  /* Modal header */
+  #nd-modal-header {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #nd-modal-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0; margin-top: 1px;
+    background: rgba(0,212,170,0.08);
+    border: 1px solid rgba(0,212,170,0.18);
+  }
+  #nd-modal-titles { flex: 1; min-width: 0; }
+  #nd-modal-name {
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: var(--text0); white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; margin-bottom: 3px;
+  }
+  #nd-modal-meta {
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  #nd-modal-status-badge {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    padding: 2px 8px; border-radius: 4px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  #nd-modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 20px; line-height: 1;
+    padding: 2px 4px; border-radius: 4px;
+    transition: color 0.12s, background 0.12s;
+    flex-shrink: 0;
+  }
+  #nd-modal-close:hover { color: var(--text0); background: var(--bg3); }
+
+  /* Modal tab bar */
+  #nd-modal-tabs {
+    display: flex; gap: 2px; padding: 8px 20px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2); flex-shrink: 0;
+  }
+  .nd-tab-btn {
+    font-family: var(--mono); font-size: 11px; font-weight: 600;
+    padding: 6px 14px; border: 1px solid transparent;
+    border-bottom: none; border-radius: 5px 5px 0 0;
+    background: transparent; color: var(--text2);
+    cursor: pointer; transition: all 0.12s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .nd-tab-btn:hover:not(.active) { color: var(--text1); background: var(--bg3); }
+  .nd-tab-btn.active {
+    background: var(--bg1); border-color: var(--border);
+    color: var(--accent); margin-bottom: -1px;
+  }
+  .nd-tab-badge {
+    font-size: 9px; background: rgba(0,212,170,0.15);
+    color: var(--accent); border-radius: 3px;
+    padding: 1px 5px; font-weight: 700;
+  }
+
+  /* Modal body (scrollable) */
+  #nd-modal-body {
+    flex: 1; overflow-y: auto;
+    padding: 0;
+  }
+  .nd-pane { display: none; padding: 18px 20px; }
+  .nd-pane.active { display: block; }
+
+  /* Metrics grid */
+  .nd-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px; margin-bottom: 18px;
+  }
+  .nd-metric-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 7px; padding: 12px 14px;
+  }
+  .nd-metric-label {
+    font-size: 9px; color: var(--text3); letter-spacing: 0.8px;
+    text-transform: uppercase; font-family: var(--mono);
+    margin-bottom: 5px;
+  }
+  .nd-metric-val {
+    font-size: 20px; font-weight: 700; color: var(--text0);
+    font-family: var(--mono); line-height: 1.1;
+  }
+  .nd-metric-unit {
+    font-size: 10px; color: var(--text3); font-family: var(--mono);
+    margin-top: 2px;
+  }
+  .nd-metric-card.highlight { border-color: rgba(0,212,170,0.3); background: rgba(0,212,170,0.04); }
+  .nd-metric-card.highlight .nd-metric-val { color: var(--accent); }
+  .nd-metric-card.warn { border-color: rgba(240,165,0,0.3); background: rgba(240,165,0,0.04); }
+  .nd-metric-card.warn .nd-metric-val { color: var(--yellow); }
+  .nd-metric-card.danger { border-color: rgba(224,92,92,0.3); background: rgba(224,92,92,0.04); }
+  .nd-metric-card.danger .nd-metric-val { color: var(--red); }
+
+  /* Section headers inside panes */
+  .nd-section-title {
+    font-size: 9px; color: var(--text3); letter-spacing: 1.2px;
+    text-transform: uppercase; font-family: var(--mono);
+    margin: 16px 0 8px; padding-bottom: 5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .nd-section-title:first-child { margin-top: 0; }
+
+  /* Key-value rows for all-metrics tab */
+  .nd-kv-table { width: 100%; border-collapse: collapse; }
+  .nd-kv-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .nd-kv-table td {
+    padding: 5px 8px; font-family: var(--mono); font-size: 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+  .nd-kv-table td:first-child { color: var(--text3); width: 48%; }
+  .nd-kv-table td:last-child  { color: var(--text0); font-weight: 600; }
+
+  /* Events stream tab */
+  #nd-events-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px 0; flex-shrink: 0;
+  }
+  .nd-events-btn {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    padding: 4px 12px; border-radius: 4px;
+    border: 1px solid var(--border2); background: var(--bg2);
+    color: var(--text2); cursor: pointer; transition: all 0.12s;
+  }
+  .nd-events-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nd-events-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  #nd-events-count {
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    margin-left: auto;
+  }
+  #nd-events-stream {
+    margin: 10px 20px 0;
+    background: var(--bg0); border: 1px solid var(--border);
+    border-radius: 6px; font-family: var(--mono); font-size: 11px;
+    color: var(--text1); height: 260px; overflow-y: auto;
+    padding: 10px 12px;
+  }
+  .nd-event-row {
+    display: flex; gap: 10px; padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    animation: ndEventIn 0.2s ease-out;
+  }
+  @keyframes ndEventIn {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .nd-event-ts   { color: var(--text3); flex-shrink: 0; }
+  .nd-event-dir  { flex-shrink: 0; font-weight: 700; }
+  .nd-event-dir.in  { color: var(--blue); }
+  .nd-event-dir.out { color: var(--accent); }
+  .nd-event-val  { color: var(--text1); flex: 1; word-break: break-all; }
+  .nd-event-empty {
+    color: var(--text3); font-size: 11px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 200px; gap: 8px;
+  }
+
+  /* Live pulse on event stream header */
+  .nd-live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); display: inline-block;
+    margin-right: 4px;
+    animation: pulse 1.2s infinite;
+  }
 
   /* Tab rename input */
   .tab-rename-input {
