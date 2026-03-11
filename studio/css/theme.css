@@ -1,0 +1,76 @@
+/* FlinkSQL Studio — Theme variables (dark/light), base body, scrollbar */
+
+  /* ── DARK THEME (default) ── */
+  :root {
+    --bg0: #080b0f;
+    --bg1: #0c1018;
+    --bg2: #111620;
+    --bg3: #161d2a;
+    --bg4: #1c2535;
+    --border: #1e2d42;
+    --border2: #253447;
+    --accent: #00d4aa;
+    --accent2: #0097ff;
+    --accent3: #f5a623;
+    --accent4: #ff4d6d;
+    --text0: #e8edf5;
+    --text1: #a8b8cc;
+    --text2: #6a7f96;
+    --text3: #3d5166;
+    --green: #39d353;
+    --red: #ff4d6d;
+    --yellow: #f5a623;
+    --blue: #0097ff;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 3px;
+    --logo-bg: #0c1018;
+    --logo-text: #e8edf5;
+    --input-bg: #080b0f;
+  }
+
+  /* ── LIGHT THEME — entire browser changes ── */
+  body.theme-light {
+    --bg0: #f4f6f9;
+    --bg1: #ffffff;
+    --bg2: #f0f2f6;
+    --bg3: #e8ecf2;
+    --bg4: #dde2eb;
+    --border: #d0d7e3;
+    --border2: #b8c3d6;
+    --accent: #007a60;
+    --accent2: #1a5fcc;
+    --accent3: #b86800;
+    --accent4: #cc2244;
+    --text0: #0f1923;
+    --text1: #2d3f55;
+    --text2: #5a6e85;
+    --text3: #8fa0b5;
+    --green: #1a7a32;
+    --red: #cc2244;
+    --yellow: #b86800;
+    --blue: #1a5fcc;
+    --logo-bg: #0f1923;
+    --logo-text: #f4f6f9;
+    --input-bg: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg0);
+    color: var(--text0);
+    font-family: var(--mono);
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg1); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
