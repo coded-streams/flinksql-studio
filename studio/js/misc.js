@@ -1,13 +1,112 @@
 // PERF QUERY FILTER
+
+// ── Collapsible performance sections ─────────────────────────────────────────
+function togglePerfSection(id) {
+  const section = document.getElementById(id);
+  if (!section) return;
+  section.classList.toggle('collapsed');
+  // Save state to localStorage
+  try {
+    const collapsed = JSON.parse(localStorage.getItem('perf-collapsed') || '{}');
+    collapsed[id] = section.classList.contains('collapsed');
+    localStorage.setItem('perf-collapsed', JSON.stringify(collapsed));
+  } catch(_) {}
+}
+
+function restorePerfSections() {
+  try {
+    const collapsed = JSON.parse(localStorage.getItem('perf-collapsed') || '{}');
+    Object.entries(collapsed).forEach(([id, isCollapsed]) => {
+      const s = document.getElementById(id);
+      if (s && isCollapsed) s.classList.add('collapsed');
+    });
+  } catch(_) {}
+}
+// Restore on load
+document.addEventListener('DOMContentLoaded', restorePerfSections);
+
+// ── Filter performance queries ────────────────────────────────────────────────
+function filterPerfQueries(val) {
+  state.perfQueryFilter = val;
+  renderTimingBars();
+}
+
 // ──────────────────────────────────────────────
+
 function filterPerfQueries(val) {
   state.perfQueryFilter = (val || '').toLowerCase();
   renderTimingBars();
 }
 
+
+// ── Collapsible performance sections ─────────────────────────────────────────
+function togglePerfSection(id) {
+  const section = document.getElementById(id);
+  if (!section) return;
+  section.classList.toggle('collapsed');
+  // Save state to localStorage
+  try {
+    const collapsed = JSON.parse(localStorage.getItem('perf-collapsed') || '{}');
+    collapsed[id] = section.classList.contains('collapsed');
+    localStorage.setItem('perf-collapsed', JSON.stringify(collapsed));
+  } catch(_) {}
+}
+
+function restorePerfSections() {
+  try {
+    const collapsed = JSON.parse(localStorage.getItem('perf-collapsed') || '{}');
+    Object.entries(collapsed).forEach(([id, isCollapsed]) => {
+      const s = document.getElementById(id);
+      if (s && isCollapsed) s.classList.add('collapsed');
+    });
+  } catch(_) {}
+}
+// Restore on load
+document.addEventListener('DOMContentLoaded', restorePerfSections);
+
+// ── Filter performance queries ────────────────────────────────────────────────
+function filterPerfQueries(val) {
+  state.perfQueryFilter = val;
+  renderTimingBars();
+}
+
 // ──────────────────────────────────────────────
+
 // AUTO CATALOG SETUP
+
+// ── Collapsible performance sections ─────────────────────────────────────────
+function togglePerfSection(id) {
+  const section = document.getElementById(id);
+  if (!section) return;
+  section.classList.toggle('collapsed');
+  // Save state to localStorage
+  try {
+    const collapsed = JSON.parse(localStorage.getItem('perf-collapsed') || '{}');
+    collapsed[id] = section.classList.contains('collapsed');
+    localStorage.setItem('perf-collapsed', JSON.stringify(collapsed));
+  } catch(_) {}
+}
+
+function restorePerfSections() {
+  try {
+    const collapsed = JSON.parse(localStorage.getItem('perf-collapsed') || '{}');
+    Object.entries(collapsed).forEach(([id, isCollapsed]) => {
+      const s = document.getElementById(id);
+      if (s && isCollapsed) s.classList.add('collapsed');
+    });
+  } catch(_) {}
+}
+// Restore on load
+document.addEventListener('DOMContentLoaded', restorePerfSections);
+
+// ── Filter performance queries ────────────────────────────────────────────────
+function filterPerfQueries(val) {
+  state.perfQueryFilter = val;
+  renderTimingBars();
+}
+
 // ──────────────────────────────────────────────
+
 async function ensureDefaultCatalog() {
   // Flink needs at least one catalog. The default_catalog exists by default,
   // but we try to USE it and create the default database if needed.
