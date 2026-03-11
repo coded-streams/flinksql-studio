@@ -31,28 +31,29 @@
 
   /* ── LIGHT THEME — entire browser changes ── */
   body.theme-light {
-    --bg0: #f4f6f9;
-    --bg1: #ffffff;
-    --bg2: #f0f2f6;
-    --bg3: #e8ecf2;
-    --bg4: #dde2eb;
-    --border: #d0d7e3;
-    --border2: #b8c3d6;
+    /* Softened light theme — warm blue-slate tones, no harsh white */
+    --bg0: #e8ecf2;
+    --bg1: #eef1f6;
+    --bg2: #e4e8f0;
+    --bg3: #d8dde8;
+    --bg4: #ccd3e0;
+    --border: #c8d0de;
+    --border2: #b0bcce;
     --accent: #007a60;
     --accent2: #1a5fcc;
     --accent3: #b86800;
     --accent4: #cc2244;
-    --text0: #0f1923;
-    --text1: #2d3f55;
-    --text2: #5a6e85;
-    --text3: #8fa0b5;
+    --text0: #1a2535;
+    --text1: #354a65;
+    --text2: #6278a0;
+    --text3: #8a9dbf;
     --green: #1a7a32;
     --red: #cc2244;
     --yellow: #b86800;
     --blue: #1a5fcc;
     --logo-bg: #0f1923;
     --logo-text: #f4f6f9;
-    --input-bg: #ffffff;
+    --input-bg: #f0f3f8;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }

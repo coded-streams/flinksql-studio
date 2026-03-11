@@ -478,27 +478,116 @@ SHOW CATALOGS;"
                   </div>
                 </div>
 
+                <!-- Section: Cluster Resources (CPU, Memory, JVM, IP) -->
+                <div class="perf-section" id="ps-cluster">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-cluster')">
+                    <span class="perf-section-arrow" id="ps-cluster-arrow">▾</span>
+                    <span class="dot" style="background:var(--accent2)"></span>
+                    Cluster Resources
+                    <span class="perf-section-badge" id="ps-cluster-badge"></span>
+                  </button>
+                  <div class="perf-section-body" id="ps-cluster-body">
+                    <div class="perf-section-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+                      <div class="perf-card res-card"><div class="res-card-label">🖥 CPU Cores</div><div class="res-card-val" id="rc-cpu">—</div><div class="res-card-sub" id="rc-cpu-sub"></div></div>
+                      <div class="perf-card res-card"><div class="res-card-label">🧠 Physical Memory</div><div class="res-card-val" id="rc-mem">—</div><div class="res-card-sub" id="rc-mem-sub">total available</div></div>
+                      <div class="perf-card res-card"><div class="res-card-label">☕ JVM Heap</div><div class="res-card-val" id="rc-heap">—</div><div class="res-card-sub" id="rc-heap-sub">used / max</div></div>
+                      <div class="perf-card res-card"><div class="res-card-label">🌐 Cluster Host</div><div class="res-card-val" id="rc-host" style="font-size:11px;word-break:break-all;">—</div><div class="res-card-sub" id="rc-host-sub"></div></div>
+                      <div class="perf-card res-card"><div class="res-card-label">🗄 Task Managers</div><div class="res-card-val" id="rc-tms">—</div><div class="res-card-sub" id="rc-tms-sub">active workers</div></div>
+                      <div class="perf-card res-card"><div class="res-card-label">⚡ Flink Version</div><div class="res-card-val" id="rc-version" style="font-size:12px;">—</div><div class="res-card-sub" id="rc-version-sub"></div></div>
+                      <div class="perf-card res-card"><div class="res-card-label">🔌 Cluster IP / Host</div><div class="res-card-val" id="rc-ip" style="font-size:11px;word-break:break-all;">—</div><div class="res-card-sub" id="rc-ip-sub">cluster endpoint</div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section: Job Resource Comparison (multi-line real-time graph) -->
+                <div class="perf-section" id="ps-jobgraph">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-jobgraph')">
+                    <span class="perf-section-arrow" id="ps-jobgraph-arrow">▾</span>
+                    <span class="dot" style="background:var(--accent)"></span>
+                    Job Resource Comparison
+                    <span class="perf-section-badge" id="ps-jobgraph-badge"></span>
+                  </button>
+                  <div class="perf-section-body" id="ps-jobgraph-body">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+                      <span style="font-size:10px;color:var(--text2);">Metric:</span>
+                      <select id="job-compare-metric" onchange="redrawJobCompare()" style="font-size:10px;background:var(--bg3);border:1px solid var(--border);color:var(--text1);padding:3px 6px;border-radius:2px;">
+                        <option value="recIn">Records In/s</option>
+                        <option value="recOut">Records Out/s</option>
+                        <option value="duration">Running Time (s)</option>
+                        <option value="backpressure">Backpressure %</option>
+                      </select>
+                      <div id="job-compare-legend" style="display:flex;gap:10px;flex-wrap:wrap;margin-left:auto;"></div>
+                    </div>
+                    <div style="position:relative;height:160px;background:var(--bg3);border-radius:3px;border:1px solid var(--border);">
+                      <canvas id="job-compare-canvas" style="width:100%;height:160px;display:block;background:var(--bg1);border-radius:2px;"></canvas>
+                      <div id="job-compare-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);">No running jobs — start a pipeline to see live comparison</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Section: Generate Report -->
+                <div class="perf-section" id="ps-report">
+                  <button class="perf-section-hdr" onclick="togglePerfSection('ps-report')">
+                    <span class="perf-section-arrow" id="ps-report-arrow">▾</span>
+                    <span class="dot" style="background:var(--accent3)"></span>
+                    Session Report
+                    <span class="perf-section-badge" id="ps-report-badge"></span>
+                  </button>
+                  <div class="perf-section-body" id="ps-report-body">
+                    <div class="perf-card" style="display:flex;flex-direction:column;gap:12px;">
+                      <p style="font-size:11px;color:var(--text2);line-height:1.6;">Generate a professional PDF report of your entire session — queries, job metrics, cluster info, checkpoints, and performance history.</p>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:11px;color:var(--text2);white-space:nowrap;">Report name:</span>
+                        <input id="report-name-input" placeholder="flinksql-session-report" style="flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text0);padding:5px 8px;border-radius:2px;font-size:11px;font-family:var(--mono);" />
+                        <button onclick="generateSessionReport()" style="background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.35);color:var(--accent);font-size:11px;padding:5px 12px;border-radius:2px;cursor:pointer;white-space:nowrap;font-family:var(--mono);">📄 Generate PDF</button>
+                      </div>
+                      <div id="report-status" style="font-size:10px;color:var(--text3);"></div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
             <!-- Job Graph tab -->
             <div id="job-graph-panel">
               <div class="jg-toolbar">
                 <span class="jg-toolbar-label">Job Graph</span>
-                <select class="jg-job-select" id="jg-job-select" onchange="loadJobGraph(this.value)">
+                <select class="jg-job-select" id="jg-job-select" onchange="onJgJobChange(this.value)">
                   <option value="">— Select a job —</option>
                 </select>
-                <button class="jg-refresh-btn" onclick="refreshJobGraphList()">⟳ Refresh Jobs</button>
-                <button class="jg-refresh-btn" onclick="loadJobGraph(document.getElementById('jg-job-select').value)" style="margin-left:2px;">↺ Reload Graph</button>
+                <!-- View mode tabs -->
+                <div class="jg-view-tabs" style="display:flex;gap:2px;margin-left:6px;">
+                  <button class="jg-view-tab active" id="jg-tab-dag" onclick="switchJgView('dag')">◈ DAG</button>
+                  <button class="jg-view-tab" id="jg-tab-timeline" onclick="switchJgView('timeline')">▤ Timeline</button>
+                </div>
+                <button class="jg-refresh-btn" onclick="refreshJobGraphList()" style="margin-left:6px;">⟳ Refresh Jobs</button>
+                <button class="jg-refresh-btn" onclick="reloadCurrentJgView()" style="margin-left:2px;">↺ Reload</button>
                 <button class="jg-refresh-btn danger" id="jg-cancel-btn" onclick="cancelSelectedJob()" style="margin-left:2px;display:none;background:rgba(255,80,80,0.12);color:#ff5050;border-color:rgba(255,80,80,0.3);">✕ Cancel Job</button>
                 <span id="jg-job-status-badge" style="font-size:10px;padding:2px 8px;border-radius:2px;margin-left:4px;display:none;"></span>
-                <span style="font-size:10px;color:var(--text3);margin-left:auto;" id="jg-hint">Double-click a node to see details</span>
+                <button class="jg-refresh-btn" onclick="generateSessionReport()" style="margin-left:auto;background:rgba(0,212,170,0.1);color:var(--accent);border-color:rgba(0,212,170,0.3);" title="Generate PDF session report">📄 Report</button>
+                <span style="font-size:10px;color:var(--text3);margin-left:8px;" id="jg-hint">Double-click a node to inspect</span>
               </div>
-              <div class="jg-canvas-wrap" id="jg-canvas-wrap">
+              <!-- DAG view -->
+              <div class="jg-canvas-wrap" id="jg-canvas-wrap" style="display:flex;flex-direction:column;">
                 <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--text3);">
                   <div style="font-size:28px;opacity:0.3;">◈</div>
                   <div style="font-size:12px;">Select a job above to visualize its execution graph</div>
                   <div style="font-size:11px;color:var(--text3);">Click Refresh Jobs to load running and recent jobs from JobManager</div>
                 </div>
+              </div>
+              <!-- Timeline view -->
+              <div id="jg-timeline-wrap" style="display:none;flex:1;overflow:auto;padding:12px 16px;">
+                <div id="jg-timeline-container" style="min-height:200px;">
+                  <div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3);font-size:12px;">Select a job to view vertex timeline</div>
+                </div>
+              </div>
+              <!-- Vertex status detail (appears below timeline on click) -->
+              <div id="jg-vertex-detail-wrap" style="display:none;border-top:1px solid var(--border);padding:12px 16px;background:var(--bg2);">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                  <span style="font-size:11px;font-weight:600;color:var(--text1);letter-spacing:1px;text-transform:uppercase;" id="jg-vd-title">Vertex Status Timeline</span>
+                  <button onclick="document.getElementById('jg-vertex-detail-wrap').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;">×</button>
+                </div>
+                <div id="jg-vertex-detail-content"></div>
               </div>
               <div class="jg-detail" id="jg-detail">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
@@ -663,7 +752,7 @@ SHOW CATALOGS;"
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
         <div style="font-size:10px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">Created by</div>
         <div style="font-size:14px;font-weight:600;color:var(--text0);">Nestor A. A</div>
-        <div style="font-size:12px;color:var(--text2);">Donated to the open source community via <strong style="color:var(--accent)">codedstreams</strong></div>
+        <div style="font-size:12px;color:var(--text2);">Open source project — <strong style="color:var(--accent)">codedstreams</strong></div>
         <a href="/cdn-cgi/l/email-protection#157b7066617a6774777c7462607d557278747c793b767a78" style="font-size:12px;color:var(--accent2);text-decoration:none;display:flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg><span class="__cf_email__" data-cfemail="e28c8791968d9083808b8395978aa2858f838b8ecc818d8f">[email&#160;protected]</span></a>
         <a href="https://github.com/coded-streams/flinksql-studio" target="_blank" style="font-size:12px;color:var(--accent2);text-decoration:none;display:flex;align-items:center;gap:6px;">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
@@ -800,5 +889,6 @@ SHOW CATALOGS;"
     </div>
   </div>
 
+  <script src="js/timeline.js"></script>
 </body>
 </html>

@@ -18,6 +18,7 @@
  *    works even if id casing differs across builds.
  */
 
+// ── SQL splitting ─────────────────────────────────────────────────────────────
 function splitSQL(raw) {
   const stmts = [];
   let cur = '', inStr = false, strChar = '', i = 0;
@@ -44,6 +45,7 @@ function splitSQL(raw) {
   return stmts;
 }
 
+// ── Catalog statusbar update ───────────────────────────────────────────────────
 function updateCatalogStatus(catalog, database) {
   if (catalog !== null) state.activeCatalog = catalog;
   if (database !== null) state.activeDatabase = database;
@@ -51,6 +53,7 @@ function updateCatalogStatus(catalog, database) {
   if (el) el.textContent = `${state.activeCatalog || '—'}.${state.activeDatabase || '—'}`;
 }
 
+// ── Main entry points ─────────────────────────────────────────────────────────
 async function executeSQL() {
   const el = document.getElementById('sql-editor');
   const sql = el?.value?.trim();
@@ -73,20 +76,32 @@ async function explainSQL() {
   await runSQL(`EXPLAIN ${sql}`);
 }
 
+// ── Core runner ───────────────────────────────────────────────────────────────
 async function runSQL(sql) {
-
   if (!state.activeSession) { toast('No active session', 'err'); return; }
+  if (!state.gateway) {
+    try {
+      state.gateway = { host: window.location.hostname, port: window.location.port || '80', baseUrl: getBaseUrl() };
+    } catch(_) {}
+  }
+  if (!state.gateway) { toast('Not connected — please reconnect', 'err'); return; }
 
   const statements = splitSQL(sql);
   if (statements.length === 0) return;
 
   setExecuting(true);
   clearResults();
-  perfQueryStart();
+  perfQueryStart(sql);
+  addLog('INFO', `Running ${statements.length} statement${statements.length > 1 ? 's' : ''} on session ${shortHandle(state.activeSession)}`);
 
   for (let i = 0; i < statements.length; i++) {
-
     const stmt = statements[i];
+    addLog('SQL', `[${i+1}/${statements.length}] ${stmt.replace(/\s+/g,' ').slice(0,120)}${stmt.length>120?'…':''}`);
+
+    const useCatalogMatch = stmt.match(/^\s*USE\s+CATALOG\s+[`"]?(\S+?)[`"]?\s*;?\s*$/i);
+    const useDbMatch      = stmt.match(/^\s*USE\s+(?!CATALOG\b)[`"]?(\S+?)[`"]?\s*;?\s*$/i);
+    if (useCatalogMatch) updateCatalogStatus(useCatalogMatch[1].replace(/`/g,''), null);
+    if (useDbMatch)      updateCatalogStatus(null, useDbMatch[1].replace(/`/g,''));
 
     try {
       await submitStatement(stmt);
@@ -97,243 +112,285 @@ async function runSQL(sql) {
       break;
     }
   }
-
   setExecuting(false);
 }
 
 async function submitStatement(sql) {
-
   const cleanSql = sql.trim().replace(/;+$/, '');
-
-  const resp = await api('POST', `/v1/sessions/${state.activeSession}/statements`, {
+  const sessionHandle = state.activeSession;
+  const resp = await api('POST', `/v1/sessions/${sessionHandle}/statements`, {
     statement: cleanSql,
     executionTimeout: 0,
   });
-
   const opHandle = resp.operationHandle;
-
   addToHistory(sql, 'running', opHandle);
   addOperation(opHandle, sql);
-
-  await pollOperation(opHandle, sql, state.activeSession);
+  await pollOperation(opHandle, sql, sessionHandle);
 }
 
+// ── Poll loop ─────────────────────────────────────────────────────────────────
+// Strategy: immediately attempt to fetch result/0 on every tick regardless of
+// status. The SQL Gateway for Flink 1.16-1.19 allows result fetches while the
+// operation is RUNNING — rows arrive as PAYLOAD pages, EOS signals completion.
+// We only check status to detect ERROR/CANCELED early; we do not gate result
+// fetches on status.
 async function pollOperation(opHandle, sql, sessionHandle) {
-
   const mySession = sessionHandle || state.activeSession;
-
   let token = 0;
+  const maxPolls = 7200;           // 60 min @ 500ms
   let polls = 0;
   let firstRows = true;
-
-  const maxPolls = 3600;
-
+  let emptyPolls = 0;
+  let consecutiveErrors = 0;
+  let _nextUri = null;       // nextResultUri from last response — used as authoritative next fetch URL
   state.currentOp = { opHandle, sessionHandle: mySession };
+  state._maxRowsWarned = false;
+
+  const stopBtn = document.getElementById('stop-btn');
+  if (stopBtn) stopBtn.style.display = 'flex';
+
+  function showResultsTab() {
+    const btn = document.getElementById('results-tab-btn')
+             || document.querySelector('[data-tab="data"]')
+             || document.querySelector('.result-tab');
+    if (btn) switchResultTab('data', btn);
+  }
+
+  // Build result URL
+  // Spec: GET /v1/sessions/{s}/operations/{op}/result/{token}?rowFormat=JSON
+  // rowFormat=JSON is supported since Flink 1.16. maxFetchSize is NOT a standard param.
+  function resultUrl(t) {
+    return `/v1/sessions/${mySession}/operations/${opHandle}/result/${t}?rowFormat=JSON`;
+  }
+  // If we have a nextResultUri from the server, use it directly (it already has rowFormat)
+  // The server URI is relative (e.g. /v1/sessions/...) so we use it as the api() path directly
+  function nextUrl(uri) {
+    // Strip any host/port prefix if present, keep from /v1/ onwards
+    const idx = uri.indexOf('/v1/');
+    return idx >= 0 ? uri.slice(idx) : uri;
+  }
 
   while (polls < maxPolls) {
-
     if (!state.currentOp || state.currentOp.opHandle !== opHandle) break;
-
     await sleep(500);
 
-    let status;
-
+    // ── 1. Check status (non-blocking — errors here are not fatal) ────────
+    let opStatus = 'RUNNING'; // assume running unless told otherwise
     try {
-      status = await api('GET', `/v1/sessions/${mySession}/operations/${opHandle}/status`);
+      const status = await api('GET', `/v1/sessions/${mySession}/operations/${opHandle}/status`);
+      opStatus = (status.operationStatus || status.status || 'RUNNING').toUpperCase();
+      updateOperationStatus(opHandle, opStatus);
     } catch (e) {
-      addLog('ERR', `Status check failed: ${parseFlinkError(e.message)}`, e.message);
-      break;
+      // Status endpoint failed — could be transient; try result fetch anyway
     }
 
-    const opStatus = (status.operationStatus || status.status || '').toUpperCase();
-
-    updateOperationStatus(opHandle, opStatus);
-
+    // ── 2. ERROR ──────────────────────────────────────────────────────────
     if (opStatus === 'ERROR') {
-
-      let rawError = status.errorMessage || status.error || status.message
-          || (status.errors && status.errors[0]) || null;
-
-      if (!rawError) {
-        try {
-
-          const errResult = await api(
-              'GET',
-              `/v1/sessions/${mySession}/operations/${opHandle}/result/0?rowFormat=JSON`
-          );
-
-          if (errResult.errors && errResult.errors.length > 0) {
-            rawError = errResult.errors.join('\n');
-          } else if (errResult.message) {
-            rawError = errResult.message;
-          }
-
-        } catch (fetchErr) {
-
-          const m = fetchErr.message?.match(/HTTP \d+: ([\s\S]+)/);
-
-          if (m) rawError = m[1];
+      let rawError = null;
+      try {
+        const errResult = await api('GET', resultUrl(0));
+        if (errResult?.errors?.length) rawError = errResult.errors.join('\n');
+        else if (errResult?.message)   rawError = errResult.message;
+        else if (errResult?.results?.data?.length) {
+          const r = errResult.results.data[0];
+          rawError = ((r?.fields ?? r) || [])[0] || null;
         }
+      } catch (fetchErr) {
+        const m = fetchErr.message?.match(/HTTP \d+: ([\s\S]+)/);
+        if (m) rawError = m[1];
       }
-
-      if (!rawError) rawError = JSON.stringify(status, null, 2);
-
-      state.lastErrorRaw = typeof rawError === 'string'
-          ? rawError
-          : JSON.stringify(rawError, null, 2);
-
+      if (!rawError) rawError = 'Operation failed (no error detail available)';
+      state.lastErrorRaw = typeof rawError === 'string' ? rawError : JSON.stringify(rawError);
       const friendly = parseFlinkError(state.lastErrorRaw);
-
       addLog('ERR', friendly, state.lastErrorRaw);
-
       updateHistoryStatus(opHandle, 'err');
-
       toast(friendly.slice(0, 90), 'err');
-
+      const logBtn = document.getElementById('log-tab-btn');
+      if (logBtn) switchResultTab('log', logBtn);
+      perfQueryEnd(0);
       break;
     }
 
-    if (opStatus === 'RUNNING' || opStatus === 'FINISHED') {
+    if (opStatus === 'CANCELED') {
+      addLog('WARN', 'Operation was cancelled');
+      updateHistoryStatus(opHandle, 'err');
+      break;
+    }
 
-      let result;
+    // ── 3. Skip waiting states ────────────────────────────────────────────
+    if (['NOT_READY','PENDING','INITIALIZED','ACCEPTED'].includes(opStatus)) {
+      polls++;
+      continue;
+    }
 
-      try {
-
-        result = await api(
-            'GET',
-            `/v1/sessions/${mySession}/operations/${opHandle}/result/${token}?rowFormat=JSON&maxFetchSize=1000`
-        );
-
-      } catch (e) {
-
-        if (e.message && e.message.includes('404')) {
-
-          const rowCount = state.results.length;
-
-          addLog('OK', `Stream ended — ${rowCount} rows.`);
-
-          updateHistoryStatus(opHandle, 'ok');
-
-          break;
-        }
-
-        addLog('ERR', parseFlinkError(e.message), e.message);
-
-        break;
-      }
-
-      if (result.nextResultUri) {
-
-        const parsed = extractToken(result.nextResultUri);
-
-        if (parsed !== null) token = parsed;
-
-      } else {
-
-        token++;
-      }
-
-      if (result.resultType === 'EOS' || result.resultType === 'PAYLOAD_EOS') {
-
+    // ── 4. Fetch results (RUNNING or FINISHED) ────────────────────────────
+    // Use nextResultUri from previous response when available (server-authoritative).
+    // Fall back to constructing the URL from our token counter.
+    let result = null;
+    const fetchPath = _nextUri ? nextUrl(_nextUri) : resultUrl(token);
+    try {
+      result = await api('GET', fetchPath);
+      consecutiveErrors = 0;
+    } catch (e) {
+      const msg = e.message || '';
+      // 404 = stream has ended naturally (valid EOS signal)
+      if (msg.includes('404') || msg.includes('Not Found')) {
         const rowCount = state.results.length;
-
-        addLog('OK', `Query complete — ${rowCount} rows.`);
-
+        addLog('OK', `Stream ended — ${rowCount} row${rowCount !== 1 ? 's' : ''}.`);
         updateHistoryStatus(opHandle, 'ok');
+        perfQueryEnd(rowCount);
+        break;
+      }
+      consecutiveErrors++;
+      if (consecutiveErrors >= 5) {
+        addLog('ERR', 'Result fetch failed repeatedly: ' + parseFlinkError(msg));
+        break;
+      }
+      polls++;
+      continue;
+    }
 
-        toast(`Done — ${rowCount} rows`, 'ok');
+    // ── 4a. Update next fetch pointer ────────────────────────────────────
+    // nextResultUri is the server-authoritative pointer to the next page.
+    _nextUri = result.nextResultUri || null;
+    if (_nextUri) {
+      const parsed = extractToken(_nextUri);
+      if (parsed !== null) token = parsed;
+      else token++;
+    } else {
+      token++;
+    }
 
+    // ── 4b. Capture column schema ─────────────────────────────────────────
+    // Do this BEFORE checking EOS so schema is available even on final page
+    if (result.results?.columns?.length > 0) {
+      state.resultColumns = result.results.columns;
+    }
+
+    // ── 4c. Normalise rows — handle all known Flink result formats ─────────
+    const rawData = result.results?.data        // standard Flink 1.16-1.19
+                 || result.data                 // some gateway versions flatten
+                 || [];
+    const newRows = rawData.map(row => {
+      if (row == null) return { fields: [] };
+      // { kind: "INSERT", fields: [...] }  — Flink 1.17+ JSON format
+      if (!Array.isArray(row) && row.fields !== undefined)
+        return { fields: Array.isArray(row.fields) ? row.fields : Object.values(row.fields) };
+      // Compact array: [ val1, val2, ... ]
+      if (Array.isArray(row)) return { fields: row };
+      // Plain object without fields key
+      return { fields: Object.values(row) };
+    });
+
+    // ── 4d. EOS detection ────────────────────────────────────────────────
+    // Per spec: resultType=EOS means all data has been fetched.
+    // resultType=PAYLOAD means more data may follow (check nextResultUri).
+    // When opStatus=FINISHED but resultType=PAYLOAD, keep fetching — there are
+    // still pages to read. Only stop when we actually receive EOS.
+    const isEOS = result.resultType === 'EOS'
+               || (!result.nextResultUri && opStatus === 'FINISHED' && result.resultType !== 'PAYLOAD');
+
+    // ── 4e. Process rows ──────────────────────────────────────────────────
+    if (newRows.length > 0) {
+      // Detect INSERT INTO result: single column named "Job ID"
+      const isJobIdResult = state.resultColumns.length === 1 &&
+        /^job.?id$/i.test(state.resultColumns[0]?.name || '');
+
+      if (isJobIdResult) {
+        const jobId = String(newRows[0]?.fields?.[0] ?? '').trim();
+        addLog('OK', `Job submitted — Job ID: ${jobId}`);
+        addLog('INFO', 'Switching to Job Graph…');
+        const jgBtn = document.getElementById('jobgraph-tab-btn');
+        if (jgBtn) switchResultTab('jobgraph', jgBtn);
+        setTimeout(async () => {
+          await refreshJobGraphList();
+          if (jobId) {
+            const sel = document.getElementById('jg-job-select');
+            if (sel) { sel.value = jobId; loadJobGraph(jobId); }
+          }
+        }, 800);
+        updateHistoryStatus(opHandle, 'ok');
+        perfQueryEnd(0);
         break;
       }
 
-      if (result.results?.columns) {
-
-        state.resultColumns = result.results.columns;
+      // Regular SELECT / SHOW / DESCRIBE — stream into results table
+      if (firstRows) {
+        firstRows = false;
+        showResultsTab();
+        addLog('INFO', 'Data arriving — streaming rows into Results tab…');
       }
-
-      const rawData = result.results?.data || [];
-
-      const newRows = rawData.map(row => {
-
-        if (row && typeof row === 'object' && !Array.isArray(row) && row.fields !== undefined) {
-
-          return { fields: row.fields };
-
-        }
-
-        return { fields: row };
-      });
-
-      if (newRows.length > 0) {
-
-        if (firstRows) {
-
-          firstRows = false;
-
-          const btn =
-              document.getElementById('results-tab-btn')
-              || document.querySelector('[data-tab="data"]');
-
-          if (btn) switchResultTab('data', btn);
-        }
-
-        state.results.push(...newRows);
-
+      emptyPolls = 0;
+      const remaining = MAX_ROWS - state.results.length;
+      if (remaining > 0) {
+        state.results.push(...newRows.slice(0, remaining));
         renderResults();
+        const badge = document.getElementById('result-row-badge');
+        if (badge) badge.textContent = state.results.length > 999 ? '999+' : state.results.length;
       }
+      if (state.results.length >= MAX_ROWS && !state._maxRowsWarned) {
+        state._maxRowsWarned = true;
+        addLog('WARN', `Display capped at ${MAX_ROWS.toLocaleString()} rows. Press Stop to export.`);
+      }
+    } else if (opStatus === 'RUNNING') {
+      emptyPolls++;
+      if (emptyPolls > 0 && emptyPolls % 20 === 0) {
+        addLog('INFO', `Streaming… ${state.results.length} rows so far. Press Stop to end.`);
+      }
+    }
 
-      if (opStatus === 'FINISHED') {
-
-        const rowCount = state.results.length;
-
-        addLog('OK', `Query finished — ${rowCount} rows`);
-
-        updateHistoryStatus(opHandle, 'ok');
-
+    // ── 4f. EOS → done ───────────────────────────────────────────────────
+    // CRITICAL: Do NOT exit just because opStatus=FINISHED.
+    // When Flink finishes a batch query it sets status=FINISHED but the result
+    // pages may not all have been fetched yet. Keep polling until resultType=EOS.
+    // For continuous streaming queries (SELECT * FROM kafka) status stays RUNNING
+    // indefinitely — only the user pressing Stop ends it.
+    if (isEOS) {
+      const rowCount = state.results.length;
+      if (rowCount === 0 && firstRows) {
+        addLog('OK', 'Statement executed successfully (no rows returned).');
+      } else {
+        addLog('OK', `Query complete — ${rowCount} row${rowCount !== 1 ? 's' : ''}.`);
         toast(`Done — ${rowCount} rows`, 'ok');
-
-        break;
       }
+      updateHistoryStatus(opHandle, 'ok');
+      perfQueryEnd(rowCount);
+      break;
     }
 
     polls++;
   }
 
   state.currentOp = null;
+  if (stopBtn) stopBtn.style.display = 'none';
 }
 
+// ── Token extraction ──────────────────────────────────────────────────────────
 function extractToken(uri) {
   if (!uri) return null;
   const m = uri.match(/\/result\/(\d+)/);
   return m ? parseInt(m[1], 10) : null;
 }
 
+// ── Cancel ────────────────────────────────────────────────────────────────────
 async function cancelOperation() {
-
   if (!state.currentOp) return;
-
   const { opHandle } = state.currentOp;
-
   state.currentOp = null;
-
   try {
-
     await api('DELETE', `/v1/sessions/${state.activeSession}/operations/${opHandle}/cancel`);
-
     addLog('WARN', `Operation ${shortHandle(opHandle)} cancelled`);
-
+    toast('Operation cancelled', 'info');
   } catch (e) {
-
     addLog('WARN', `Cancel request sent (${e.message})`);
   }
-
+  const stopBtn = document.getElementById('stop-btn');
+  if (stopBtn) stopBtn.style.display = 'none';
   setExecuting(false);
 }
 
 function setExecuting(val) {
-
   const el = document.getElementById('status-exec');
-
   if (el) el.style.display = val ? 'flex' : 'none';
 }
 
@@ -350,7 +407,7 @@ async function executeForData(sql) {
     if (['NOT_READY','PENDING','INITIALIZED','ACCEPTED'].includes(s)) continue;
     if (s === 'FINISHED' || s === 'RUNNING') {
       const result = await api('GET',
-          `/v1/sessions/${state.activeSession}/operations/${opHandle}/result/0?rowFormat=JSON&maxFetchSize=200`);
+        `/v1/sessions/${state.activeSession}/operations/${opHandle}/result/0?rowFormat=JSON&maxFetchSize=200`);
       const cols = (result.results?.columns || []).map(c => c.name);
       const rows = (result.results?.data || []).map(r => {
         const f = r?.fields ?? r;

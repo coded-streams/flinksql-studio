@@ -651,6 +651,9 @@ const _ndChartData = { recIn: [], recOut: [], bytIn: [], bytOut: [] };
 function _drawNdChart() {
   const canvas = document.getElementById('nd-throughput-canvas');
   if (!canvas) return;
+  // Ensure canvas has correct pixel dimensions
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width > 0) canvas.width = Math.round(rect.width);
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
@@ -733,11 +736,13 @@ async function _pollEventStream() {
   try {
     // Fetch all available metrics for this vertex using the two-step list+fetch pattern
     // First get the metric name list if we don't have it
-    if (!_ndState._metricNames) {
+    // Refresh metric names every 5s or when empty (vertex may not be ready yet)
+    if (!_ndState._metricNames || _ndState._metricNames.length === 0) {
       const listResp = await jmApi(`/jobs/${jid}/vertices/${nid}/metrics`);
-      _ndState._metricNames = (listResp && Array.isArray(listResp))
+      const names = (listResp && Array.isArray(listResp))
         ? listResp.map(m => m.id).filter(Boolean)
         : [];
+      if (names.length > 0) _ndState._metricNames = names;  // only cache when we have names
     }
 
     // Always fetch the key throughput metrics
@@ -828,7 +833,10 @@ function _addEventRow({ recInPs, recOutPs, bytInPs, bytOutPs, totalIn, totalOut,
   if (bp > 0)
     parts.push(`<span class="nd-event-dir" style="color:var(--red)">⚠ BP</span><span class="nd-event-val" style="color:var(--red)">${bp}% backpressure  busy:${busy}%</span>`);
 
-  if (parts.length === 0) return;
+  // Even if no throughput, show a heartbeat tick so user knows streaming is active
+  if (parts.length === 0) {
+    parts.push(`<span class="nd-event-dir" style="color:var(--text3);">●</span><span class="nd-event-val" style="color:var(--text3);">idle — waiting for records</span>`);
+  }
 
   const row = document.createElement('div');
   row.className = 'nd-event-row';

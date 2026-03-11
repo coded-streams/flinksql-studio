@@ -14,8 +14,13 @@ const perf = {
 };
 
 // Called when a query starts executing
-function perfQueryStart() {
+function perfQueryStart(sql) {
   perf.queryStart = Date.now();
+  // Add a 'running' entry immediately so history shows it during execution
+  const sqlText = sql || document.getElementById('sql-editor')?.value?.trim().replace(/\s+/g,' ').slice(0, 55) || '';
+  perf.timings.unshift({ sql: sqlText, ms: 0, rows: 0, ts: Date.now(), status: 'RUNNING' });
+  if (perf.timings.length > 20) perf.timings.pop();
+  renderTimingBars();
 }
 
 // Called when a query finishes
@@ -26,10 +31,17 @@ function perfQueryEnd(rowCount) {
   perf.lastQueryMs = ms;
   perf.queryStart  = null;
 
-  // Record in timing history
-  const sql = document.getElementById('sql-editor').value.trim().replace(/\s+/g,' ').slice(0, 55);
-  perf.timings.unshift({ sql, ms, rows: rowCount });
-  if (perf.timings.length > 10) perf.timings.pop();
+  // Update the RUNNING entry added by perfQueryStart, or add new if not found
+  const runningIdx = perf.timings.findIndex(t => t.status === 'RUNNING');
+  if (runningIdx >= 0) {
+    perf.timings[runningIdx].ms     = ms;
+    perf.timings[runningIdx].rows   = rowCount;
+    perf.timings[runningIdx].status = 'FINISHED';
+  } else {
+    const sql = document.getElementById('sql-editor')?.value?.trim().replace(/\s+/g,' ').slice(0, 55) || '';
+    perf.timings.unshift({ sql, ms, rows: rowCount, ts: Date.now(), status: 'FINISHED' });
+    if (perf.timings.length > 20) perf.timings.pop();
+  }
 
   // Update KPIs
   updateKpiQueryTime(ms, rowCount);
@@ -134,24 +146,27 @@ async function refreshPerf() {
     renderJobList(jobsResp.jobs);
 
     // For running jobs, fetch metrics
+    // IMPORTANT: Flink 1.19 job-level aggregate metrics need ?agg=sum which is unreliable.
+    // Always sum vertex-level metrics directly — this is the authoritative source.
     const running = jobsResp.jobs.filter(j => j.state === 'RUNNING');
     let totalRecIn = 0, totalRecOut = 0;
     for (const job of running.slice(0, 5)) {
-      const metrics = await jmApi(`/jobs/${job.jid}/metrics?get=numRecordsInPerSecond,numRecordsOutPerSecond`);
-      if (metrics) {
-        metrics.forEach(m => {
-          if (m.id === 'numRecordsInPerSecond')  totalRecIn  += parseFloat(m.value || 0);
-          if (m.id === 'numRecordsOutPerSecond') totalRecOut += parseFloat(m.value || 0);
-        });
-      }
-      // Backpressure — use job vertices
       const detail = await jmApi(`/jobs/${job.jid}`);
       if (detail && detail.vertices) {
         let maxBp = 0;
-        detail.vertices.forEach(v => {
-          const bp = v.metrics?.['backPressuredTimeMsPerSecond'] || 0;
-          maxBp = Math.max(maxBp, bp);
-        });
+        for (const v of detail.vertices.slice(0, 8)) {
+          const vm = await jmApi(
+            `/jobs/${job.jid}/vertices/${v.id}/metrics?get=numRecordsInPerSecond,numRecordsOutPerSecond,backPressuredTimeMsPerSecond`
+          );
+          if (vm && Array.isArray(vm)) {
+            vm.forEach(m => {
+              const val = parseFloat(m.value || 0);
+              if (m.id === 'numRecordsInPerSecond')        totalRecIn  += val;
+              if (m.id === 'numRecordsOutPerSecond')       totalRecOut += val;
+              if (m.id === 'backPressuredTimeMsPerSecond') maxBp = Math.max(maxBp, val);
+            });
+          }
+        }
         const bpPct = Math.min(100, Math.round(maxBp / 10));
         setGauge('gauge-bp-arc', 'gauge-bp-val', bpPct, '%',
           bpPct > 70 ? 'var(--red)' : bpPct > 30 ? 'var(--yellow)' : 'var(--green)');
@@ -173,6 +188,33 @@ async function refreshPerf() {
     setKpiCounter('kpi-rec-out', 'kpi-rec-out-delta', recOut, prevOut);
     perf.prevRecIn  = recIn;
     perf.prevRecOut = recOut;
+  }
+
+  // Cluster resources (new panel)
+  if (typeof refreshClusterResources === 'function') refreshClusterResources();
+  // Job comparison chart (new panel)
+  if (typeof updateJobCompare === 'function') updateJobCompare();
+  // Update throughput badge
+  if (perf.sparkRecIn.length > 0) {
+    const badge = document.getElementById('ps-throughput-badge');
+    const lastIn = perf.sparkRecIn[perf.sparkRecIn.length-1] || 0;
+    if (badge) badge.textContent = lastIn > 0 ? Math.round(lastIn)+'/s' : '';
+  }
+  // Update queries badge
+  const qBadge = document.getElementById('ps-queries-badge');
+  if (qBadge) qBadge.textContent = perf.timings.length > 0 ? perf.timings.length : '';
+  // Update jobs badge
+  if (jobsResp && jobsResp.jobs) {
+    const runCount = jobsResp.jobs.filter(j=>j.state==='RUNNING').length;
+    const jBadge = document.getElementById('ps-jobs-badge');
+    if (jBadge) jBadge.textContent = runCount > 0 ? runCount+' running' : jobsResp.jobs.length+' total';
+    const jcBadge = document.getElementById('ps-jobgraph-badge');
+    if (jcBadge) jcBadge.textContent = runCount > 0 ? runCount+' live' : '';
+  }
+
+  // Auto-start live refresh when there are running jobs
+  if (!perf.liveRunning && running && running.length > 0) {
+    togglePerfLive();   // start live if we see running jobs and it's not already on
   }
 
   // Checkpoint + state metrics for first running job
@@ -272,19 +314,25 @@ function renderTimingBars() {
   }
   const maxMs = Math.max(...data.map(t => t.ms));
   const colors = ['var(--accent)', 'var(--blue)', 'var(--accent3)', 'var(--green)'];
+  const maxFinishedMs = Math.max(...data.filter(t=>t.status!=='RUNNING').map(t=>t.ms||1), 1);
   list.innerHTML = data.map((t, i) => {
-    const pct  = Math.round((t.ms / maxMs) * 100);
-    const col  = colors[i % colors.length];
-    const label = t.ms < 1000 ? t.ms + 'ms' : (t.ms/1000).toFixed(2) + 's';
+    const isRunning = t.status === 'RUNNING';
+    const pct  = isRunning ? 30 : Math.round(((t.ms||0) / maxFinishedMs) * 100);
+    const col  = isRunning ? 'var(--accent)' : colors[i % colors.length];
+    const dur  = isRunning ? '…running' : (t.ms < 1000 ? t.ms + 'ms' : (t.ms/1000).toFixed(2) + 's');
+    const rowsLabel = isRunning ? '' : ` · ${(t.rows||0).toLocaleString()} rows`;
     const sqlShort = (t.sql || '').slice(0, 70) + ((t.sql||'').length > 70 ? '…' : '');
+    const barStyle = isRunning
+      ? `width:${pct}%;background:var(--accent);opacity:0.7;animation:pulse-bar 1.2s ease-in-out infinite alternate;`
+      : `width:${pct}%;background:${col};`;
     return `
-      <div class="timing-row">
+      <div class="timing-row" style="${isRunning?'border-left:2px solid var(--accent);':''}">
         <div class="timing-meta">
           <span class="timing-sql" title="${escHtml(t.sql)}">${escHtml(sqlShort)}</span>
-          <span class="timing-ms" style="color:${col}">${label} · ${(t.rows||0).toLocaleString()} rows</span>
+          <span class="timing-ms" style="color:${col}">${dur}${rowsLabel}</span>
         </div>
         <div class="timing-bar-wrap">
-          <div class="timing-bar" style="width:${pct}%;background:${col};"></div>
+          <div class="timing-bar" style="${barStyle}"></div>
         </div>
       </div>`;
   }).join('');

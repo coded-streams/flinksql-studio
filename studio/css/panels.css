@@ -597,3 +597,185 @@
   font-size: 11px;
   text-align: right;
 }
+
+
+/* ── Job Graph View Tabs (DAG / Timeline) ─────────────────────── */
+.jg-view-tabs { display:flex; gap:2px; }
+.jg-view-tab {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: var(--mono);
+  transition: background 0.15s, color 0.15s;
+}
+.jg-view-tab:hover { background: var(--bg4); color: var(--text1); }
+.jg-view-tab.active { background: rgba(0,212,170,0.12); border-color: rgba(0,212,170,0.4); color: var(--accent); }
+
+/* ── Vertex Timeline Chart ─────────────────────────────────────── */
+#jg-timeline-wrap { background: var(--bg1); }
+.vtl-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  margin-bottom: 6px;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 2px 0;
+  transition: background 0.1s;
+}
+.vtl-row:hover { background: var(--bg3); }
+.vtl-label {
+  font-size: 10px;
+  color: var(--text1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 8px;
+}
+.vtl-bar-wrap {
+  position: relative;
+  height: 24px;
+  background: var(--bg3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.vtl-segment {
+  position: absolute;
+  top: 4px;
+  height: 16px;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 9px;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  transition: filter 0.1s;
+}
+.vtl-segment:hover { filter: brightness(1.2); }
+.vtl-axis {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  margin-bottom: 10px;
+}
+.vtl-axis-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text3);
+}
+.vtl-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.vtl-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text2);
+}
+.vtl-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Vertex status detail panel */
+.vd-status-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.vd-status-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-family: var(--mono);
+  min-width: 90px;
+  gap: 2px;
+  transition: transform 0.1s;
+}
+.vd-status-seg:hover { transform: translateY(-1px); }
+.vd-status-name { font-weight: 600; color: rgba(255,255,255,0.9); }
+.vd-status-dur  { font-size: 9px; color: rgba(255,255,255,0.65); }
+.vd-arrow { color: var(--text3); font-size: 14px; display: flex; align-items: center; }
+
+/* ── Cluster Resource Cards ────────────────────────────────────── */
+.res-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+}
+.res-card-label { font-size: 10px; color: var(--text2); }
+.res-card-val { font-size: 20px; font-weight: 700; color: var(--text0); font-family: var(--mono); }
+.res-card-sub { font-size: 9px; color: var(--text3); }
+
+/* ── Job Resource Comparison Chart ────────────────────────────── */
+#job-compare-canvas { image-rendering: pixelated; }
+#job-compare-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  color: var(--text2);
+  font-family: var(--mono);
+}
+#job-compare-legend .legend-dot {
+  width: 12px;
+  height: 3px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* ── Section bg colors (both themes) ─────────────────────────── */
+.perf-section {
+  background: var(--bg1);
+  border-radius: 4px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.perf-section:hover { border-color: var(--border2); }
+.perf-section-hdr {
+  background: var(--bg2);
+  border-bottom: 1px solid transparent;
+  transition: background 0.12s;
+}
+.perf-section-hdr:hover { background: var(--bg3); color: var(--text0); }
+body.theme-light .perf-section { background: var(--bg1); border-color: var(--border); }
+body.theme-light .perf-section-hdr { background: var(--bg2); color: var(--text1); }
+body.theme-light .perf-section-hdr:hover { background: var(--bg3); color: var(--text0); }
+
+/* ── Report modal overlay ────────────────────────────────────── */
+#report-name-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── Running query bar animation ─────────────────────────────── */
+@keyframes pulse-bar {
+  from { opacity: 0.5; }
+  to   { opacity: 1.0; }
+}
