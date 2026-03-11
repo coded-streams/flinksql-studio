@@ -1,192 +1,192 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlinkSQL Studio — Documentation</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-  <style>
-    :root {
-      --bg0:#090c12; --bg1:#0d1117; --bg2:#131920; --bg3:#1a2130;
-      --border:#1e2d3d; --border2:#253348;
-      --accent:#00d4aa; --accent2:#00a884; --accent3:#7ee8d0;
-      --blue:#4fa3e0; --purple:#9b72cf; --orange:#f0a500; --red:#e05c5c; --green:#3fb950;
-      --text0:#f0f6fc; --text1:#c9d1d9; --text2:#8b949e; --text3:#4a5568;
-      --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
-      --logo-bg:#0c1018; --logo-clip:polygon(0 0,80% 0,100% 20%,100% 100%,20% 100%,0 80%);
-      --radius:8px; --nav-h:58px;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    html{scroll-behavior:smooth}
-    body{font-family:var(--sans);background:var(--bg1);color:var(--text1);line-height:1.7;font-size:15px}
-    a{color:var(--accent);text-decoration:none}
-    a:hover{color:var(--accent3);text-decoration:underline}
-    ::-webkit-scrollbar{width:6px;height:6px}
-    ::-webkit-scrollbar-track{background:var(--bg1)}
-    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlinkSQL Studio — Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg0:#090c12; --bg1:#0d1117; --bg2:#131920; --bg3:#1a2130;
+  --border:#1e2d3d; --border2:#253348;
+  --accent:#00d4aa; --accent2:#00a884; --accent3:#7ee8d0;
+  --blue:#4fa3e0; --purple:#9b72cf; --orange:#f0a500; --red:#e05c5c; --green:#3fb950;
+  --text0:#f0f6fc; --text1:#c9d1d9; --text2:#8b949e; --text3:#4a5568;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  --logo-bg:#0c1018; --logo-clip:polygon(0 0,80% 0,100% 20%,100% 100%,20% 100%,0 80%);
+  --radius:8px; --nav-h:58px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg1);color:var(--text1);line-height:1.7;font-size:15px}
+a{color:var(--accent);text-decoration:none}
+a:hover{color:var(--accent3);text-decoration:underline}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
-    /* NAV */
-    .nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
-    .nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}
-    .logo-mark{width:26px;height:26px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.35);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .logo-text{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text0);letter-spacing:-0.2px}
-    .logo-ver{font-size:9px;color:var(--text3);margin-left:4px;font-weight:400}
-    .nav-links{display:flex;align-items:center;gap:2px;list-style:none;flex:1}
-    .nav-links a{font-size:13px;color:var(--text2);padding:6px 11px;border-radius:5px;transition:color .15s,background .15s;white-space:nowrap}
-    .nav-links a:hover{color:var(--text0);background:var(--bg3);text-decoration:none}
-    .nav-links a.active{color:var(--accent)}
-    .nav-right{display:flex;align-items:center;gap:8px;margin-left:auto}
-    .nav-btn{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text1);cursor:pointer;transition:all .15s;text-decoration:none}
-    .nav-btn:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
-    .nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
-    .nav-btn.primary:hover{background:var(--accent3);color:#000}
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
+.nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}
+.logo-mark{width:26px;height:26px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.35);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-text{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text0);letter-spacing:-0.2px}
+.logo-ver{font-size:9px;color:var(--text3);margin-left:4px;font-weight:400}
+.nav-links{display:flex;align-items:center;gap:2px;list-style:none;flex:1}
+.nav-links a{font-size:13px;color:var(--text2);padding:6px 11px;border-radius:5px;transition:color .15s,background .15s;white-space:nowrap}
+.nav-links a:hover{color:var(--text0);background:var(--bg3);text-decoration:none}
+.nav-links a.active{color:var(--accent)}
+.nav-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.nav-btn{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text1);cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+.nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+.nav-btn.primary:hover{background:var(--accent3);color:#000}
 
-    /* HERO */
-    .hero{background:var(--bg0);padding:88px 32px 72px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
-    .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(0,212,170,0.07) 0%,transparent 70%);pointer-events:none}
-    .hero-logo{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:24px}
-    .hero-logo-mark{width:52px;height:52px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.4);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center}
-    .hero-title{font-family:var(--mono);font-size:46px;font-weight:700;color:var(--text0);letter-spacing:-2px;line-height:1.1}
-    .hero-title span{color:var(--accent)}
-    .hero-sub{font-size:17px;color:var(--text2);max-width:580px;margin:16px auto 0;line-height:1.8}
-    .hero-badges{display:flex;gap:8px;justify-content:center;margin-top:26px;flex-wrap:wrap}
-    .badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--mono);color:var(--text2)}
-    .badge.green{border-color:rgba(63,185,80,0.4);color:var(--green);background:rgba(63,185,80,0.06)}
-    .badge.teal{border-color:rgba(0,212,170,0.4);color:var(--accent);background:rgba(0,212,170,0.06)}
-    .badge.blue{border-color:rgba(79,163,224,0.4);color:var(--blue);background:rgba(79,163,224,0.06)}
-    .hero-cta{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-decoration:none;border:1px solid transparent}
-    .btn-primary{background:var(--accent);color:#000}
-    .btn-primary:hover{background:var(--accent3);text-decoration:none;color:#000}
-    .btn-outline{background:transparent;border-color:var(--border2);color:var(--text1)}
-    .btn-outline:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
+/* HERO */
+.hero{background:var(--bg0);padding:88px 32px 72px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(0,212,170,0.07) 0%,transparent 70%);pointer-events:none}
+.hero-logo{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:24px}
+.hero-logo-mark{width:52px;height:52px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.4);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center}
+.hero-title{font-family:var(--mono);font-size:46px;font-weight:700;color:var(--text0);letter-spacing:-2px;line-height:1.1}
+.hero-title span{color:var(--accent)}
+.hero-sub{font-size:17px;color:var(--text2);max-width:580px;margin:16px auto 0;line-height:1.8}
+.hero-badges{display:flex;gap:8px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border2);padding:4px 12px;border-radius:20px;font-size:11px;font-family:var(--mono);color:var(--text2)}
+.badge.green{border-color:rgba(63,185,80,0.4);color:var(--green);background:rgba(63,185,80,0.06)}
+.badge.teal{border-color:rgba(0,212,170,0.4);color:var(--accent);background:rgba(0,212,170,0.06)}
+.badge.blue{border-color:rgba(79,163,224,0.4);color:var(--blue);background:rgba(79,163,224,0.06)}
+.hero-cta{display:flex;gap:12px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;text-decoration:none;border:1px solid transparent}
+.btn-primary{background:var(--accent);color:#000}
+.btn-primary:hover{background:var(--accent3);text-decoration:none;color:#000}
+.btn-outline{background:transparent;border-color:var(--border2);color:var(--text1)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
 
-    /* LAYOUT */
-    .page{display:flex;max-width:1280px;margin:0 auto}
+/* LAYOUT */
+.page{display:flex;max-width:1280px;margin:0 auto}
 
-    /* TOC */
-    .toc{width:232px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:28px 0 28px 20px;border-right:1px solid var(--border)}
-    .toc-section{margin-bottom:20px}
-    .toc-label{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:5px;display:block}
-    .toc a{display:block;font-size:13px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}
-    .toc a:hover{color:var(--text0);text-decoration:none;border-left-color:var(--border2)}
-    .toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
+/* TOC */
+.toc{width:232px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:28px 0 28px 20px;border-right:1px solid var(--border)}
+.toc-section{margin-bottom:20px}
+.toc-label{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:5px;display:block}
+.toc a{display:block;font-size:13px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}
+.toc a:hover{color:var(--text0);text-decoration:none;border-left-color:var(--border2)}
+.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
 
-    /* CONTENT */
-    .content{flex:1;min-width:0;padding:44px 52px 96px}
-    .doc-section{margin-bottom:68px}
-    h2{font-size:24px;font-weight:700;color:var(--text0);letter-spacing:-0.5px;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
-    h2 .si{width:30px;height:30px;border-radius:7px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-    h3{font-size:16px;font-weight:600;color:var(--text0);margin:28px 0 10px}
-    h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 7px}
-    p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
-    ul.doc-ul{margin:6px 0 14px 20px}
-    ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}
-    ul.doc-ul li strong{color:var(--text1)}
+/* CONTENT */
+.content{flex:1;min-width:0;padding:44px 52px 96px}
+.doc-section{margin-bottom:68px}
+h2{font-size:24px;font-weight:700;color:var(--text0);letter-spacing:-0.5px;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+h2 .si{width:30px;height:30px;border-radius:7px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+h3{font-size:16px;font-weight:600;color:var(--text0);margin:28px 0 10px}
+h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 7px}
+p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
+ul.doc-ul{margin:6px 0 14px 20px}
+ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}
+ul.doc-ul li strong{color:var(--text1)}
 
-    /* CODE */
-    code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
-    pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:18px 22px;overflow-x:auto;margin:14px 0;position:relative}
-    pre code{background:none;border:none;padding:0;font-size:13px;color:var(--text1);line-height:1.7}
-    .pre-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block}
+/* CODE */
+code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
+pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:18px 22px;overflow-x:auto;margin:14px 0;position:relative}
+pre code{background:none;border:none;padding:0;font-size:13px;color:var(--text1);line-height:1.7}
+.pre-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block}
 
-    /* CALLOUTS */
-    .callout{border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13px;line-height:1.7;display:flex;gap:11px;align-items:flex-start}
-    .callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
-    .callout-body{flex:1}
-    .callout-body strong{display:block;margin-bottom:3px;font-size:13px}
-    .callout.tip{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--text1)}
-    .callout.tip strong{color:var(--accent)}
-    .callout.warn{background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2);color:var(--text1)}
-    .callout.warn strong{color:var(--orange)}
-    .callout.info{background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2);color:var(--text1)}
-    .callout.info strong{color:var(--blue)}
-    .callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2);color:var(--text1)}
-    .callout.danger strong{color:var(--red)}
+/* CALLOUTS */
+.callout{border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13px;line-height:1.7;display:flex;gap:11px;align-items:flex-start}
+.callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.callout-body{flex:1}
+.callout-body strong{display:block;margin-bottom:3px;font-size:13px}
+.callout.tip{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);color:var(--text1)}
+.callout.tip strong{color:var(--accent)}
+.callout.warn{background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2);color:var(--text1)}
+.callout.warn strong{color:var(--orange)}
+.callout.info{background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2);color:var(--text1)}
+.callout.info strong{color:var(--blue)}
+.callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2);color:var(--text1)}
+.callout.danger strong{color:var(--red)}
 
-    /* FEATURE GRID */
-    .feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:13px;margin:18px 0}
-    .feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .15s,transform .15s;position:relative;overflow:hidden}
-    .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .15s}
-    .feature-card:hover{border-color:var(--border2);transform:translateY(-1px)}
-    .feature-card:hover::before{opacity:1}
-    .fci{font-size:20px;margin-bottom:8px;display:block}
-    .feature-card h3{margin:0 0 5px;color:var(--text0);font-size:14px}
-    .feature-card p{font-size:13px;margin:0;color:var(--text2);line-height:1.6}
+/* FEATURE GRID */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:13px;margin:18px 0}
+.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .15s,transform .15s;position:relative;overflow:hidden}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .15s}
+.feature-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.feature-card:hover::before{opacity:1}
+.fci{font-size:20px;margin-bottom:8px;display:block}
+.feature-card h3{margin:0 0 5px;color:var(--text0);font-size:14px}
+.feature-card p{font-size:13px;margin:0;color:var(--text2);line-height:1.6}
 
-    /* TABLES */
-    .table-wrap{overflow-x:auto;margin:14px 0;border-radius:var(--radius);border:1px solid var(--border)}
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    thead tr{background:var(--bg2)}
-    th{text-align:left;padding:9px 13px;color:var(--text0);font-weight:600;font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
-    td{padding:8px 13px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
-    tr:last-child td{border-bottom:none}
-    tr:hover td{background:rgba(255,255,255,0.02)}
-    td code{font-size:11px}
+/* TABLES */
+.table-wrap{overflow-x:auto;margin:14px 0;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--bg2)}
+th{text-align:left;padding:9px 13px;color:var(--text0);font-weight:600;font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:8px 13px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,0.02)}
+td code{font-size:11px}
 
-    /* TABS */
-    .tab-group{margin:18px 0}
-    .tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}
-    .tab-btn{font-family:var(--mono);font-size:12px;padding:7px 15px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
-    .tab-btn.active{background:var(--bg0);border-color:var(--border);color:var(--accent);border-bottom-color:var(--bg0)}
-    .tab-btn:hover:not(.active){color:var(--text1);background:var(--bg3)}
-    .tab-pane{display:none}
-    .tab-pane.active{display:block}
+/* TABS */
+.tab-group{margin:18px 0}
+.tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}
+.tab-btn{font-family:var(--mono);font-size:12px;padding:7px 15px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
+.tab-btn.active{background:var(--bg0);border-color:var(--border);color:var(--accent);border-bottom-color:var(--bg0)}
+.tab-btn:hover:not(.active){color:var(--text1);background:var(--bg3)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
 
-    /* MERMAID */
-    .mermaid-wrap{background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin:14px 0;overflow-x:auto;display:flex;justify-content:center}
-    .mermaid{max-width:100%}
+/* MERMAID */
+.mermaid-wrap{background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin:14px 0;overflow-x:auto;display:flex;justify-content:center}
+.mermaid{max-width:100%}
 
-    /* STEPS */
-    .steps{margin:18px 0}
-    .step{display:flex;gap:15px;margin-bottom:26px;position:relative}
-    .step::before{content:'';position:absolute;left:16px;top:38px;width:2px;bottom:-6px;background:var(--border)}
-    .step:last-child::before{display:none}
-    .step-num{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;z-index:1}
-    .step-body{flex:1;padding-top:5px}
-    .step-body h4{margin-top:0;margin-bottom:5px}
+/* STEPS */
+.steps{margin:18px 0}
+.step{display:flex;gap:15px;margin-bottom:26px;position:relative}
+.step::before{content:'';position:absolute;left:16px;top:38px;width:2px;bottom:-6px;background:var(--border)}
+.step:last-child::before{display:none}
+.step-num{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;z-index:1}
+.step-body{flex:1;padding-top:5px}
+.step-body h4{margin-top:0;margin-bottom:5px}
 
-    /* TAGS */
-    .tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-right:4px}
-    .tag.setup{background:rgba(79,163,224,0.1);color:var(--blue);border:1px solid rgba(79,163,224,0.25)}
-    .tag.config{background:rgba(155,114,207,0.1);color:var(--purple);border:1px solid rgba(155,114,207,0.25)}
-    .tag.ddl{background:rgba(0,212,170,0.1);color:var(--accent);border:1px solid rgba(0,212,170,0.25)}
-    .tag.window{background:rgba(240,165,0,0.1);color:var(--orange);border:1px solid rgba(240,165,0,0.25)}
-    .tag.connector{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
-    .tag.pattern{background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.25)}
-    .tag.perf{background:rgba(240,165,0,0.08);color:var(--orange);border:1px solid rgba(240,165,0,0.2)}
-    .tag.debug{background:rgba(224,92,92,0.08);color:var(--red);border:1px solid rgba(224,92,92,0.2)}
+/* TAGS */
+.tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-right:4px}
+.tag.setup{background:rgba(79,163,224,0.1);color:var(--blue);border:1px solid rgba(79,163,224,0.25)}
+.tag.config{background:rgba(155,114,207,0.1);color:var(--purple);border:1px solid rgba(155,114,207,0.25)}
+.tag.ddl{background:rgba(0,212,170,0.1);color:var(--accent);border:1px solid rgba(0,212,170,0.25)}
+.tag.window{background:rgba(240,165,0,0.1);color:var(--orange);border:1px solid rgba(240,165,0,0.25)}
+.tag.connector{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
+.tag.pattern{background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.25)}
+.tag.perf{background:rgba(240,165,0,0.08);color:var(--orange);border:1px solid rgba(240,165,0,0.2)}
+.tag.debug{background:rgba(224,92,92,0.08);color:var(--red);border:1px solid rgba(224,92,92,0.2)}
 
-    /* DEPLOY */
-    .deploy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:13px;margin:18px 0}
-    .deploy-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
-    .deploy-card-icon{font-size:26px;margin-bottom:9px;display:block}
-    .deploy-card h3{margin:0 0 7px;font-size:15px;color:var(--text0)}
-    .deploy-card p{font-size:13px;margin-bottom:11px;color:var(--text2)}
+/* DEPLOY */
+.deploy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:13px;margin:18px 0}
+.deploy-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.deploy-card-icon{font-size:26px;margin-bottom:9px;display:block}
+.deploy-card h3{margin:0 0 7px;font-size:15px;color:var(--text0)}
+.deploy-card p{font-size:13px;margin-bottom:11px;color:var(--text2)}
 
-    /* VERSION */
-    .version-list{display:flex;flex-direction:column;gap:11px;margin:14px 0}
-    .version-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
-    .version-header{display:flex;align-items:center;gap:11px;margin-bottom:11px}
-    .version-tag{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);padding:2px 9px;border-radius:4px}
-    .version-date{font-size:12px;color:var(--text3);font-family:var(--mono)}
-    .version-label{font-size:11px;font-family:var(--mono);font-weight:600;padding:2px 8px;border-radius:4px;margin-left:auto}
-    .version-label.current{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
-    .version-card ul{margin-left:17px}
-    .version-card li{font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.6}
-    .version-card li strong{color:var(--text1)}
+/* VERSION */
+.version-list{display:flex;flex-direction:column;gap:11px;margin:14px 0}
+.version-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
+.version-header{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+.version-tag{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);padding:2px 9px;border-radius:4px}
+.version-date{font-size:12px;color:var(--text3);font-family:var(--mono)}
+.version-label{font-size:11px;font-family:var(--mono);font-weight:600;padding:2px 8px;border-radius:4px;margin-left:auto}
+.version-label.current{background:rgba(63,185,80,0.1);color:var(--green);border:1px solid rgba(63,185,80,0.25)}
+.version-card ul{margin-left:17px}
+.version-card li{font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.6}
+.version-card li strong{color:var(--text1)}
 
-    /* FOOTER */
-    footer{border-top:1px solid var(--border);background:var(--bg0);padding:36px 32px;text-align:center}
-    .footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
-    footer p{font-size:13px;color:var(--text3);margin-bottom:5px}
-    footer a{color:var(--text2)}
-    footer a:hover{color:var(--accent)}
+/* FOOTER */
+footer{border-top:1px solid var(--border);background:var(--bg0);padding:36px 32px;text-align:center}
+.footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
+footer p{font-size:13px;color:var(--text3);margin-bottom:5px}
+footer a{color:var(--text2)}
+footer a:hover{color:var(--accent)}
 
-    @media(max-width:900px){.toc{display:none}.content{padding:28px 20px 64px}.hero-title{font-size:32px}}
-  </style>
+@media(max-width:900px){.toc{display:none}.content{padding:28px 20px 64px}.hero-title{font-size:32px}}
+</style>
 </head>
 <body>
 
@@ -231,7 +231,7 @@
   <div class="hero-badges">
     <span class="badge teal">Single HTML file</span>
     <span class="badge green">MIT License</span>
-    <span class="badge blue">Flink 1.16+</span>
+    <span class="badge blue">Flink 1.19+</span>
     <span class="badge teal">Live Kafka results</span>
     <span class="badge blue">Kubernetes Operator</span>
     <span class="badge green">Docker ready</span>
@@ -283,7 +283,7 @@
 
     <!-- QUICKSTART -->
     <section class="doc-section" id="quickstart">
-      <h2><span ></span>Quickstart</h2>
+      <h2><span class="si">⚡</span>Quickstart</h2>
       <p>FlinkSQL Studio is a single HTML file served by nginx. The fastest path is Docker Compose — it starts the Studio alongside a full Flink cluster in one command.</p>
       <div class="tab-group">
         <div class="tab-nav">
@@ -337,8 +337,8 @@ EOF</code></pre>
         <table>
           <thead><tr><th>Mode</th><th>Best For</th><th>Authentication</th></tr></thead>
           <tbody>
-          <tr><td><strong>Proxy Mode</strong></td><td>Local Docker or Kubernetes clusters. Routes through the nginx reverse proxy — zero config required.</td><td>None</td></tr>
-          <tr><td><strong>Direct Gateway Mode</strong></td><td>Remote clusters, Confluent Cloud Flink, Ververica Cloud, AWS Managed Flink. Enter gateway URL directly.</td><td>Bearer token, Username/Password, or None</td></tr>
+            <tr><td><strong>Proxy Mode</strong></td><td>Local Docker or Kubernetes clusters. Routes through the nginx reverse proxy — zero config required.</td><td>None</td></tr>
+            <tr><td><strong>Direct Gateway Mode</strong></td><td>Remote clusters, Confluent Cloud Flink, Ververica Cloud, AWS Managed Flink. Enter gateway URL directly.</td><td>Bearer token, Username/Password, or None</td></tr>
           </tbody>
         </table>
       </div>
@@ -357,33 +357,33 @@ EOF</code></pre>
       <p>FlinkSQL Studio is a static HTML file served by nginx. All SQL execution happens via the Flink SQL Gateway REST API. The browser manages all session state client-side.</p>
       <div class="mermaid-wrap">
         <div class="mermaid">
-          flowchart TD
-          B["🌐 Browser\nlocalhost:3030"]
-          N["nginx\nflink-studio container"]
-          GW["Flink SQL Gateway :8083"]
-          JM["Flink JobManager :8081"]
-          TM1["TaskManager 1 · 10 slots"]
-          TM2["TaskManager 2 · 10 slots"]
-          K["Apache Kafka"]
-          S["MinIO / S3"]
-          B-->|"/flink-api/"|N
-          B-->|"/jobmanager-api/"|N
-          N-->|"proxy"|GW
-          N-->|"proxy"|JM
-          GW-->JM
-          JM-->TM1
-          JM-->TM2
-          TM1-->K
-          TM2-->K
-          TM1-->S
-          style B fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style N fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-          style GW fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-          style JM fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-          style TM1 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
-          style TM2 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
-          style K fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style S fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+flowchart TD
+  B["🌐 Browser\nlocalhost:3030"]
+  N["nginx\nflink-studio container"]
+  GW["Flink SQL Gateway :8083"]
+  JM["Flink JobManager :8081"]
+  TM1["TaskManager 1 · 10 slots"]
+  TM2["TaskManager 2 · 10 slots"]
+  K["Apache Kafka"]
+  S["MinIO / S3"]
+  B-->|"/flink-api/"|N
+  B-->|"/jobmanager-api/"|N
+  N-->|"proxy"|GW
+  N-->|"proxy"|JM
+  GW-->JM
+  JM-->TM1
+  JM-->TM2
+  TM1-->K
+  TM2-->K
+  TM1-->S
+  style B fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+  style N fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+  style GW fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+  style JM fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+  style TM1 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+  style TM2 fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+  style K fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+  style S fill:#1a2130,stroke:#f0a500,color:#f0f6fc
         </div>
       </div>
       <p>nginx proxies <code>/flink-api/</code> to the SQL Gateway and <code>/jobmanager-api/</code> to the JobManager REST API, solving browser CORS without touching Flink configuration.</p>
@@ -393,13 +393,13 @@ EOF</code></pre>
         <table>
           <thead><tr><th>State</th><th>Storage</th><th>Survives Reload?</th></tr></thead>
           <tbody>
-          <tr><td>Editor tabs &amp; SQL content</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
-          <tr><td>Query history</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
-          <tr><td>Theme preference</td><td><code>localStorage</code></td><td>✅ Yes</td></tr>
-          <tr><td>SQL Gateway session handle</td><td>In-memory only</td><td>❌ Reconnect required</td></tr>
-          <tr><td>Result rows</td><td>In-memory only</td><td>❌ Re-run query</td></tr>
-          <tr><td>Performance timings</td><td>In-memory (exportable)</td><td>❌ Export before reload</td></tr>
-          <tr><td>Full workspace</td><td>JSON file (export/import)</td><td>✅ Via import</td></tr>
+            <tr><td>Editor tabs &amp; SQL content</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
+            <tr><td>Query history</td><td><code>localStorage</code> (auto-saved)</td><td>✅ Yes</td></tr>
+            <tr><td>Theme preference</td><td><code>localStorage</code></td><td>✅ Yes</td></tr>
+            <tr><td>SQL Gateway session handle</td><td>In-memory only</td><td>❌ Reconnect required</td></tr>
+            <tr><td>Result rows</td><td>In-memory only</td><td>❌ Re-run query</td></tr>
+            <tr><td>Performance timings</td><td>In-memory (exportable)</td><td>❌ Export before reload</td></tr>
+            <tr><td>Full workspace</td><td>JSON file (export/import)</td><td>✅ Via import</td></tr>
           </tbody>
         </table>
       </div>
@@ -473,14 +473,14 @@ EOF</code></pre>
         <table>
           <thead><tr><th>Tag</th><th>Snippets</th></tr></thead>
           <tbody>
-          <tr><td><span class="tag setup">SETUP</span></td><td>⚠ Common Flink SQL Mistakes, Use Default Catalog, Create In-Memory Catalog, Use Hive Catalog</td></tr>
-          <tr><td><span class="tag config">CONFIG</span></td><td>⚡ Recommended Streaming Config (all-in-one), Set Runtime Mode, Set Parallelism, Set State TTL</td></tr>
-          <tr><td><span class="tag ddl">DDL</span></td><td>Show Catalogs, Show Databases, Show Tables, Show Full Tables, Describe Table, Show Create Table, Check If Table Exists, Show Jobs</td></tr>
-          <tr><td><span class="tag window">WINDOW</span></td><td>Tumble Window, Hop Window (sliding), Session Window, Cumulate Window</td></tr>
-          <tr><td><span class="tag connector">CONNECTOR</span></td><td>Kafka Source, Datagen Source, Elasticsearch Sink, MinIO / S3 Sink, Print Sink</td></tr>
-          <tr><td><span class="tag perf">PERF</span></td><td>Enable MiniBatch, Local-Global Aggregation, Idle Source Timeout</td></tr>
-          <tr><td><span class="tag pattern">PATTERN</span></td><td>Top-N per Group (ROW_NUMBER), Deduplication, Temporal Join, Interval Join</td></tr>
-          <tr><td><span class="tag debug">DEBUG</span></td><td>EXPLAIN Plan, EXPLAIN CHANGELOG MODE</td></tr>
+            <tr><td><span class="tag setup">SETUP</span></td><td>⚠ Common Flink SQL Mistakes, Use Default Catalog, Create In-Memory Catalog, Use Hive Catalog</td></tr>
+            <tr><td><span class="tag config">CONFIG</span></td><td>⚡ Recommended Streaming Config (all-in-one), Set Runtime Mode, Set Parallelism, Set State TTL</td></tr>
+            <tr><td><span class="tag ddl">DDL</span></td><td>Show Catalogs, Show Databases, Show Tables, Show Full Tables, Describe Table, Show Create Table, Check If Table Exists, Show Jobs</td></tr>
+            <tr><td><span class="tag window">WINDOW</span></td><td>Tumble Window, Hop Window (sliding), Session Window, Cumulate Window</td></tr>
+            <tr><td><span class="tag connector">CONNECTOR</span></td><td>Kafka Source, Datagen Source, Elasticsearch Sink, MinIO / S3 Sink, Print Sink</td></tr>
+            <tr><td><span class="tag perf">PERF</span></td><td>Enable MiniBatch, Local-Global Aggregation, Idle Source Timeout</td></tr>
+            <tr><td><span class="tag pattern">PATTERN</span></td><td>Top-N per Group (ROW_NUMBER), Deduplication, Temporal Join, Interval Join</td></tr>
+            <tr><td><span class="tag debug">DEBUG</span></td><td>EXPLAIN Plan, EXPLAIN CHANGELOG MODE</td></tr>
           </tbody>
         </table>
       </div>
@@ -500,11 +500,11 @@ EOF</code></pre>
         <table>
           <thead><tr><th>Flink Version</th><th>Kafka Connector JAR</th></tr></thead>
           <tbody>
-          <tr><td><code>1.20.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.20.jar</code></td></tr>
-          <tr><td><code>1.19.x</code> ← recommended</td><td><code>flink-sql-connector-kafka-3.3.0-1.19.jar</code></td></tr>
-          <tr><td><code>1.18.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.18.jar</code></td></tr>
-          <tr><td><code>1.17.x</code></td><td><code>flink-sql-connector-kafka-3.2.0-1.17.jar</code></td></tr>
-          <tr><td><code>1.16.x</code></td><td><code>flink-sql-connector-kafka-3.1.0-1.16.jar</code></td></tr>
+            <tr><td><code>1.20.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.20.jar</code></td></tr>
+            <tr><td><code>1.19.x</code> ← recommended</td><td><code>flink-sql-connector-kafka-3.3.0-1.19.jar</code></td></tr>
+            <tr><td><code>1.18.x</code></td><td><code>flink-sql-connector-kafka-3.3.0-1.18.jar</code></td></tr>
+            <tr><td><code>1.17.x</code></td><td><code>flink-sql-connector-kafka-3.2.0-1.17.jar</code></td></tr>
+            <tr><td><code>1.16.x</code></td><td><code>flink-sql-connector-kafka-3.1.0-1.16.jar</code></td></tr>
           </tbody>
         </table>
       </div>
@@ -539,30 +539,30 @@ USER flink</code></pre>
       <p>A complete multi-stage streaming pipeline built and monitored entirely in FlinkSQL Studio: datagen source, Kafka enrichment, branching routing, windowed aggregation, and live result preview.</p>
       <div class="mermaid-wrap">
         <div class="mermaid">
-          flowchart LR
-          DG["⚙ datagen"]
-          TE["trade-events\nKafka"]
-          EN["enrich + route\nJob 2"]
-          ET["enriched-trades\nKafka"]
-          AL["risk-alerts\nKafka"]
-          AG["TUMBLE 10s\nJob 3"]
-          TS["trade-summary\nKafka"]
-          PR["print\nstdout"]
-          DG-->|"INSERT\nJob 1"|TE
-          TE-->EN
-          EN-->|"Branch A"|ET
-          EN-->|"Branch B\nHIGH+CRITICAL"|AL
-          ET-->AG
-          AG-->TS
-          AG-->PR
-          style DG fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-          style TE fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style EN fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style ET fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style AL fill:#1a2130,stroke:#e05c5c,color:#f0f6fc
-          style AG fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style TS fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style PR fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+flowchart LR
+  DG["⚙ datagen"]
+  TE["trade-events\nKafka"]
+  EN["enrich + route\nJob 2"]
+  ET["enriched-trades\nKafka"]
+  AL["risk-alerts\nKafka"]
+  AG["TUMBLE 10s\nJob 3"]
+  TS["trade-summary\nKafka"]
+  PR["print\nstdout"]
+  DG-->|"INSERT\nJob 1"|TE
+  TE-->EN
+  EN-->|"Branch A"|ET
+  EN-->|"Branch B\nHIGH+CRITICAL"|AL
+  ET-->AG
+  AG-->TS
+  AG-->PR
+  style DG fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+  style TE fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+  style EN fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+  style ET fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+  style AL fill:#1a2130,stroke:#e05c5c,color:#f0f6fc
+  style AG fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+  style TS fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+  style PR fill:#1a2130,stroke:#3fb950,color:#f0f6fc
         </div>
       </div>
       <div class="steps">
@@ -663,27 +663,27 @@ FROM enriched_trades_view;</code></pre>
 
       <div class="mermaid-wrap">
         <div class="mermaid">
-          flowchart TD
-          CR["FlinkSQLStudio CR\nkubectl apply"]
-          OP["Kube Operator\nKopf controller"]
-          DEP["Deployment\nnginx pods"]
-          SVC["Service\nClusterIP/NodePort/LB"]
-          POD["nginx Pod\nIDE + reverse proxy"]
-          GW["Flink SQL Gateway"]
-          JM["Flink JobManager"]
-          CR-->|"reconcile"|OP
-          OP-->|"creates / owns"|DEP
-          OP-->|"creates / owns"|SVC
-          DEP-->POD
-          POD-->GW
-          POD-->JM
-          style CR fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style OP fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-          style DEP fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-          style SVC fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-          style POD fill:#1a2130,stroke:#3fb950,color:#f0f6fc
-          style GW fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style JM fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+flowchart TD
+  CR["FlinkSQLStudio CR\nkubectl apply"]
+  OP["Kube Operator\nKopf controller"]
+  DEP["Deployment\nnginx pods"]
+  SVC["Service\nClusterIP/NodePort/LB"]
+  POD["nginx Pod\nIDE + reverse proxy"]
+  GW["Flink SQL Gateway"]
+  JM["Flink JobManager"]
+  CR-->|"reconcile"|OP
+  OP-->|"creates / owns"|DEP
+  OP-->|"creates / owns"|SVC
+  DEP-->POD
+  POD-->GW
+  POD-->JM
+  style CR fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+  style OP fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+  style DEP fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+  style SVC fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+  style POD fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+  style GW fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+  style JM fill:#1a2130,stroke:#f0a500,color:#f0f6fc
         </div>
       </div>
 
@@ -709,18 +709,18 @@ FROM enriched_trades_view;</code></pre>
         <table>
           <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead>
           <tbody>
-          <tr><td><code>spec.gateway.host</code></td><td>string</td><td>✅</td><td>—</td><td>Flink SQL Gateway hostname</td></tr>
-          <tr><td><code>spec.gateway.port</code></td><td>integer</td><td>—</td><td><code>8083</code></td><td>SQL Gateway port</td></tr>
-          <tr><td><code>spec.jobmanager.host</code></td><td>string</td><td>—</td><td><code>localhost</code></td><td>JobManager REST hostname</td></tr>
-          <tr><td><code>spec.jobmanager.port</code></td><td>integer</td><td>—</td><td><code>8081</code></td><td>JobManager REST port</td></tr>
-          <tr><td><code>spec.image</code></td><td>string</td><td>—</td><td><code>codedstreams/flinksql-studio:latest</code></td><td>IDE Docker image</td></tr>
-          <tr><td><code>spec.replicas</code></td><td>integer</td><td>—</td><td><code>1</code></td><td>Pod count (1–10)</td></tr>
-          <tr><td><code>spec.service.type</code></td><td>string</td><td>—</td><td><code>ClusterIP</code></td><td><code>ClusterIP</code>, <code>NodePort</code>, or <code>LoadBalancer</code></td></tr>
-          <tr><td><code>spec.service.port</code></td><td>integer</td><td>—</td><td><code>80</code></td><td>Service port</td></tr>
-          <tr><td><code>spec.service.nodePort</code></td><td>integer</td><td>—</td><td>—</td><td>NodePort (30000–32767)</td></tr>
-          <tr><td><code>spec.resources.requests</code></td><td>object</td><td>—</td><td><code>{cpu:50m, memory:64Mi}</code></td><td>Pod resource requests</td></tr>
-          <tr><td><code>spec.resources.limits</code></td><td>object</td><td>—</td><td><code>{cpu:200m, memory:128Mi}</code></td><td>Pod resource limits</td></tr>
-          <tr><td><code>spec.extraEnv</code></td><td>array</td><td>—</td><td><code>[]</code></td><td>Extra env vars for the pod</td></tr>
+            <tr><td><code>spec.gateway.host</code></td><td>string</td><td>✅</td><td>—</td><td>Flink SQL Gateway hostname</td></tr>
+            <tr><td><code>spec.gateway.port</code></td><td>integer</td><td>—</td><td><code>8083</code></td><td>SQL Gateway port</td></tr>
+            <tr><td><code>spec.jobmanager.host</code></td><td>string</td><td>—</td><td><code>localhost</code></td><td>JobManager REST hostname</td></tr>
+            <tr><td><code>spec.jobmanager.port</code></td><td>integer</td><td>—</td><td><code>8081</code></td><td>JobManager REST port</td></tr>
+            <tr><td><code>spec.image</code></td><td>string</td><td>—</td><td><code>codedstreams/flinksql-studio:latest</code></td><td>IDE Docker image</td></tr>
+            <tr><td><code>spec.replicas</code></td><td>integer</td><td>—</td><td><code>1</code></td><td>Pod count (1–10)</td></tr>
+            <tr><td><code>spec.service.type</code></td><td>string</td><td>—</td><td><code>ClusterIP</code></td><td><code>ClusterIP</code>, <code>NodePort</code>, or <code>LoadBalancer</code></td></tr>
+            <tr><td><code>spec.service.port</code></td><td>integer</td><td>—</td><td><code>80</code></td><td>Service port</td></tr>
+            <tr><td><code>spec.service.nodePort</code></td><td>integer</td><td>—</td><td>—</td><td>NodePort (30000–32767)</td></tr>
+            <tr><td><code>spec.resources.requests</code></td><td>object</td><td>—</td><td><code>{cpu:50m, memory:64Mi}</code></td><td>Pod resource requests</td></tr>
+            <tr><td><code>spec.resources.limits</code></td><td>object</td><td>—</td><td><code>{cpu:200m, memory:128Mi}</code></td><td>Pod resource limits</td></tr>
+            <tr><td><code>spec.extraEnv</code></td><td>array</td><td>—</td><td><code>[]</code></td><td>Extra env vars for the pod</td></tr>
           </tbody>
         </table>
       </div>
@@ -905,33 +905,33 @@ spec:
 </footer>
 
 <script>
-  function switchTab(btn, paneId) {
-    const g = btn.closest('.tab-group');
-    g.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    g.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(paneId).classList.add('active');
-  }
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        document.querySelectorAll('.toc a').forEach(l => l.classList.remove('active'));
-        const link = document.querySelector(`.toc a[href="#${e.target.id}"]`);
-        if (link) link.classList.add('active');
-      }
-    });
-  }, { rootMargin: '-15% 0px -60% 0px' });
-  document.querySelectorAll('.doc-section').forEach(s => obs.observe(s));
-  mermaid.initialize({
-    startOnLoad: true, theme: 'dark',
-    themeVariables: {
-      background: '#090c12', primaryColor: '#1a2130',
-      primaryTextColor: '#f0f6fc', primaryBorderColor: '#00d4aa',
-      lineColor: '#4a5568', edgeLabelBackground: '#131920',
-      tertiaryColor: '#1a2130', fontSize: '13px'
-    },
-    flowchart: { curve: 'basis', padding: 18 }
+function switchTab(btn, paneId) {
+  const g = btn.closest('.tab-group');
+  g.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  g.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(paneId).classList.add('active');
+}
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      document.querySelectorAll('.toc a').forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+      if (link) link.classList.add('active');
+    }
   });
+}, { rootMargin: '-15% 0px -60% 0px' });
+document.querySelectorAll('.doc-section').forEach(s => obs.observe(s));
+mermaid.initialize({
+  startOnLoad: true, theme: 'dark',
+  themeVariables: {
+    background: '#090c12', primaryColor: '#1a2130',
+    primaryTextColor: '#f0f6fc', primaryBorderColor: '#00d4aa',
+    lineColor: '#4a5568', edgeLabelBackground: '#131920',
+    tertiaryColor: '#1a2130', fontSize: '13px'
+  },
+  flowchart: { curve: 'basis', padding: 18 }
+});
 </script>
 </body>
 </html>

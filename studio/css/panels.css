@@ -1,0 +1,361 @@
+/* FlinkSQL Studio — Panels: Performance Monitor & Job Graph */
+
+  /* ── PERFORMANCE PANEL ─────────────────────────────────── */
+  #perf-panel {
+    display: none; flex: 1; overflow-y: auto;
+    background: var(--bg0);
+    padding: 0;
+  }
+  #perf-panel.active { display: flex; flex-direction: column; }
+
+  .perf-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px;
+    background: var(--bg1); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .perf-toolbar-label { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+  .perf-refresh-btn {
+    margin-left: auto; height: 24px; padding: 0 10px;
+    background: transparent; border: 1px solid var(--border2);
+    color: var(--text2); font-family: var(--mono); font-size: 10px;
+    cursor: pointer; border-radius: var(--radius); transition: all 0.12s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .perf-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .perf-refresh-btn.live { border-color: var(--green); color: var(--green); }
+  .perf-live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); animation: pulse 1.2s infinite;
+  }
+
+  .perf-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .perf-kpi {
+    background: var(--bg1);
+    padding: 10px 14px;
+    display: flex; flex-direction: column; gap: 3px;
+    position: relative; overflow: hidden;
+  }
+  .perf-kpi::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 2px; background: var(--kpi-color, var(--accent));
+    opacity: 0.6;
+  }
+  .perf-kpi-label { font-size: 9px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; }
+  .perf-kpi-value { font-size: 20px; font-weight: 700; color: var(--text0); line-height: 1.1; letter-spacing: -0.5px; }
+  .perf-kpi-unit  { font-size: 10px; color: var(--text2); }
+  .perf-kpi-delta { font-size: 10px; margin-top: 1px; }
+  .perf-kpi-delta.up   { color: var(--green); }
+  .perf-kpi-delta.down { color: var(--red); }
+  .perf-kpi-delta.neu  { color: var(--text3); }
+
+  .perf-body {
+    flex: 1; display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 1px; background: var(--border);
+    overflow-y: auto;
+  }
+
+  .perf-card {
+    background: var(--bg1);
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .perf-card-title {
+    font-size: 10px; color: var(--text2);
+    letter-spacing: 1.2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .perf-card-title .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+
+  /* Sparkline SVG */
+  .sparkline-wrap { flex: 1; min-height: 52px; position: relative; }
+  .sparkline-wrap svg { width: 100%; height: 52px; }
+  .spark-line { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .spark-fill { opacity: 0.08; }
+  .spark-label-row {
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: var(--text3); margin-top: 2px;
+  }
+
+  /* Arc gauge */
+  .gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+  .gauge-row   { display: flex; gap: 16px; justify-content: center; align-items: flex-end; }
+  .gauge-svg   { overflow: visible; }
+  .gauge-bg    { fill: none; stroke: var(--bg3); stroke-width: 8; }
+  .gauge-arc   { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.5s ease; }
+  .gauge-val   { font-size: 13px; font-weight: 700; fill: var(--text0); font-family: var(--mono); }
+  .gauge-sub   { font-size: 8px; fill: var(--text3); font-family: var(--mono); }
+  .gauge-name  { font-size: 10px; color: var(--text2); text-align: center; margin-top: 2px; }
+
+  /* Query timing bar */
+  .timing-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
+  .timing-row  { display: flex; flex-direction: column; gap: 3px; }
+  .timing-meta { display: flex; justify-content: space-between; font-size: 10px; }
+  .timing-sql  { color: var(--text1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+  .timing-ms   { color: var(--accent); font-weight: 600; flex-shrink: 0; }
+  .timing-bar-wrap { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  .timing-bar  { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+
+  /* Job list */
+  .job-list { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
+  .job-row  {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 11px;
+  }
+  .job-status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .job-status-dot.RUNNING  { background: var(--green); box-shadow: 0 0 5px var(--green); animation: pulse 1.5s infinite; }
+  .job-status-dot.FINISHED { background: var(--text3); }
+  .job-status-dot.FAILED   { background: var(--red); }
+  .job-status-dot.CANCELED { background: var(--yellow); }
+  .job-name { color: var(--text0); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .job-dur  { color: var(--text3); font-size: 10px; flex-shrink: 0; }
+  .job-state-badge {
+    font-size: 9px; padding: 1px 5px; border-radius: 2px; flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+  .job-state-badge.RUNNING  { background: rgba(57,211,83,0.15); color: var(--green); }
+  .job-state-badge.FINISHED { background: rgba(100,100,100,0.2); color: var(--text2); }
+  .job-state-badge.FAILED   { background: rgba(255,77,109,0.15); color: var(--red); }
+  .job-state-badge.CANCELED { background: rgba(245,166,35,0.15); color: var(--yellow); }
+
+  /* Cluster overview row */
+  .cluster-row {
+    display: flex; gap: 1px; background: var(--border);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .cluster-stat {
+    flex: 1; background: var(--bg2);
+    padding: 7px 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .cluster-stat-icon { font-size: 14px; }
+  .cluster-stat-val  { font-size: 15px; font-weight: 700; color: var(--text0); }
+  .cluster-stat-lbl  { font-size: 10px; color: var(--text3); }
+
+  .perf-empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px; color: var(--text3); padding: 20px;
+  }
+  .perf-empty .icon { font-size: 24px; opacity: 0.4; }
+  .perf-empty .msg  { font-size: 11px; text-align: center; line-height: 1.6; }
+
+  /* ── JOB GRAPH PANEL ─────────────────────────────────── */
+  #job-graph-panel {
+    display: none; flex: 1; overflow: hidden;
+    flex-direction: column; background: var(--bg0);
+  }
+  #job-graph-panel.active { display: flex; }
+
+  .jg-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 12px; background: var(--bg1);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .jg-toolbar-label { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; }
+  .jg-job-select {
+    background: var(--bg2); border: 1px solid var(--border2);
+    color: var(--text0); font-family: var(--mono); font-size: 11px;
+    padding: 3px 8px; border-radius: var(--radius); outline: none;
+    cursor: pointer; min-width: 200px;
+  }
+  .jg-refresh-btn {
+    height: 24px; padding: 0 10px;
+    background: transparent; border: 1px solid var(--border2);
+    color: var(--text2); font-family: var(--mono); font-size: 10px;
+    cursor: pointer; border-radius: var(--radius); transition: all 0.12s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .jg-refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .jg-canvas-wrap {
+    flex: 1; overflow: hidden; position: relative;
+    background:
+      linear-gradient(rgba(0,212,170,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.02) 1px, transparent 1px);
+    background-size: 24px 24px;
+    cursor: grab;
+    user-select: none;
+  }
+  .jg-canvas-wrap.dragging { cursor: grabbing; }
+  #jg-svg { display: block; position: absolute; top: 0; left: 0; }
+  #jg-svg-inner { /* transform group for pan */ }
+
+  /* Node styles */
+  .jg-node-rect {
+    rx: 4; ry: 4;
+    fill: var(--bg2); stroke: var(--border2); stroke-width: 1.5;
+    transition: stroke 0.15s;
+    cursor: pointer;
+  }
+  .jg-node-rect:hover { stroke: var(--accent); }
+  .jg-node-rect.source  { stroke: var(--blue); fill: rgba(0,151,255,0.07); }
+  .jg-node-rect.sink    { stroke: var(--accent3); fill: rgba(245,166,35,0.07); }
+  .jg-node-rect.process { stroke: var(--green); fill: rgba(57,211,83,0.06); }
+  .jg-node-rect.selected { stroke: var(--accent); stroke-width: 2.5; }
+
+  .jg-node-title { font-family: var(--mono); font-size: 10px; fill: var(--text0); font-weight: 600; }
+  .jg-node-sub   { font-family: var(--mono); font-size: 9px;  fill: var(--text2); }
+  .jg-node-badge { font-family: var(--mono); font-size: 9px;  fill: var(--accent); font-weight: 600; }
+
+  .jg-edge { fill: none; stroke: var(--border2); stroke-width: 1.5; marker-end: url(#arrow); }
+  .jg-edge.active {
+    stroke: var(--accent); stroke-width: 2;
+    stroke-dasharray: 10 5;
+    animation: flowEdge 1.2s linear infinite;
+  }
+  .jg-edge.error-edge {
+    stroke: var(--red); stroke-width: 2; opacity: 0.8;
+    stroke-dasharray: 6 4;
+    animation: flowEdgeErr 1.5s linear infinite;
+  }
+  @keyframes flowEdge    { to { stroke-dashoffset: -45; } }
+  @keyframes flowEdgeErr { to { stroke-dashoffset: -40; } }
+  .jg-edge-label { font-family: var(--mono); font-size: 9px; fill: var(--text3); }
+
+  /* Status dot in node */
+  .jg-status-dot { r: 4; }
+  .jg-status-dot.RUNNING  { fill: var(--green); filter: drop-shadow(0 0 3px var(--green)); animation: pulse 1.5s infinite; }
+  .jg-status-dot.FINISHED { fill: var(--text3); }
+  .jg-status-dot.FAILED   { fill: var(--red);   filter: drop-shadow(0 0 4px var(--red)); animation: pulse 1s infinite; }
+  .jg-status-dot.ERROR    { fill: var(--red);   filter: drop-shadow(0 0 4px var(--red)); animation: pulse 1s infinite; }
+  .jg-status-dot.CANCELED { fill: var(--yellow); }
+  .jg-status-dot.CREATED  { fill: var(--yellow); }
+
+  /* Fault / error node rect  */
+  .jg-node-rect.fault {
+    stroke: var(--red) !important; stroke-width: 2.5 !important;
+    fill: rgba(255,77,109,0.12) !important;
+  }
+  .jg-node-rect.fault-pulse {
+    animation: faultPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes faultPulse {
+    0%,100% { stroke-opacity: 1; }
+    50%      { stroke-opacity: 0.4; }
+  }
+
+  /* Detail panel */
+  .jg-detail {
+    flex-shrink: 0; background: var(--bg1);
+    border-top: 1px solid var(--border);
+    padding: 10px 14px; display: none;
+    max-height: 130px; overflow-y: auto;
+    font-size: 11px;
+  }
+  .jg-detail.open { display: block; }
+  .jg-detail-title { font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .jg-detail-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+  .jg-detail-kv { display: flex; flex-direction: column; gap: 2px; }
+  .jg-detail-key { font-size: 9px; color: var(--text3); letter-spacing: 0.5px; }
+  .jg-detail-val { font-size: 12px; color: var(--text0); font-weight: 600; }
+
+  /* Tab rename input */
+  .tab-rename-input {
+    background: var(--bg0); border: 1.5px solid var(--accent);
+    color: var(--text0); font-family: var(--mono); font-size: 11px;
+    padding: 0 5px; height: 20px; outline: none;
+    border-radius: 2px; min-width: 50px; max-width: 156px;
+    box-shadow: 0 0 0 2px rgba(0,212,170,0.15);
+  }
+  .tab-rename-counter {
+    font-size: 9px; color: var(--text3); line-height: 20px;
+    flex-shrink: 0; margin-left: 2px;
+  }
+  .tab-rename-counter.over { color: var(--red); }
+
+
+/* ── Checkpoint metrics card ── */
+.cp-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+.cp-badge-ok   { background: rgba(57,211,83,0.15);  color: var(--green); }
+.cp-badge-warn { background: rgba(245,166,35,0.15); color: var(--yellow); }
+.cp-badge-err  { background: rgba(255,77,109,0.15); color: var(--red); }
+.cp-badge-none { background: rgba(100,100,100,0.15); color: var(--text3); }
+
+.cp-summary-row {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 10px 0 10px;
+}
+.cp-stat {
+  flex: 1;
+  text-align: center;
+  padding: 8px 4px 7px;
+  border-right: 1px solid var(--border);
+}
+.cp-stat:last-child { border-right: none; }
+.cp-stat-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text0);
+  font-family: var(--mono);
+  line-height: 1.3;
+}
+.cp-stat-lbl {
+  font-size: 9px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.cp-section-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin: 10px 0 6px;
+}
+
+.cp-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.cp-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.cp-row:nth-last-child(-n+2) { border-bottom: none; }
+.cp-key {
+  color: var(--text2);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cp-val {
+  color: var(--text0);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: right;
+}
