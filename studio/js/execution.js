@@ -378,7 +378,7 @@ function setExecuting(val) {
   if (el) el.style.display = val ? 'flex' : 'none';
 }
 
-// ── executeForData — used by catalog browser for internal queries ──────────────
+// ── executeForData — used by catalog browser for internal queries  s──────────────
 async function executeForData(sql) {
   const resp = await api('POST', `/v1/sessions/${state.activeSession}/statements`, { statement: sql });
   const opHandle = resp.operationHandle;
