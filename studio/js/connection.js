@@ -218,6 +218,7 @@ function launchApp(host, port) {
   renderSessionsList();
   renderHistory();
   startHeartbeat();
+  if (typeof startResourceMonitor === 'function') startResourceMonitor();
 
   // Inform user about catalog requirement
   addLog('INFO', 'Connected. Tip: You must USE CATALOG default_catalog before running SQL. Sessions are per-cluster and do not persist across container restarts — but your tabs and history are saved locally.');
@@ -228,39 +229,83 @@ function shortHandle(h) {
   return h.length > 12 ? h.slice(0, 8) + '…' : h;
 }
 
-function disconnectAll() {
-  if (!confirm('Disconnect from Flink SQL Gateway?')) return;
+function disconnectAll(silent = false, prefillName = '') {
+  if (!silent && !confirm('Disconnect from Flink SQL Gateway?')) return;
   state.pollTimer && clearInterval(state.pollTimer);
   if (_heartbeatTimer) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
-  _catalogGen++; // cancel any in-flight catalog load
-  state.currentOp = null; // cancel any in-flight query poll
+  _catalogGen++;
+  state.currentOp = null;
   state.gateway = null;
   state.activeSession = null;
   document.getElementById('app').classList.remove('visible');
   document.getElementById('connect-screen').style.display = 'flex';
   document.getElementById('connect-status').className = 'connect-status';
   document.getElementById('connect-btn').disabled = false;
-  document.getElementById('stop-btn').style.display = 'none';
-  setConnectStatus('ok', 'Disconnected. You can reconnect.');
+  const stopBtn = document.getElementById('stop-btn');
+  if (stopBtn) stopBtn.style.display = 'none';
+  // Pre-fill session name on reconnect screen
+  const nameInput = document.getElementById('inp-session-name');
+  const savedName = prefillName || (() => {
+    try { return localStorage.getItem('flinksql_last_session_name') || ''; } catch(_) { return ''; }
+  })();
+  if (nameInput && savedName) nameInput.value = savedName;
+  setConnectStatus('ok', silent
+    ? 'Auto-disconnected after 30min idle. Your tabs are preserved — reconnect to continue.'
+    : 'Disconnected. You can reconnect.');
 }
 
 // ──────────────────────────────────────────────
 // HEARTBEAT + SESSION GUARD
 // ──────────────────────────────────────────────
 let _heartbeatTimer = null;
+let _lastActivityTime = Date.now();
+const IDLE_EXPIRE_MS = 30 * 60 * 1000;  // 30 minutes
+
+// ── Track user activity (keypress, click, run) ────────────────────────────────
+function _touchActivity() { _lastActivityTime = Date.now(); }
+if (typeof document !== 'undefined') {
+  ['keydown','mousedown','click'].forEach(evt =>
+    document.addEventListener(evt, _touchActivity, { passive: true })
+  );
+}
+
+function _hasRunningJobs() {
+  // Check if any ops in state.operations have status 'running'
+  return (state.operations || []).some(op =>
+    op.status === 'running' || op.status === 'RUNNING'
+  );
+}
+
 function startHeartbeat() {
   if (_heartbeatTimer) clearInterval(_heartbeatTimer);
   _heartbeatTimer = setInterval(async () => {
     if (!state.activeSession || !state.gateway) return;
+
+    // ── Idle-expire logic ──────────────────────────────────────────────────────
+    // Only auto-expire if: no running jobs AND idle > 30min
+    const idleSecs = (Date.now() - _lastActivityTime) / 1000;
+    const hasJobs = _hasRunningJobs();
+    if (!hasJobs && idleSecs > IDLE_EXPIRE_MS / 1000) {
+      // Save session name then auto-disconnect to connect screen
+      const sname = (() => { try { return localStorage.getItem('flinksql_last_session_name') || ''; } catch(_) { return ''; } })();
+      addLog('WARN', `Auto-disconnecting after ${Math.round(idleSecs/60)}min idle (no running jobs).`);
+      toast('Idle disconnect — click reconnect to resume', 'info');
+      // Show connect screen with session name pre-filled
+      disconnectAll(/* silent= */true, sname);
+      return;
+    }
+
+    // ── Always send heartbeat to keep Flink session alive ─────────────────────
     try {
-      const resp = await api('POST', `/v1/sessions/${state.activeSession}/heartbeat`);
-      // If heartbeat 404s the session is gone — show banner
+      await api('POST', `/v1/sessions/${state.activeSession}/heartbeat`);
     } catch (e) {
-      if (e.message && (e.message.includes('404') || e.message.includes('not found') || e.message.includes('Session'))) {
-        showSessionExpiredBanner();
+      const msg = e.message || '';
+      if (msg.includes('404') || msg.includes('does not exist') || msg.includes('Session')) {
+        // Only show banner if user is active (not idle)
+        if (idleSecs < 120) showSessionExpiredBanner();
       }
     }
-  }, 30000); // every 30s — keeps Flink session alive (default TTL 10min)
+  }, 30000); // every 30s
 }
 
 // ── Session expired banner ─────────────────────────────────────────────────

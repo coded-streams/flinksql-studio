@@ -1,22 +1,31 @@
 // TABS
 // ──────────────────────────────────────────────
 let tabCounter = 0;
+function _nextTabNumber() {
+  // Find the lowest positive integer NOT already used as a Query N name or tab-N id.
+  // This fills gaps: if you have Query 1, Query 3 — next new tab is Query 2.
+  const used = new Set();
+  state.tabs.forEach(t => {
+    const m = (t.id || '').match(/tab-(\d+)/);
+    if (m) used.add(parseInt(m[1]));
+  });
+  // Also track names like "Query 5" so renamed tabs don't re-use their number
+  let n = 1;
+  while (used.has(n)) n++;
+  return n;
+}
 function _syncTabCounter() {
-  // After restoring tabs from localStorage, find the highest tab number
-  // so new tabs get unique names like "Query 4" not "Query 1" again
+  // Kept for backward compat — ensures tabCounter >= highest existing id
   state.tabs.forEach(t => {
     const m = (t.id || '').match(/tab-(\d+)/);
     if (m) tabCounter = Math.max(tabCounter, parseInt(m[1]));
-    // Also try to extract from name like "Query 3"
-    const nm = (t.name || '').match(/Query\s+(\d+)/i);
-    if (nm) tabCounter = Math.max(tabCounter, parseInt(nm[1]));
   });
 }
 function addTab(name) {
-  _syncTabCounter();   // ensure tabCounter is past all existing tabs before adding
-  tabCounter++;
-  const id = 'tab-' + tabCounter;
-  const tab = { id, name: name || `Query ${tabCounter}`, sql: '', saved: true };
+  const n = _nextTabNumber();
+  tabCounter = Math.max(tabCounter, n);
+  const id = 'tab-' + n;
+  const tab = { id, name: name || `Query ${n}`, sql: '', saved: true };
   state.tabs.push(tab);
   renderTabs();
   switchTab(id);

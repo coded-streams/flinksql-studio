@@ -1,3 +1,91 @@
+
+// ── Resource exhaustion monitor ───────────────────────────────────────────────
+let _resMonitorTimer = null;
+let _resWarned = { heap: false, rows: false };
+
+function startResourceMonitor() {
+  if (_resMonitorTimer) clearInterval(_resMonitorTimer);
+  _resMonitorTimer = setInterval(_checkResources, 15000); // check every 15s
+}
+
+function _checkResources() {
+  // ── JS Heap (Chrome/Edge only via performance.memory) ──────────────────────
+  if (performance && performance.memory) {
+    const used = performance.memory.usedJSHeapSize;
+    const limit = performance.memory.jsHeapSizeLimit;
+    if (limit > 0) {
+      const pct = Math.round((used / limit) * 100);
+      if (pct >= 80 && !_resWarned.heap) {
+        _resWarned.heap = true;
+        _showResourceWarning(
+          `⚠ Memory at ${pct}%`,
+          `JS heap: ${(used/1024/1024).toFixed(0)}MB / ${(limit/1024/1024).toFixed(0)}MB`,
+          () => _freeResultMemory()
+        );
+      } else if (pct < 60) {
+        _resWarned.heap = false;
+      }
+    }
+  }
+
+  // ── Result rows cap ─────────────────────────────────────────────────────────
+  const totalRows = (state.resultSlots || []).reduce((s, sl) => s + (sl.rows?.length || 0), 0);
+  if (totalRows > 40000 && !_resWarned.rows) {
+    _resWarned.rows = true;
+    _showResourceWarning(
+      `⚠ ${totalRows.toLocaleString()} result rows in memory`,
+      'Consider clearing old stream slots to free memory.',
+      () => _freeResultMemory()
+    );
+  } else if (totalRows < 20000) {
+    _resWarned.rows = false;
+  }
+}
+
+function _freeResultMemory() {
+  // Keep only the active slot, truncate all others to last 1000 rows
+  const active = state.activeSlot;
+  (state.resultSlots || []).forEach(slot => {
+    if (slot.id !== active && slot.status !== 'streaming' && slot.rows.length > 1000) {
+      slot.rows = slot.rows.slice(-1000);
+    }
+  });
+  // Trim non-streaming slots entirely if there are > 5
+  const done = (state.resultSlots || []).filter(s => s.status !== 'streaming');
+  if (done.length > 3) {
+    const toRemove = done.slice(0, done.length - 3).map(s => s.id);
+    state.resultSlots = (state.resultSlots || []).filter(s => !toRemove.includes(s.id));
+  }
+  if (typeof renderStreamSelector === 'function') renderStreamSelector();
+  addLog('INFO', 'Resource cleanup: old result slots trimmed to free memory.');
+  toast('Memory freed — old results trimmed', 'info');
+}
+
+function _showResourceWarning(title, detail, onAction) {
+  // Remove existing
+  const old = document.getElementById('resource-warning-toast');
+  if (old) old.remove();
+
+  const el = document.createElement('div');
+  el.id = 'resource-warning-toast';
+  el.className = 'resource-warning-toast';
+  el.innerHTML = `
+    <div class="rw-title">${title}</div>
+    <div>${detail}</div>
+    <div class="rw-action">Click to free memory now · ✕ to dismiss</div>
+  `;
+  el.onclick = (e) => {
+    if (e.target.classList.contains('rw-dismiss')) { el.remove(); return; }
+    onAction();
+    el.remove();
+  };
+
+  // Auto-dismiss after 12s
+  document.body.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 12000);
+  addLog('WARN', `${title}: ${detail}`);
+}
+
 // MISC: collapsible sections, perf filter, catalog setup, live toggle, init
 
 // ── Collapsible performance sections ─────────────────────────────────────────

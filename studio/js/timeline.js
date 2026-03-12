@@ -518,7 +518,8 @@ function updateJobCompareLegend() {
 // ════════════════════════════════════════════════════════════════════════════
 // SESSION PDF REPORT
 // ════════════════════════════════════════════════════════════════════════════
-async function generateSessionReport(focusJid) {
+async function generateSessionReport(focusJid, opts = {}) {
+  const { rowFrom = 1, rowTo = Infinity, entityFilter = '', reportTitle = '' } = opts;
   const statusEl = document.getElementById('report-status');
   if (statusEl) statusEl.textContent = '⏳ Gathering session data…';
 
@@ -551,16 +552,31 @@ async function generateSessionReport(focusJid) {
         for (const v of detail.vertices.slice(0, 20)) {
           // Do NOT use &agg=sum at vertex level — Flink 1.19 ignores or breaks it.
           // Fetch without agg and manually sum across subtasks.
+          // Step 1: List actual metric IDs for this vertex
+          let actualMetricIds = [];
+          try {
+            const listResp = await jmApi(`/jobs/${j.jid}/vertices/${v.id}/metrics`);
+            if (listResp && Array.isArray(listResp)) {
+              const WANTED = ['numRecordsIn','numRecordsOut','numRecordsInPerSecond','numRecordsOutPerSecond',
+                              'numBytesIn','numBytesOut','backPressuredTimeMsPerSecond','idleTimeMsPerSecond',
+                              'busyTimeMsPerSecond','currentOutputWatermark'];
+              actualMetricIds = listResp.map(m => m.id).filter(id => {
+                const seg = id.lastIndexOf('.') >= 0 ? id.slice(id.lastIndexOf('.')+1) : id;
+                return WANTED.includes(seg);
+              });
+            }
+          } catch(_) {}
+          // Fallback to bare names if list fails
+          if (actualMetricIds.length === 0) actualMetricIds = ['numRecordsIn','numRecordsOut','numRecordsInPerSecond','numRecordsOutPerSecond','numBytesIn','numBytesOut'];
+
+          // Step 2: Fetch using actual IDs — Flink 1.19 requires exact prefixed IDs
           const vm = await jmApi(
-            `/jobs/${j.jid}/vertices/${v.id}/metrics?get=numRecordsIn,numRecordsOut,numRecordsInPerSecond,numRecordsOutPerSecond,numBytesIn,numBytesOut,backPressuredTimeMsPerSecond,idleTimeMsPerSecond,busyTimeMsPerSecond,currentOutputWatermark`
+            `/jobs/${j.jid}/vertices/${v.id}/metrics?get=${encodeURIComponent(actualMetricIds.slice(0,25).join(','))}`
           );
           if (vm && Array.isArray(vm)) {
-            // Accumulate by summing all entries that share the same suffix key
             const acc = {};
             vm.forEach(m => {
-              // Metric name may be prefixed: "0.numRecordsIn", "0.MiniBatchAssigner[184].numRecordsIn"
-              // Extract the base metric name (last dot-segment)
-              const key = m.id.includes('.') ? m.id.split('.').pop() : m.id;
+              const key = m.id.lastIndexOf('.') >= 0 ? m.id.slice(m.id.lastIndexOf('.')+1) : m.id;
               const val = parseFloat(m.value || 0);
               acc[key] = (acc[key] || 0) + val;
             });
@@ -603,6 +619,7 @@ async function generateSessionReport(focusJid) {
     if (statusEl) statusEl.textContent = '⏳ Rendering report…';
 
     const reportHtml = buildReportHtml({
+      customTitle: reportTitle,
       sessionId, catalog, database,
       overview, jobs: jobDetails,
       timings: perf.timings || [],
@@ -634,10 +651,60 @@ async function generateSessionReport(focusJid) {
 async function generateJobGraphReport() {
   const sel = document.getElementById('jg-job-select');
   const jid = sel?.value || null;
-  await generateSessionReport(jid);   // null = all jobs
+
+  // Show filter modal before generating
+  const existing = document.getElementById('report-filter-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'report-filter-modal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:24px;min-width:340px;max-width:480px;font-family:var(--mono);">
+      <div style="font-size:14px;font-weight:700;color:var(--text0);margin-bottom:4px;">📊 Generate Report</div>
+      <div style="font-size:10px;color:var(--text2);margin-bottom:16px;">Job: <span style="color:var(--accent)">${jid ? jid.slice(0,16)+'…' : 'All Jobs'}</span></div>
+
+      <label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px;">Include result rows (row number range — leave blank for all):</label>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input id="rpt-row-from" type="number" placeholder="From row" min="1"
+          style="flex:1;padding:5px 8px;font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);border-radius:3px;color:var(--text0);">
+        <input id="rpt-row-to" type="number" placeholder="To row"
+          style="flex:1;padding:5px 8px;font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);border-radius:3px;color:var(--text0);">
+      </div>
+
+      <label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px;">Filter results by entity / value (e.g. CRITICAL, NORTH_EU, device_id 42):</label>
+      <input id="rpt-entity-filter" type="text" placeholder="Leave blank to include all rows"
+        style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);border-radius:3px;color:var(--text0);margin-bottom:12px;"
+        onkeydown="event.stopPropagation();">
+
+      <label style="font-size:10px;color:var(--text2);display:block;margin-bottom:3px;">Custom report title (optional):</label>
+      <input id="rpt-title" type="text" placeholder="e.g. Sensor Network — March 2026 Analysis"
+        style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:11px;font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);border-radius:3px;color:var(--text0);margin-bottom:20px;"
+        onkeydown="event.stopPropagation();">
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('report-filter-modal').remove();"
+          style="padding:6px 16px;font-size:11px;font-family:var(--mono);cursor:pointer;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:3px;">Cancel</button>
+        <button id="rpt-generate-btn"
+          style="padding:6px 16px;font-size:11px;font-family:var(--mono);cursor:pointer;background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.35);color:var(--accent);border-radius:3px;font-weight:700;">Generate PDF</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  document.getElementById('rpt-generate-btn').onclick = async () => {
+    const rowFrom    = parseInt(document.getElementById('rpt-row-from').value) || 1;
+    const rowTo      = parseInt(document.getElementById('rpt-row-to').value)   || Infinity;
+    const entityFilt = (document.getElementById('rpt-entity-filter').value || '').toLowerCase().trim();
+    const rptTitle   = document.getElementById('rpt-title').value.trim();
+    modal.remove();
+    await generateSessionReport(jid, { rowFrom, rowTo, entityFilter: entityFilt, reportTitle: rptTitle });
+  };
 }
 
-function buildReportHtml({ sessionId, catalog, database, overview, jobs, timings, generatedAt, reportName, isSingleJob }) {
+function buildReportHtml({ sessionId, catalog, database, overview, jobs, timings, generatedAt, reportName, isSingleJob, customTitle }) {
+  if (customTitle) reportName = customTitle;
   const fmtDur = ms => {
     if (!ms || ms <= 0) return '—';
     if (ms < 1000)      return ms + 'ms';

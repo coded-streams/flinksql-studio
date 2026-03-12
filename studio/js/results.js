@@ -3,10 +3,20 @@
 function renderResults() {
   const wrap = document.getElementById('result-table-wrap');
   const cols = state.resultColumns;
-  const rows = state.results;
+  // Apply search filter
+  const q = (state.resultSearch || '').toLowerCase().trim();
+  let rows = state.results;
+  if (q) {
+    rows = rows.filter(row => {
+      const fields = Array.isArray(row?.fields) ? row.fields : Object.values(row?.fields || row || {});
+      return fields.some(v => String(v ?? '').toLowerCase().includes(q));
+    });
+  }
+  // Apply sort direction — newest-first reverses the array display
+  const displayRows = state.resultNewestFirst ? [...rows].reverse() : rows;
   const page = state.resultPage;
   const start = page * state.pageSize;
-  const pageRows = rows.slice(start, start + state.pageSize);
+  const pageRows = displayRows.slice(start, start + state.pageSize);
 
   if (rows.length === 0) {
     wrap.innerHTML = '<div class="empty-state"><div class="icon">⚡</div><div class="msg">Query returned no rows.</div></div>';
@@ -24,7 +34,11 @@ function renderResults() {
   html += '</tr></thead><tbody>';
 
   pageRows.forEach((row, ri) => {
-    html += `<tr><td class="row-index">${start + ri + 1}</td>`;
+    // Show original row number (account for reversed display)
+    const origIdx = state.resultNewestFirst
+      ? (rows.length - 1 - (start + ri))
+      : (start + ri);
+    html += `<tr><td class="row-index">${origIdx + 1}</td>`;
     const rawFields = (row && row.fields !== undefined) ? row.fields : row;
     const fieldArr = Array.isArray(rawFields) ? rawFields : Object.values(rawFields || {});
     fieldArr.forEach((val, ci) => {
@@ -56,16 +70,24 @@ function renderResults() {
   wrap.innerHTML = html;
 
   // Pagination
-  const totalPages = Math.ceil(rows.length / state.pageSize);
-  if (totalPages > 1) {
-    document.getElementById('result-pagination').style.display = 'flex';
-    document.getElementById('page-info').textContent = `Page ${page + 1} of ${totalPages}`;
-    document.getElementById('page-prev').disabled = page === 0;
-    document.getElementById('page-next').disabled = page >= totalPages - 1;
-    document.getElementById('result-stats').textContent = `${rows.length} total rows · ${cols.length} cols`;
+  const totalPages = Math.ceil(displayRows.length / state.pageSize);
+  const pag = document.getElementById('result-pagination');
+  if (totalPages > 0) {
+    if (pag) pag.style.display = 'flex';
+    const pi = document.getElementById('page-info');
+    if (pi) pi.textContent = `Page ${page + 1} of ${Math.max(1,totalPages)}`;
+    const pp = document.getElementById('page-prev');
+    if (pp) pp.disabled = page === 0;
+    const pn = document.getElementById('page-next');
+    if (pn) pn.disabled = page >= totalPages - 1;
+    const matchText = q ? ` · ${rows.length} match` : '';
+    const rs = document.getElementById('result-stats');
+    if (rs) rs.textContent = `${state.results.length} total rows · ${cols.length} cols${matchText}`;
   } else {
-    document.getElementById('result-pagination').style.display = 'none';
+    if (pag) pag.style.display = 'none';
   }
+  // Render search + sort toolbar
+  _renderResultsToolbar(cols, rows);
 
   // NOTE: Do NOT call switchResultTab here — renderResults is called
   // on every streaming tick and forcing a tab switch would prevent the user
@@ -77,6 +99,74 @@ function changePage(dir) {
   const totalPages = Math.ceil(state.results.length / state.pageSize);
   state.resultPage = Math.max(0, Math.min(state.resultPage + dir, totalPages - 1));
   renderResults();
+}
+
+// ── Results search + sort toolbar ────────────────────────────────────────────
+function _renderResultsToolbar(cols, filteredRows) {
+  let tb = document.getElementById('results-sort-toolbar');
+  if (!tb) {
+    const wrap = document.getElementById('result-data-tab');
+    if (!wrap) return;
+    tb = document.createElement('div');
+    tb.id = 'results-sort-toolbar';
+    tb.style.cssText = `
+      display:flex; align-items:center; gap:6px; padding:4px 8px;
+      background:var(--bg2); border-bottom:1px solid var(--border);
+      flex-shrink:0; min-height:32px;
+    `;
+    // Insert after stream-selector-bar if it exists, else at top
+    const streamBar = document.getElementById('stream-selector-bar');
+    if (streamBar && streamBar.nextSibling) {
+      wrap.insertBefore(tb, streamBar.nextSibling);
+    } else {
+      wrap.insertBefore(tb, wrap.firstChild);
+    }
+  }
+
+  const q = state.resultSearch || '';
+  const newest = state.resultNewestFirst;
+  const totalRows = state.results.length;
+  const filtered = filteredRows.length;
+
+  tb.innerHTML = `
+    <input id="result-search-input" type="text" placeholder="🔍 Search rows…" value="${escHtml(q)}"
+      style="flex:1;min-width:0;max-width:220px;padding:2px 7px;font-size:11px;
+             font-family:var(--mono);background:var(--bg3);border:1px solid var(--border2);
+             border-radius:3px;color:var(--text0);outline:none;"
+      oninput="state.resultSearch=this.value;state.resultPage=0;renderResults();"
+      onkeydown="event.stopPropagation();">
+    ${q ? `<span style="font-size:10px;color:var(--text2);">${filtered}/${totalRows}</span>
+           <button onclick="state.resultSearch='';state.resultPage=0;renderResults();"
+             style="padding:1px 5px;font-size:10px;background:none;border:1px solid var(--border);
+                    color:var(--text2);border-radius:2px;cursor:pointer;">✕</button>` : ''}
+    <button id="sort-dir-btn" title="${newest?'Newest first (click for oldest first)':'Oldest first (click for newest first)'}"
+      onclick="state.resultNewestFirst=!state.resultNewestFirst;state.resultPage=0;renderResults();"
+      style="padding:2px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;
+             background:${newest?'rgba(0,212,170,0.1)':'var(--bg3)'};
+             border:1px solid ${newest?'rgba(0,212,170,0.35)':'var(--border)'};
+             color:${newest?'var(--accent)':'var(--text2)'};border-radius:3px;white-space:nowrap;">
+      ${newest?'↓ Newest first':'↑ Oldest first'}
+    </button>
+    <button onclick="clearCurrentSlotResults();"
+      title="Clear results — start fresh"
+      style="padding:2px 8px;font-size:10px;font-family:var(--mono);cursor:pointer;
+             background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:3px;">
+      ⌫ Clear
+    </button>
+  `;
+}
+
+function clearCurrentSlotResults() {
+  // Clear only the active slot's rows (doesn't stop streaming — just empties display)
+  const slot = (state.resultSlots || []).find(s => s.id === state.activeSlot);
+  if (slot) { slot.rows = []; }
+  state.results = [];
+  state.resultPage = 0;
+  state._maxRowsWarned = false;
+  renderResults();
+  const badge = document.getElementById('result-row-badge');
+  if (badge) badge.textContent = '0';
+  addLog('INFO', 'Results cleared — new rows will appear as they arrive.');
 }
 
 // ── Stream Selector: lets user pick which result slot to view ────────────────

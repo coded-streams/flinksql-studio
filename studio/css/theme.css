@@ -75,3 +75,66 @@
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
 
+
+  /* ── MONOKAI THEME ── */
+  body.theme-monokai {
+    --bg0: #1a1a1a;
+    --bg1: #272822;
+    --bg2: #2d2e27;
+    --bg3: #333429;
+    --bg4: #3d3e30;
+    --border: #464741;
+    --border2: #555650;
+    --accent: #a6e22e;
+    --accent2: #66d9e8;
+    --accent3: #e6db74;
+    --accent4: #f92672;
+    --text0: #f8f8f2;
+    --text1: #cfcfc2;
+    --text2: #919183;
+    --text3: #5c5c52;
+    --green: #a6e22e;
+    --red: #f92672;
+    --yellow: #e6db74;
+    --blue: #66d9e8;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 3px;
+    --logo-bg: #272822;
+    --logo-text: #f8f8f2;
+    --input-bg: #1a1a1a;
+  }
+  body.theme-monokai .editor-area {
+    background: #272822;
+    color: #f8f8f2;
+  }
+  body.theme-monokai .CodeMirror,
+  body.theme-monokai #sql-editor {
+    background: #272822 !important;
+    color: #f8f8f2 !important;
+  }
+
+/* ── Resource warning tooltip ── */
+.resource-warning-toast {
+  position: fixed;
+  bottom: 44px;
+  right: 16px;
+  background: rgba(245,166,35,0.97);
+  color: #111;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  z-index: 9998;
+  max-width: 320px;
+  animation: slideUp 0.2s ease;
+  cursor: pointer;
+}
+.resource-warning-toast .rw-title { font-size:12px; margin-bottom:3px; }
+.resource-warning-toast .rw-action { font-size:10px; opacity:0.8; margin-top:4px; }
+@keyframes slideUp {
+  from { transform: translateY(10px); opacity:0; }
+  to   { transform: translateY(0);    opacity:1; }
+}

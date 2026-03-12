@@ -795,23 +795,35 @@ async function _pollEventStream() {
       if (names.length > 0) _ndState._metricNames = names;  // only cache when we have names
     }
 
-    // Always fetch base throughput metrics directly — no filtering.
-    // Flink 1.17+ exposes these on all running vertices regardless of connector type.
-    //  ensures we get the SUM across all parallel subtasks (not just one).
-    const baseMetrics = [
+    // CRITICAL FIX — Flink 1.19 returns metric data ONLY when you request by the
+    // EXACT full prefixed id (e.g. "0.numRecordsIn", "0.MiniBatchAssigner[184].numRecordsIn").
+    // Requesting by bare name "numRecordsIn" returns an empty array.
+    // Strategy: use all names from the list endpoint directly as the fetch request.
+    const WANTED_SUFFIXES = [
       'numRecordsIn', 'numRecordsOut',
       'numRecordsInPerSecond', 'numRecordsOutPerSecond',
       'numBytesIn', 'numBytesOut',
       'numBytesInPerSecond', 'numBytesOutPerSecond',
       'backPressuredTimeMsPerSecond', 'idleTimeMsPerSecond', 'busyTimeMsPerSecond',
     ];
-    // Add any Kafka-specific metrics that were discovered
-    const kafkaNames = (_ndState._metricNames || []).filter(m =>
-      m.includes('Kafka') || m.includes('kafka')
-    );
-    const fetchList = [...new Set([...baseMetrics, ...kafkaNames])];
+
+    // Build fetch list from ACTUAL metric ids returned by the list call
+    let fetchList = [];
+    if (_ndState._metricNames && _ndState._metricNames.length > 0) {
+      // Filter to only metrics whose last segment is one we care about
+      fetchList = _ndState._metricNames.filter(id => {
+        const lastDot = id.lastIndexOf('.');
+        const seg = lastDot >= 0 ? id.slice(lastDot + 1) : id;
+        return WANTED_SUFFIXES.includes(seg) || id.includes('Kafka') || id.includes('kafka');
+      });
+    }
+    // Fallback: if list not yet loaded or empty, try bare names
+    if (fetchList.length === 0) fetchList = WANTED_SUFFIXES;
+
+    // Flink URL length limit ~4096 — cap at 30 metrics
+    const fetchSlice = fetchList.slice(0, 30);
     const metrics = await jmApi(
-      `/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(fetchList.join(','))}`
+      `/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(fetchSlice.join(','))}`
     );
 
     if (metrics && Array.isArray(metrics) && metrics.length > 0) {

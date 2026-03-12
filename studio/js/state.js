@@ -11,6 +11,8 @@ const state = {
   resultColumns: [],      // column definitions
   resultPage: 0,
   pageSize: 100,
+  resultNewestFirst: true,  // true = newest rows at top (default for streaming)
+  resultSearch: '',         // filter string across all fields
   currentOp: null,        // { sessionHandle, operationHandle }
   // ── Multi-stream result slots ───────────────────────────────────────────
   // Each streaming SELECT gets its own slot so results don't overwrite each other.
@@ -29,7 +31,7 @@ const state = {
   activeDatabase: 'default',          // tracks current database from USE <db>
 };
 
-const MAX_ROWS = 10000;   // cap results to avoid browser slowdown
+const MAX_ROWS = 50000;   // cap results — raised to 50k (use Clear button to reset)
 
 const SNIPPETS = [
   { title:'⚠ Common Flink SQL Mistakes', desc:'Read before running SQL — key Flink differences vs MySQL/PG', tag:'SETUP',
