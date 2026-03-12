@@ -260,7 +260,7 @@ function startHeartbeat() {
         showSessionExpiredBanner();
       }
     }
-  }, 60000); // every 60s
+  }, 30000); // every 30s — keeps Flink session alive (default TTL 10min)
 }
 
 // ── Session expired banner ─────────────────────────────────────────────────

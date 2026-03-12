@@ -549,16 +549,22 @@ async function generateSessionReport(focusJid) {
       const vertexMetrics = {};
       if (detail && detail.vertices) {
         for (const v of detail.vertices.slice(0, 20)) {
+          // Do NOT use &agg=sum at vertex level — Flink 1.19 ignores or breaks it.
+          // Fetch without agg and manually sum across subtasks.
           const vm = await jmApi(
-            `/jobs/${j.jid}/vertices/${v.id}/metrics?get=numRecordsIn,numRecordsOut,numRecordsInPerSecond,numRecordsOutPerSecond,numBytesIn,numBytesOut,backPressuredTimeMsPerSecond,idleTimeMsPerSecond,busyTimeMsPerSecond,currentOutputWatermark&agg=sum`
+            `/jobs/${j.jid}/vertices/${v.id}/metrics?get=numRecordsIn,numRecordsOut,numRecordsInPerSecond,numRecordsOutPerSecond,numBytesIn,numBytesOut,backPressuredTimeMsPerSecond,idleTimeMsPerSecond,busyTimeMsPerSecond,currentOutputWatermark`
           );
           if (vm && Array.isArray(vm)) {
-            vertexMetrics[v.id] = {};
+            // Accumulate by summing all entries that share the same suffix key
+            const acc = {};
             vm.forEach(m => {
-              // Handle subtask-prefixed names
+              // Metric name may be prefixed: "0.numRecordsIn", "0.MiniBatchAssigner[184].numRecordsIn"
+              // Extract the base metric name (last dot-segment)
               const key = m.id.includes('.') ? m.id.split('.').pop() : m.id;
-              vertexMetrics[v.id][key] = parseFloat(m.value || 0);
+              const val = parseFloat(m.value || 0);
+              acc[key] = (acc[key] || 0) + val;
             });
+            vertexMetrics[v.id] = acc;
           }
         }
       }

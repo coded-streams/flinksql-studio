@@ -67,8 +67,10 @@ function renderResults() {
     document.getElementById('result-pagination').style.display = 'none';
   }
 
-  // Switch to data tab
-  switchResultTab('data', document.getElementById('results-tab-btn'));
+  // NOTE: Do NOT call switchResultTab here — renderResults is called
+  // on every streaming tick and forcing a tab switch would prevent the user
+  // from navigating to Log, Job Graph, or Performance while data streams in.
+  // Tab switching is handled by showResultsTab() in pollOperation (firstRows only).
 }
 
 function changePage(dir) {
@@ -77,17 +79,156 @@ function changePage(dir) {
   renderResults();
 }
 
+// ── Stream Selector: lets user pick which result slot to view ────────────────
+function renderStreamSelector() {
+  const slots = state.resultSlots || [];
+  let sel = document.getElementById('stream-selector-bar');
+
+  if (slots.length === 0) {
+    if (sel) sel.style.display = 'none';
+    return;
+  }
+
+  // Create bar if it doesn't exist
+  if (!sel) {
+    const wrap = document.getElementById('result-data-tab');
+    if (!wrap) return;
+    sel = document.createElement('div');
+    sel.id = 'stream-selector-bar';
+    sel.style.cssText = `
+      display:flex; align-items:center; gap:4px; padding:4px 8px;
+      background:var(--bg2); border-bottom:1px solid var(--border);
+      flex-shrink:0; overflow-x:auto; white-space:nowrap; min-height:32px;
+    `;
+    wrap.insertBefore(sel, wrap.firstChild);
+  }
+  sel.style.display = slots.length > 0 ? 'flex' : 'none';
+
+  const activeId = state.activeSlot;
+  sel.innerHTML = '<span style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-right:4px;flex-shrink:0;">Streams:</span>';
+
+  slots.forEach(slot => {
+    const isActive = slot.id === activeId;
+    const isStreaming = slot.status === 'streaming';
+    const badge = document.createElement('button');
+    badge.style.cssText = `
+      display:inline-flex; align-items:center; gap:5px; padding:2px 8px;
+      border-radius:3px; font-size:10px; font-family:var(--mono); cursor:pointer;
+      border: 1px solid ${isActive ? 'var(--accent)' : 'var(--border)'};
+      background: ${isActive ? 'rgba(0,212,170,0.12)' : 'var(--bg3)'};
+      color: ${isActive ? 'var(--accent)' : 'var(--text2)'};
+      flex-shrink:0;
+    `;
+    if (isStreaming) {
+      badge.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1s infinite;display:inline-block;"></span>${escHtml(slot.label)} <span style="color:var(--text3)">${slot.rows.length}</span>`;
+    } else {
+      badge.innerHTML = `<span style="color:var(--text3);">✓</span>${escHtml(slot.label)} <span style="color:var(--text3)">${slot.rows.length}</span>`;
+    }
+    badge.title = slot.sql;
+    badge.onclick = () => switchToSlot(slot.id);
+
+    // Close button
+    const close = document.createElement('span');
+    close.textContent = '×';
+    close.style.cssText = 'margin-left:2px;opacity:0.5;cursor:pointer;font-size:11px;';
+    close.onclick = (e) => { e.stopPropagation(); removeSlot(slot.id); };
+    badge.appendChild(close);
+    sel.appendChild(badge);
+  });
+
+  // "Clear All" button
+  if (slots.length > 1) {
+    const clearBtn = document.createElement('button');
+    clearBtn.textContent = 'Clear All';
+    clearBtn.style.cssText = `
+      margin-left:auto; padding:2px 8px; font-size:9px; font-family:var(--mono);
+      background:none; border:1px solid var(--border); color:var(--text3); cursor:pointer; border-radius:3px; flex-shrink:0;
+    `;
+    clearBtn.onclick = clearAllSlots;
+    sel.appendChild(clearBtn);
+  }
+}
+
+function switchToSlot(slotId) {
+  const slot = (state.resultSlots || []).find(s => s.id === slotId);
+  if (!slot) return;
+  state.activeSlot = slotId;
+  state.results = slot.rows;
+  state.resultColumns = slot.columns;
+  state.resultPage = 0;
+  renderStreamSelector();
+  renderResults();
+  const tab = document.getElementById('results-tab-btn');
+  if (tab) switchResultTab('data', tab);
+}
+
+function removeSlot(slotId) {
+  state.resultSlots = (state.resultSlots || []).filter(s => s.id !== slotId);
+  if (state.activeSlot === slotId) {
+    const remaining = state.resultSlots;
+    if (remaining.length > 0) {
+      switchToSlot(remaining[remaining.length - 1].id);
+    } else {
+      state.activeSlot = null;
+      clearResults();
+    }
+  }
+  renderStreamSelector();
+}
+
+function clearAllSlots() {
+  state.resultSlots = [];
+  state.activeSlot = null;
+  clearResults();
+  renderStreamSelector();
+}
+
+// ── DDL/SET status confirmation card ─────────────────────────────────────────
+function showDDLStatus(verb, sql) {
+  // Accumulate DDL status lines in a special status slot
+  let statusSlot = (state.resultSlots || []).find(s => s.id === 'ddl-status');
+  if (!statusSlot) {
+    statusSlot = {
+      id: 'ddl-status',
+      label: 'Statements',
+      sql: '',
+      columns: [{ name: 'Status', type: 'VARCHAR' }, { name: 'Statement', type: 'VARCHAR' }, { name: 'Time', type: 'VARCHAR' }],
+      rows: [],
+      status: 'done',
+      startedAt: new Date(),
+    };
+    if (!state.resultSlots) state.resultSlots = [];
+    state.resultSlots.unshift(statusSlot); // put it first
+  }
+  const ts = new Date().toLocaleTimeString('en-US',{hour12:false});
+  statusSlot.rows.push({ fields: ['OK', sql, ts] });
+  statusSlot.columns = [{ name: 'Status', type: 'VARCHAR' }, { name: 'Statement', type: 'VARCHAR' }, { name: 'Time', type: 'VARCHAR' }];
+
+  // Only switch to this slot if user is already on results tab or no active slot
+  if (!state.activeSlot || state.activeSlot === 'ddl-status') {
+    state.activeSlot = 'ddl-status';
+    state.results = statusSlot.rows;
+    state.resultColumns = statusSlot.columns;
+    state.resultPage = 0;
+    renderResults();
+  }
+  renderStreamSelector();
+}
+
 function clearResults() {
   state.results = [];
   state.resultColumns = [];
   state.resultPage = 0;
-  document.getElementById('result-table-wrap').innerHTML = `
+  const wrap = document.getElementById('result-table-wrap');
+  if (wrap) wrap.innerHTML = `
     <div class="empty-state">
       <div class="icon">⚡</div>
       <div class="msg">Run a query to see results here.<br><kbd>Ctrl+Enter</kbd> to execute.</div>
     </div>`;
-  document.getElementById('result-row-badge').textContent = '0';
-  document.getElementById('result-pagination').style.display = 'none';
+  const badge = document.getElementById('result-row-badge');
+  if (badge) badge.textContent = '0';
+  const pag = document.getElementById('result-pagination');
+  if (pag) pag.style.display = 'none';
 }
 
 function exportCSV() {
@@ -183,6 +324,13 @@ function parseFlinkError(raw) {
   // ── Detect USE CATALOG missing
   if (s.indexOf('No current catalog') !== -1 || s.indexOf('No default catalog') !== -1) {
     return 'No active catalog. Run: USE CATALOG default_catalog; (or create one first)';
+  }
+
+  // ── Detect SESSION expired / does not exist ─────────────────────────────
+  if (s.indexOf('does not exist') !== -1 && (s.indexOf('Session') !== -1 || s.indexOf('session') !== -1)) {
+    // Trigger auto-renewal in background — next retry will use the new session
+    if (typeof showSessionExpiredBanner === 'function') showSessionExpiredBanner();
+    return 'Session expired — your Flink session no longer exists. Click "Create New Session" in the banner above, then re-run your CREATE TABLE statements.';
   }
 
   // ── Detect table not found (TEMPORARY tables are session-scoped)

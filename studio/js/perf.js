@@ -156,7 +156,7 @@ async function refreshPerf() {
         let maxBp = 0;
         for (const v of detail.vertices.slice(0, 8)) {
           const vm = await jmApi(
-            `/jobs/${job.jid}/vertices/${v.id}/metrics?get=numRecordsInPerSecond,numRecordsOutPerSecond,backPressuredTimeMsPerSecond&agg=sum`
+            `/jobs/${job.jid}/vertices/${v.id}/metrics?get=numRecordsInPerSecond,numRecordsOutPerSecond,backPressuredTimeMsPerSecond`
           );
           if (vm && Array.isArray(vm)) {
             vm.forEach(m => {

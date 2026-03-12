@@ -90,7 +90,6 @@ async function runSQL(sql) {
   if (statements.length === 0) return;
 
   setExecuting(true);
-  clearResults();
   perfQueryStart(sql);
   addLog('INFO', `Running ${statements.length} statement${statements.length > 1 ? 's' : ''} on session ${shortHandle(state.activeSession)}`);
 
@@ -117,11 +116,51 @@ async function runSQL(sql) {
 
 async function submitStatement(sql) {
   const cleanSql = sql.trim().replace(/;+$/, '');
-  const sessionHandle = state.activeSession;
-  const resp = await api('POST', `/v1/sessions/${sessionHandle}/statements`, {
-    statement: cleanSql,
-    executionTimeout: 0,
-  });
+  let sessionHandle = state.activeSession;
+
+  // ── Session validation before submit ──────────────────────────────────
+  // Verify session is still alive. If not, auto-renew before attempting submit.
+  try {
+    await api('GET', `/v1/sessions/${sessionHandle}`);
+  } catch(e) {
+    const msg = e.message || '';
+    const isSessionGone = msg.includes('does not exist') || msg.includes('404') || msg.includes('Session');
+    if (isSessionGone) {
+      addLog('WARN', 'Session expired — auto-creating new session…');
+      try {
+        await renewSession();
+        sessionHandle = state.activeSession;
+        addLog('OK', `New session ready: ${shortHandle(sessionHandle)} — retrying statement…`);
+        toast('Session auto-renewed — retrying', 'info');
+      } catch(renewErr) {
+        throw new Error('Session expired and auto-renewal failed: ' + renewErr.message);
+      }
+    }
+    // If it's a different error (network etc), proceed anyway — submit may still work
+  }
+
+  let resp;
+  try {
+    resp = await api('POST', `/v1/sessions/${sessionHandle}/statements`, {
+      statement: cleanSql,
+      executionTimeout: 0,
+    });
+  } catch(e) {
+    const msg = e.message || '';
+    // If session expired between our check and the submit, retry once with fresh session
+    if (msg.includes('does not exist') || msg.includes('Session')) {
+      addLog('WARN', 'Session expired mid-flight — auto-renewing…');
+      await renewSession();
+      sessionHandle = state.activeSession;
+      resp = await api('POST', `/v1/sessions/${sessionHandle}/statements`, {
+        statement: cleanSql,
+        executionTimeout: 0,
+      });
+    } else {
+      throw e;
+    }
+  }
+
   const opHandle = resp.operationHandle;
   addToHistory(sql, 'running', opHandle);
   addOperation(opHandle, sql);
@@ -323,37 +362,69 @@ async function pollOperation(opHandle, sql, sessionHandle) {
           return v === 'OK' || v === 'TRUE' || v === '';
         });
       if (isStatusOk) {
-        addLog('OK', `Statement executed successfully (${sql.trim().split(/\s+/)[0].toUpperCase()})`);
+        const verb = sql.trim().split(/\s+/)[0].toUpperCase();
+        addLog('OK', `${verb} — OK`);
         updateHistoryStatus(opHandle, 'ok');
         perfQueryEnd(0);
+        // Show a visible status confirmation in the Results area
+        // (but don't switch away from whatever tab the user is on)
+        showDDLStatus(verb, sql.trim().replace(/\s+/g,' ').slice(0,80));
         break;
       }
 
-      // Regular SELECT / SHOW / DESCRIBE — stream into results table
+      // Regular SELECT / SHOW / DESCRIBE — stream into per-statement result slot
       if (firstRows) {
         firstRows = false;
+        // Create a new result slot for this statement
+        const slotId = 'slot-' + Date.now();
+        const slotLabel = sql.trim().replace(/\s+/g,' ').slice(0, 40) + (sql.length > 40 ? '…' : '');
+        const newSlot = {
+          id: slotId,
+          label: slotLabel,
+          sql: sql,
+          columns: state.resultColumns,
+          rows: [],
+          status: 'streaming',
+          startedAt: new Date(),
+        };
+        state.resultSlots.push(newSlot);
+        // Cap slots at 10 (remove oldest)
+        if (state.resultSlots.length > 10) state.resultSlots.shift();
+        state.activeSlot = slotId;
+        // Back-fill the columns now that we know them
+        newSlot.columns = [...state.resultColumns];
         showResultsTab();
-        addLog('INFO', 'Data arriving — streaming rows into Results tab…');
+        renderStreamSelector();
+        addLog('INFO', `Data arriving — streaming into slot: ${slotLabel}`);
       }
+
       emptyPolls = 0;
-      const remaining = MAX_ROWS - state.results.length;
-      if (remaining > 0) {
-        state.results.push(...newRows.slice(0, remaining));
-        // During live streaming, auto-advance to last page so new rows are visible
-        const totalPages = Math.ceil(state.results.length / state.pageSize);
-        if (totalPages > 1 && state.resultPage < totalPages - 1) {
-          state.resultPage = totalPages - 1;
+
+      // Route rows to the active slot
+      const slot = state.resultSlots.find(s => s.id === state.activeSlot);
+      if (slot) {
+        const remaining = MAX_ROWS - slot.rows.length;
+        if (remaining > 0) {
+          slot.rows.push(...newRows.slice(0, remaining));
+          slot.columns = [...state.resultColumns]; // update schema
+          // Also mirror to legacy state.results + state.resultColumns for backwards compat
+          state.results = slot.rows;
+          state.resultColumns = slot.columns;
+          // Auto-advance to last page
+          const totalPages = Math.ceil(slot.rows.length / state.pageSize);
+          if (totalPages > 1 && state.resultPage < totalPages - 1) {
+            state.resultPage = totalPages - 1;
+          }
+          renderResults();
+          const badge = document.getElementById('result-row-badge');
+          if (badge) badge.textContent = slot.rows.length > 999 ? '999+' : slot.rows.length;
+          const wrap = document.getElementById('result-table-wrap');
+          if (wrap) wrap.scrollTop = wrap.scrollHeight;
         }
-        renderResults();
-        const badge = document.getElementById('result-row-badge');
-        if (badge) badge.textContent = state.results.length > 999 ? '999+' : state.results.length;
-        // Auto-scroll the table wrap to show newest rows
-        const wrap = document.getElementById('result-table-wrap');
-        if (wrap) wrap.scrollTop = wrap.scrollHeight;
-      }
-      if (state.results.length >= MAX_ROWS && !state._maxRowsWarned) {
-        state._maxRowsWarned = true;
-        addLog('WARN', `Display capped at ${MAX_ROWS.toLocaleString()} rows. Press Stop to export.`);
+        if (slot.rows.length >= MAX_ROWS && !state._maxRowsWarned) {
+          state._maxRowsWarned = true;
+          addLog('WARN', `Display capped at ${MAX_ROWS.toLocaleString()} rows.`);
+        }
       }
     } else if (opStatus === 'RUNNING') {
       emptyPolls++;
@@ -378,6 +449,10 @@ async function pollOperation(opHandle, sql, sessionHandle) {
       }
       updateHistoryStatus(opHandle, 'ok');
       perfQueryEnd(rowCount);
+      // Mark the active slot as complete
+      const doneSlot = state.resultSlots.find(s => s.id === state.activeSlot);
+      if (doneSlot) doneSlot.status = 'done';
+      renderStreamSelector();
       break;
     }
 

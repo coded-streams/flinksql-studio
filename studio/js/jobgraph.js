@@ -116,7 +116,7 @@ async function loadJobGraph(jid) {
     if (st === 'RUNNING' && plan.plan && plan.plan.nodes) {
       for (const node of plan.plan.nodes.slice(0, 8)) {
         try {
-          const vm = await jmApi(`/jobs/${jid}/vertices/${node.id}/metrics?get=numRecordsInPerSecond,numRecordsOutPerSecond,backPressuredTimeMsPerSecond&agg=sum`);
+          const vm = await jmApi(`/jobs/${jid}/vertices/${node.id}/metrics?get=numRecordsInPerSecond,numRecordsOutPerSecond,backPressuredTimeMsPerSecond`);
           if (vm && Array.isArray(vm)) {
             vertexMetrics[node.id] = {};
             vm.forEach(m => { vertexMetrics[node.id][m.id] = m.value; });
@@ -797,7 +797,7 @@ async function _pollEventStream() {
 
     // Always fetch base throughput metrics directly — no filtering.
     // Flink 1.17+ exposes these on all running vertices regardless of connector type.
-    // &agg=sum ensures we get the SUM across all parallel subtasks (not just one).
+    //  ensures we get the SUM across all parallel subtasks (not just one).
     const baseMetrics = [
       'numRecordsIn', 'numRecordsOut',
       'numRecordsInPerSecond', 'numRecordsOutPerSecond',
@@ -811,33 +811,30 @@ async function _pollEventStream() {
     );
     const fetchList = [...new Set([...baseMetrics, ...kafkaNames])];
     const metrics = await jmApi(
-      `/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(fetchList.join(','))}&agg=sum`
+      `/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(fetchList.join(','))}`
     );
 
     if (metrics && Array.isArray(metrics) && metrics.length > 0) {
-      // Flink 1.17-1.19: vertex metrics are returned with subtask prefix
-      // e.g. "0.MiniBatchAssigner[184].numRecordsOutPerSecond" or "0.numRecordsOutPerSecond"
-      // We match by exact id, by suffix, OR sum across all subtask entries for same metric.
+      // Flink 1.19: vertex metrics come with subtask prefix AND operator name prefix:
+      // "0.numRecordsIn"  OR  "0.MiniBatchAssigner[184].numRecordsIn"
+      // We ALWAYS sum across all matching subtask entries (replaces removed &agg=sum)
       const get = key => {
-        // Try exact match first
-        const exact = metrics.find(m => m.id === key);
-        if (exact) return parseFloat(exact.value || 0);
-        // Match by suffix (handles subtask-prefixed names)
-        const suffixMatches = metrics.filter(m =>
-          m.id === key ||
-          m.id.endsWith('.' + key) ||
-          m.id.endsWith(key)       // handles "0.numRecordsOutPerSecond" type
-        );
-        if (suffixMatches.length === 1) return parseFloat(suffixMatches[0].value || 0);
-        if (suffixMatches.length  > 1) {
-          // Multiple subtasks — SUM them (e.g. 0.numRecordsOut, 1.numRecordsOut)
-          return suffixMatches.reduce((s, m) => s + parseFloat(m.value || 0), 0);
-        }
-        return 0;
+        const matches = metrics.filter(m => {
+          if (m.id === key) return true;
+          // Last segment after final dot must equal key
+          const lastDot = m.id.lastIndexOf('.');
+          const seg = lastDot >= 0 ? m.id.slice(lastDot + 1) : m.id;
+          return seg === key;
+        });
+        if (matches.length === 0) return 0;
+        return matches.reduce((s, m) => s + parseFloat(m.value || 0), 0);
       };
-      const has = key => metrics.some(m =>
-        m.id === key || m.id.endsWith('.' + key) || m.id.endsWith(key)
-      );
+      const has = key => metrics.some(m => {
+        if (m.id === key) return true;
+        const lastDot = m.id.lastIndexOf('.');
+        const seg = lastDot >= 0 ? m.id.slice(lastDot + 1) : m.id;
+        return seg === key;
+      });
 
       const recInPs  = get('numRecordsInPerSecond');
       const recOutPs = get('numRecordsOutPerSecond');
@@ -903,7 +900,7 @@ async function _fetchFinalSnapshot(jid, nid, isSource, isSink) {
       'backPressuredTimeMsPerSecond','idleTimeMsPerSecond','busyTimeMsPerSecond',
     ];
     const metrics = await jmApi(
-      `/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(baseMetrics.join(','))}&agg=sum`
+      `/jobs/${jid}/vertices/${nid}/metrics?get=${encodeURIComponent(baseMetrics.join(','))}`
     );
 
     if (!metrics || !Array.isArray(metrics) || metrics.length === 0) {
@@ -914,9 +911,12 @@ async function _fetchFinalSnapshot(jid, nid, isSource, isSink) {
     }
 
     const getM = key => {
-      const suffixMatches = metrics.filter(m => m.id === key || m.id.endsWith('.' + key) || m.id.endsWith(key));
-      if (suffixMatches.length === 0) return 0;
-      return suffixMatches.reduce((s, m) => s + parseFloat(m.value || 0), 0);
+      const matches = metrics.filter(m => {
+        if (m.id === key) return true;
+        const lastDot = m.id.lastIndexOf('.');
+        return (lastDot >= 0 ? m.id.slice(lastDot + 1) : m.id) === key;
+      });
+      return matches.reduce((s, m) => s + parseFloat(m.value || 0), 0);
     };
 
     const totalIn   = Math.round(getM('numRecordsIn'));

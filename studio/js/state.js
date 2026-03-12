@@ -12,6 +12,11 @@ const state = {
   resultPage: 0,
   pageSize: 100,
   currentOp: null,        // { sessionHandle, operationHandle }
+  // ── Multi-stream result slots ───────────────────────────────────────────
+  // Each streaming SELECT gets its own slot so results don't overwrite each other.
+  // Slots: [ { id, label, sql, columns, rows, status, jobId, startedAt } ]
+  resultSlots: [],        // all active/completed result streams
+  activeSlot: null,       // id of the slot currently displayed
   pollTimer: null,
   history: [],
   operations: [],
