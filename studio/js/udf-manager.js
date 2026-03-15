@@ -481,13 +481,43 @@ function _buildUdfManagerModal() {
         <div id="udf-pane-upload" style="padding:20px;display:none;">
 
           <!-- How it works -->
-          <div style="background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2);padding:12px 14px;border-radius:var(--radius);margin-bottom:16px;font-size:12px;color:var(--text1);line-height:1.8;">
+          <div style="background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2);padding:12px 14px;border-radius:var(--radius);margin-bottom:14px;font-size:12px;color:var(--text1);line-height:1.8;">
             <strong style="color:var(--blue,#4fa3e0);">How JAR upload works</strong><br>
-            FlinkSQL Studio uploads your JAR directly to the Flink JobManager via the same REST endpoint
-            that the Flink Web UI uses: <code style="color:var(--accent);">POST /jars/upload</code>.<br>
-            Once uploaded, the JAR is available to <strong>all TaskManagers</strong> in the cluster immediately —
-            no SSH, no container restart, no manual file copying required.<br><br>
-            After uploading, use the <strong>＋ Register UDF</strong> tab to register functions from the uploaded JAR.
+            FlinkSQL Studio uploads your JAR directly to the Flink JobManager via
+            <code style="color:var(--accent);">POST /jars/upload</code> — the same endpoint the Flink Web UI uses.
+            The JAR is available to all TaskManagers immediately. No SSH, no restart.<br><br>
+            <strong style="color:var(--yellow,#f5a623);">JobManager URL is separate from the SQL Gateway.</strong>
+            The Gateway runs on port 8083; the JobManager REST API runs on port 8081.
+            Set the correct URL below. After uploading, use <strong>＋ Register UDF</strong>.
+          </div>
+
+          <!-- JobManager URL config — shown in direct/remote mode -->
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;">
+              Flink JobManager REST API URL
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <div style="flex:2;min-width:180px;">
+                <label class="field-label" style="font-size:10px;">Full URL override
+                  <span style="font-weight:400;color:var(--text3);">(overrides auto-detect)</span>
+                </label>
+                <input id="inp-jm-override" class="field-input" type="text"
+                  placeholder="e.g. http://flink-jobmanager:8081 or http://localhost:8081"
+                  style="font-size:11px;font-family:var(--mono);"
+                  oninput="_jarUpdateJmPreview()" />
+              </div>
+              <div style="flex:0 0 90px;">
+                <label class="field-label" style="font-size:10px;">JM Port
+                  <span style="font-weight:400;color:var(--text3);">(if auto-detect)</span>
+                </label>
+                <input id="inp-jm-port" class="field-input" type="text"
+                  value="8081" placeholder="8081"
+                  style="font-size:11px;font-family:var(--mono);"
+                  oninput="_jarUpdateJmPreview()" />
+              </div>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-top:6px;line-height:1.6;"
+              id="jm-url-preview">Auto-detecting JobManager URL…</div>
           </div>
 
           <!-- Drop zone -->
@@ -888,7 +918,7 @@ function switchUdfTab(tab) {
         if (pane) pane.style.display = active ? 'block' : 'none';
     });
     if (tab === 'library')   loadUdfLibrary();
-    if (tab === 'upload')    _jarLoadList();
+    if (tab === 'upload')    _jarListOnTabOpen();
     if (tab === 'maven')     _mvnUpdatePreview();
     if (tab === 'templates') _renderUdfTemplates();
 }
@@ -1193,7 +1223,69 @@ function _udfTmplInsert(gi, ti) {
 // Uses POST /jars/upload (same endpoint as the Flink Web UI)
 // Routed through /jobmanager-api/ proxy in nginx
 
+// Resolves the correct JobManager REST base URL.
+//
+// Priority:
+//   1. User-supplied override in the Upload JAR tab (inp-jm-override)
+//   2. Proxy mode    → swap /flink-api → /jobmanager-api  (nginx handles port 8081)
+//   3. Direct mode   → same host as gateway but port 8081
+//   4. Remote mode   → same host as gateway URL but port 8081
+//
+function _getJmBase() {
+    // 1. User override field — highest priority
+    const overrideEl = document.getElementById('inp-jm-override');
+    const override   = (overrideEl?.value || '').trim();
+    if (override) return override.replace(/\/$/, '');
+
+    if (!state.gateway) return null;
+    const url = state.gateway.baseUrl || '';
+
+    // 2. Proxy mode
+    if (url.includes('/flink-api')) {
+        return url.replace('/flink-api', '/jobmanager-api');
+    }
+
+    // 3 & 4. Direct / Remote mode — derive host, replace port with 8081
+    // But also allow user to override port via inp-jm-port
+    const jmPortEl = document.getElementById('inp-jm-port');
+    const jmPort   = (jmPortEl?.value || '8081').trim();
+
+    try {
+        const parsed = new URL(url);
+        parsed.port  = jmPort;
+        return parsed.origin;   // e.g. http://my-cluster.internal:8081
+    } catch(_) {
+        // Relative fallback
+        return '/jobmanager-api';
+    }
+}
+
+// Tab-open handler: show neutral state if not connected; load list if connected
+function _jarListOnTabOpen() {
+    const listEl = document.getElementById('udf-jar-list');
+    _jarUpdateJmPreview();  // Always show resolved URL on tab open
+    if (!listEl) return;
+    if (!state.gateway) {
+        listEl.innerHTML = '<div style="font-size:11px;color:var(--text3);line-height:1.7;">Connect to a Flink cluster first, then click ⧳ Refresh list to see uploaded JARs.</div>';
+        return;
+    }
+    _jarLoadList();
+}
+
 let _selectedJarFile = null;
+
+function _jarUpdateJmPreview() {
+    const el = document.getElementById('jm-url-preview');
+    if (!el) return;
+    const resolved = _getJmBase();
+    if (resolved) {
+        el.textContent = 'Resolved JobManager URL: ' + resolved;
+        el.style.color = 'var(--accent)';
+    } else {
+        el.textContent = 'Not connected — connect to a cluster first.';
+        el.style.color = 'var(--text3)';
+    }
+}
 
 function _jarDragOver(e) {
     e.preventDefault();
@@ -1279,9 +1371,11 @@ async function _jarUpload() {
 
     // Build the JobManager base URL from gateway config
     // Gateway is at /flink-api/, JobManager REST is at /jobmanager-api/
-    const jmBase = state.gateway.baseUrl
-        ? state.gateway.baseUrl.replace('/flink-api', '/jobmanager-api')
-        : '/jobmanager-api';
+    const jmBase = _getJmBase();
+    if (!jmBase) {
+        _jarSetStatus('✗ Not connected to a Flink cluster. Connect first.', 'var(--red)');
+        return;
+    }
 
     const progressWrap = document.getElementById('udf-jar-progress-wrap');
     const progressBar  = document.getElementById('udf-jar-progress-bar');
@@ -1289,8 +1383,14 @@ async function _jarUpload() {
     if (progressWrap) progressWrap.style.display = 'block';
     _jarSetStatus('Uploading ' + _selectedJarFile.name + ' to Flink cluster…', 'var(--accent)');
 
+    // Per Flink REST API spec and confirmed via Flink Web UI network inspection:
+    // - Field name must be exactly "jarfile"
+    // - Must include Content-Type: application/x-java-archive on the part
+    // - Must be multipart/form-data (FormData handles this automatically)
+    // Missing the Content-Type causes HTTP 500 from the JobManager.
+    const jarBlob  = new Blob([await _selectedJarFile.arrayBuffer()], { type: 'application/x-java-archive' });
     const formData = new FormData();
-    formData.append('jarfile', _selectedJarFile, _selectedJarFile.name);
+    formData.append('jarfile', jarBlob, _selectedJarFile.name);
 
     try {
         // Use XHR instead of fetch so we get upload progress events
@@ -1363,9 +1463,7 @@ async function _jarLoadList() {
     }
     listEl.innerHTML = '<div style="font-size:11px;color:var(--text3);">Loading…</div>';
 
-    const jmBase = state.gateway.baseUrl
-        ? state.gateway.baseUrl.replace('/flink-api', '/jobmanager-api')
-        : '/jobmanager-api';
+    const jmBase = _getJmBase();
 
     try {
         const resp = await fetch(jmBase + '/jars');
@@ -1409,10 +1507,24 @@ async function _jarLoadList() {
 
     } catch(err) {
         const msg = err.message || '';
-        let hint = msg.includes('404')
-            ? 'The /jars endpoint is not reachable. Ensure the Flink Web UI port (8081) is proxied at /jobmanager-api/.'
-            : err.message;
-        listEl.innerHTML = `<div style="font-size:11px;color:var(--red);">Could not load JAR list: ${escHtml(hint)}</div>`;
+        const isProxy = (state.gateway && state.gateway.baseUrl || '').includes('/flink-api');
+        let hint;
+        if (msg.includes('404') || msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch')) {
+            hint = isProxy
+                ? 'The Flink JobManager is not reachable via /jobmanager-api/. Check your nginx config proxies port 8081 at /jobmanager-api/.'
+                : 'The Flink JobManager REST API (port 8081) is not reachable from this browser. ' +
+                'JAR upload requires the JobManager Web UI endpoint, which is separate from the SQL Gateway. ' +
+                'Ensure port 8081 is accessible.';
+        } else {
+            hint = msg;
+        }
+        listEl.innerHTML =
+            '<div style="font-size:11px;color:var(--yellow,#f5a623);line-height:1.7;margin-bottom:6px;">' +
+            '⚠ JAR list not available: ' + escHtml(hint) +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--text3);line-height:1.7;">' +
+            'This does not affect SQL UDFs — use the ✎ SQL UDF tab for functions that need no JAR.' +
+            '</div>';
     }
 }
 
@@ -1434,9 +1546,7 @@ function _jarUseInRegister(jarName) {
 async function _jarDelete(jarId, jarName) {
     if (!confirm('Delete ' + jarName + ' from the cluster?\n\nThis removes the JAR from the Flink JobManager. Any UDFs registered from it will stop working after the next job restart.')) return;
 
-    const jmBase = state.gateway.baseUrl
-        ? state.gateway.baseUrl.replace('/flink-api', '/jobmanager-api')
-        : '/jobmanager-api';
+    const jmBase = _getJmBase();
 
     try {
         const resp = await fetch(jmBase + '/jars/' + encodeURIComponent(jarId), { method: 'DELETE' });

@@ -240,6 +240,7 @@
       <button class="topbar-btn" onclick="openNewSessionModal()"    title="New Session">＋ New Session</button>
       <button class="topbar-btn" onclick="refreshCatalog()"         title="Refresh Catalog">⟳ Catalog</button>
       <button class="topbar-btn" onclick="openSnippets()"           title="Snippets">✂ Snippets</button>
+      <button class="topbar-btn" onclick="openProjectManager()"      title="Project Manager — save, load and run FlinkSQL projects">⬡ Projects</button>
       <button class="topbar-btn" onclick="openUdfManager()"          title="UDF Manager — User-Defined Functions">⨍ UDFs</button>
       <button class="topbar-btn" onclick="showTipsModal()"          title="Tips &amp; Flink Concepts">💡 Tips</button>
       <button class="topbar-btn" onclick="openModal('modal-about')" title="About">ℹ About</button>
@@ -875,7 +876,7 @@ SHOW CATALOGS;"></textarea>
         <div>
           <div style="font-size:18px;font-weight:700;color:var(--text0);">FlinkSQL Studio</div>
           <div style="font-size:11px;color:var(--text2);margin-top:3px;">Browser-based SQL IDE for Apache Flink</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono);">v1.0.20 · MIT License</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono);">v1.0.21 · MIT License</div>
         </div>
       </div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
@@ -1028,6 +1029,9 @@ SHOW CATALOGS;"></textarea>
 
 <!-- 19. UDF Manager — library, register, SQL UDF creator, templates -->
 <script src="js/udf-manager.js"></script>
+
+<!-- 20. Project Manager — create, load, run, save, delete FlinkSQL projects -->
+<script src="js/project-manager.js"></script>
 
 </body>
 </html>

@@ -197,6 +197,7 @@
     <li><a href="#connectors">Connectors</a></li>
     <li><a href="#pipeline">Pipeline Demo</a></li>
     <li><a href="#operator">Kube Operator</a></li>
+    <li><a href="#project-manager">Project Manager</a></li>
     <li><a href="#udf-manager">UDF Manager</a></li>
     <li><a href="#changelog">Changelog</a></li>
   </ul>
@@ -258,6 +259,7 @@
       <a href="#features">All Features</a>
       <a href="#admin">Admin Session</a>
       <a href="#tips-modal">Tips &amp; Concepts Modal</a>
+      <a href="#project-manager">Project Manager</a>
       <a href="#udf-manager">UDF Manager</a>
       <a href="#snippets">Snippets Library</a>
       <a href="#job-graph">Job Graph</a>
@@ -482,6 +484,7 @@ EOF</code></pre>
 
       <h3>Themes &amp; UX</h3>
       <div class="feature-grid">
+        <div class="feature-card"><span class="fci">⬡</span><h3>Project Manager</h3><p>Save, load, run, and delete named FlinkSQL projects. Each project stores all editor tabs, SET configuration, catalog context, and metadata. Export to JSON for sharing or backup. Tracks storage usage per project.</p></div>
         <div class="feature-card"><span class="fci">⨍</span><h3>UDF Manager</h3><p>Browse all registered functions, register JAR-based or Python UDFs, create SQL UDFs without writing a single line of Java, and insert professional UDF templates directly into the editor.</p></div>
         <div class="feature-card"><span class="fci">💡</span><h3>Tips &amp; Concepts Modal</h3><p>On first connect, a paginated modal walks through IDE features, Flink architecture, window types, state, connectors, and performance tips — like IntelliJ's "Tip of the Day".</p></div>
         <div class="feature-card"><span class="fci">🎨</span><h3>6 Themes</h3><p>Dark (default), Light, Monokai, Dracula, Nord, Contrast. Preference persisted across sessions.</p></div>
@@ -833,7 +836,7 @@ metadata:
   name: prod-studio
   namespace: flink
 spec:
-  image: codedstreams/flinksql-studio:v1.0.20
+  image: codedstreams/flinksql-studio:v1.0.21
   replicas: 2
   gateway:
     host: flink-sql-gateway
@@ -883,6 +886,63 @@ spec:
     </section>
 
     <!-- CHANGELOG -->
+    <section class="doc-section" id="project-manager">
+      <h2><span class="si">⬡</span>Project Manager</h2>
+      <p>
+        The <strong>Project Manager</strong> lets you save, load, run, and organise your FlinkSQL work as named projects.
+        Access it from the topbar via the <code style="background:rgba(0,212,170,0.12);color:var(--accent);padding:2px 7px;border-radius:3px;">⬡ Projects</code> button.
+        Projects are stored in browser <code>localStorage</code> and can be exported and imported as JSON files.
+      </p>
+
+      <h3 style="margin-top:22px;color:var(--text0);font-size:15px;">What a project stores</h3>
+      <table class="params-table" style="margin-top:10px;">
+        <thead><tr><th>Field</th><th>Description</th></tr></thead>
+        <tbody>
+        <tr><td><strong>SQL tabs</strong></td><td>All editor tab titles and SQL content, snapshotted at save time</td></tr>
+        <tr><td><strong>SET config</strong></td><td>All <code>SET ...</code> statements from query history — runtime mode, checkpointing, mini-batch, etc.</td></tr>
+        <tr><td><strong>Catalog / Database</strong></td><td>Active <code>USE CATALOG</code> and <code>USE</code> context at save time</td></tr>
+        <tr><td><strong>Metadata</strong></td><td>Name, description, created/modified timestamps, run count, version tag</td></tr>
+        </tbody>
+      </table>
+
+      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">Three tabs</h3>
+
+      <div class="feature-grid" style="margin-top:12px;">
+        <div class="feature-card">
+          <span class="fci">📁</span>
+          <h3>Projects tab</h3>
+          <p>Lists all saved projects with size, tab count, last modified, and run count. Actions per project: <strong>Load</strong> (restore to editor), <strong>▶ Run</strong> (load + execute), <strong>⬇ Export</strong> (download JSON), <strong>🗑 Delete</strong>. Search bar filters by name or description.</p>
+        </div>
+        <div class="feature-card">
+          <span class="fci">＋</span>
+          <h3>New Project tab</h3>
+          <p>Create a named project with optional description. Checkboxes control whether to snapshot current editor tabs and current SET config from history. The active project is shown in the topbar.</p>
+        </div>
+        <div class="feature-card">
+          <span class="fci">🗄</span>
+          <h3>Storage tab</h3>
+          <p>Shows a progress bar of localStorage usage (5 MB limit). Per-project storage breakdown. Buttons to export all, import from file, or clear all projects. Export before clearing.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">Workflow</h3>
+      <ol style="margin:10px 0 0 20px;font-size:13px;line-height:2.2;">
+        <li>Write your SQL across tabs. Run <code>SET</code> statements to configure the session.</li>
+        <li>Open <strong>⬡ Projects → ＋ New Project</strong>. Name it, tick snapshot tabs + config, click <strong>⬡ Create Project</strong>.</li>
+        <li>The project appears in the list with an <strong>ACTIVE</strong> badge. The topbar shows the project name.</li>
+        <li>Continue working. Click <strong>💾 Save Current State</strong> (modal footer) to update the active project.</li>
+        <li>To restore: open <strong>⬡ Projects → Load</strong> on any project. This replaces the editor tabs.</li>
+        <li>To share: click <strong>⬇</strong> on any project row to download a <code>.json</code> file. Import on any other Studio instance.</li>
+      </ol>
+
+      <div class="callout" style="margin-top:14px;background:rgba(245,166,35,0.06);border-left:3px solid var(--yellow,#f5a623);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
+        <strong style="color:var(--yellow,#f5a623);">Storage limit:</strong> Browser localStorage is limited to ~5 MB.
+        Each project is typically 2–20 KB. Export projects you want to keep permanently — localStorage is
+        cleared when browser data is cleared. For large SQL files, keep scripts in version control and use
+        projects for session config and metadata only.
+      </div>
+    </section>
+
     <section class="doc-section" id="udf-manager">
       <h2><span class="si">⨍</span>UDF Manager</h2>
       <p>
@@ -1322,7 +1382,7 @@ FROM cleansed_source;</pre>
       <div class="version-list">
         <div class="version-card">
           <div class="version-header">
-            <span class="version-tag">v1.0.20</span>
+            <span class="version-tag">v1.0.21</span>
             <span class="version-date">March 2026</span>
             <span class="version-label current">current</span>
           </div>
@@ -1340,47 +1400,61 @@ FROM cleansed_source;</pre>
         </div>
         <div class="version-card">
           <div class="version-header">
-            <span class="version-tag">v1.0.19</span>
-            <span class="version-date">March 2026</span>
+            <div class="version-card">
+              <div class="version-header">
+                <span class="version-tag">v1.0.20</span>
+                <span class="version-date">March 2026</span>
+              </div>
+              <ul>
+                <li><strong>⬡ Project Manager</strong> — create, load, run, save, and delete FlinkSQL projects; each project stores SQL tabs, SET config, catalog/database context, and metadata; export/import as JSON; storage usage tracking with per-project breakdown</li>
+                <li><strong>JAR Upload fix</strong> — FormData now sends <code>application/x-java-archive</code> Content-Type on the jarfile part (fixes HTTP 500 from Flink JobManager); configurable JobManager URL override field added for direct/remote clusters on non-standard ports</li>
+                <li><strong>_getJmBase() rewrite</strong> — correctly resolves JobManager URL in proxy mode (nginx swap), direct mode (port swap to 8081), and remote mode (user override field); no longer crashes with red error on tab open when not connected</li>
+                <li><strong>Maven / Gradle tab</strong> — generates complete <code>pom.xml</code> / <code>build.gradle</code> with correct provided/compileOnly scopes, shade/shadow plugin, and build commands; explains why Flink JARs must not be bundled</li>
+              </ul>
+            </div>
+            <div class="version-card">
+              <div class="version-header">
+                <span class="version-tag">v1.0.19</span>
+                <span class="version-date">March 2026</span>
+              </div>
+              <ul>
+                <li><strong>Admin Session</strong> — privileged connect mode with full cluster job visibility, admin badge in topbar, session activity modal, technical and business/management PDF reports</li>
+                <li><strong>Admin passcode management</strong> — default <code>admin1234</code>, changeable via Admin Settings modal after connecting</li>
+                <li><strong>Job scoping</strong> — regular sessions only see their own jobs; admin sees all cluster jobs with session attribution</li>
+                <li><strong>Duplicate submission guard</strong> — INSERT INTO / pipeline queries blocked if same statement already running</li>
+                <li><strong>Job tagging</strong> — <code>pipeline.name</code> SET injected automatically before INSERT statements with session label prefix</li>
+                <li><strong>Cancel job confirmation modal</strong> — explicit "Are you sure?" dialog before sending cancel signal to JobManager</li>
+                <li><strong>Tips &amp; Concepts modal</strong> — 16 tips across 6 categories: IDE features, Flink architecture, window types, state, connectors, performance, admin</li>
+                <li><strong>Load existing sessions</strong> — connect screen auto-fetches sessions from gateway after Test Connection for dropdown selection</li>
+                <li><strong>Session persistence</strong> — heartbeat keeps sessions alive indefinitely; no idle expiry unless explicitly disconnected</li>
+              </ul>
+            </div>
+            <div class="version-card">
+              <div class="version-header"><span class="version-tag">v1.0.18</span><span class="version-date">March 2026</span></div>
+              <ul>
+                <li><strong>Results display fixed</strong> — <code>NOT_READY</code> / <code>EOS</code> handling; Kafka SELECT rows reliably stream into Results tab</li>
+                <li><strong>Mouse wheel zoom</strong> on Job Graph (20%–300%) with zoom-toward-cursor and % indicator</li>
+                <li><strong>Catalog context fix</strong> — sidebar refresh no longer hijacks active USE CATALOG context</li>
+                <li>Named workspace export, session isolation, Cancel Job button, full session export</li>
+                <li>⚡ Recommended Streaming Config snippet, INSERT auto-redirect to Job Graph</li>
+              </ul>
+            </div>
+            <div class="version-card">
+              <div class="version-header"><span class="version-tag">v1.0.17</span><span class="version-date">February 2026</span></div>
+              <ul>
+                <li>Job Graph DAG — drag-to-pan, animated edges, fault highlighting, node double-click detail</li>
+                <li>Tab rename (double-click), per-session workspace isolation</li>
+              </ul>
+            </div>
+            <div class="version-card">
+              <div class="version-header"><span class="version-tag">v1.0.1 – v1.0.16</span><span class="version-date">December 2025 – January 2026</span></div>
+              <ul>
+                <li>Initial build: SQL editor, session management, Results / Log / Operations tabs</li>
+                <li>Snippet library, query history, catalog browser, performance tracking panel</li>
+                <li>Dark/light theme toggle, workspace export/import, Job Graph tab first visual pipeline monitoring</li>
+              </ul>
+            </div>
           </div>
-          <ul>
-            <li><strong>Admin Session</strong> — privileged connect mode with full cluster job visibility, admin badge in topbar, session activity modal, technical and business/management PDF reports</li>
-            <li><strong>Admin passcode management</strong> — default <code>admin1234</code>, changeable via Admin Settings modal after connecting</li>
-            <li><strong>Job scoping</strong> — regular sessions only see their own jobs; admin sees all cluster jobs with session attribution</li>
-            <li><strong>Duplicate submission guard</strong> — INSERT INTO / pipeline queries blocked if same statement already running</li>
-            <li><strong>Job tagging</strong> — <code>pipeline.name</code> SET injected automatically before INSERT statements with session label prefix</li>
-            <li><strong>Cancel job confirmation modal</strong> — explicit "Are you sure?" dialog before sending cancel signal to JobManager</li>
-            <li><strong>Tips &amp; Concepts modal</strong> — 16 tips across 6 categories: IDE features, Flink architecture, window types, state, connectors, performance, admin</li>
-            <li><strong>Load existing sessions</strong> — connect screen auto-fetches sessions from gateway after Test Connection for dropdown selection</li>
-            <li><strong>Session persistence</strong> — heartbeat keeps sessions alive indefinitely; no idle expiry unless explicitly disconnected</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.18</span><span class="version-date">March 2026</span></div>
-          <ul>
-            <li><strong>Results display fixed</strong> — <code>NOT_READY</code> / <code>EOS</code> handling; Kafka SELECT rows reliably stream into Results tab</li>
-            <li><strong>Mouse wheel zoom</strong> on Job Graph (20%–300%) with zoom-toward-cursor and % indicator</li>
-            <li><strong>Catalog context fix</strong> — sidebar refresh no longer hijacks active USE CATALOG context</li>
-            <li>Named workspace export, session isolation, Cancel Job button, full session export</li>
-            <li>⚡ Recommended Streaming Config snippet, INSERT auto-redirect to Job Graph</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.17</span><span class="version-date">February 2026</span></div>
-          <ul>
-            <li>Job Graph DAG — drag-to-pan, animated edges, fault highlighting, node double-click detail</li>
-            <li>Tab rename (double-click), per-session workspace isolation</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.1 – v1.0.16</span><span class="version-date">December 2025 – January 2026</span></div>
-          <ul>
-            <li>Initial build: SQL editor, session management, Results / Log / Operations tabs</li>
-            <li>Snippet library, query history, catalog browser, performance tracking panel</li>
-            <li>Dark/light theme toggle, workspace export/import, Job Graph tab first visual pipeline monitoring</li>
-          </ul>
-        </div>
-      </div>
     </section>
 
   </main>
