@@ -1141,6 +1141,166 @@ MATCH_RECOGNIZE (
 ) MR;</pre>
 <strong>ONE ROW PER MATCH</strong> emits one result row per matched sequence. <strong>ALL ROWS PER MATCH</strong> emits every event that participated in the match — useful for audit trails.`
   },
+
+  // ── USER-DEFINED FUNCTIONS ──────────────────────────────────────────────────
+  {
+    icon: '⨍', category: 'UDFs',
+    title: 'What are User-Defined Functions?',
+    body: `UDFs let you extend Flink SQL with custom logic that built-in functions cannot express — masking PII, calling an external API, complex business rules, or custom aggregations.
+<br><br>
+Flink supports <strong>four UDF types</strong>:
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
+  <div style="background:rgba(0,212,170,0.07);border:1px solid rgba(0,212,170,0.2);padding:9px 12px;border-radius:4px;">
+    <div style="font-weight:700;color:var(--accent);font-size:12px;margin-bottom:3px;">Scalar (UDF)</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6;">One row in → one value out.<br>e.g. <code>mask_email(email)</code></div>
+  </div>
+  <div style="background:rgba(79,163,224,0.07);border:1px solid rgba(79,163,224,0.2);padding:9px 12px;border-radius:4px;">
+    <div style="font-weight:700;color:var(--blue,#4fa3e0);font-size:12px;margin-bottom:3px;">Table (UDTF)</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6;">One row in → many rows out.<br>e.g. <code>split_tags(csv_string)</code></div>
+  </div>
+  <div style="background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.2);padding:9px 12px;border-radius:4px;">
+    <div style="font-weight:700;color:var(--yellow,#f5a623);font-size:12px;margin-bottom:3px;">Aggregate (UDAGG)</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6;">Many rows in → one value out.<br>e.g. <code>weighted_avg(price, qty)</code></div>
+  </div>
+  <div style="background:rgba(176,109,255,0.07);border:1px solid rgba(176,109,255,0.2);padding:9px 12px;border-radius:4px;">
+    <div style="font-weight:700;color:#b06dff;font-size:12px;margin-bottom:3px;">Async Table</div>
+    <div style="font-size:11px;color:var(--text2);line-height:1.6;">Non-blocking external lookup.<br>e.g. enrich from REST API</div>
+  </div>
+</div>
+<br>Open <strong>⨍ UDFs</strong> in the topbar to browse, register, and use UDFs in your pipelines.`
+  },
+  {
+    icon: '🔢', category: 'UDFs',
+    title: 'Creating and registering a UDF — 3-step guide',
+    body: `
+<!-- Auto-advancing stepper: 3s per step, loops once -->
+<div id="udf-stepper-wrap" style="position:relative;">
+  <div style="display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);border-radius:4px;overflow:hidden;">
+    <div id="udf-step-btn-0" onclick="_udfStepGo(0)" style="flex:1;padding:8px;text-align:center;font-size:10px;font-weight:700;cursor:pointer;background:var(--accent);color:#000;transition:all 0.25s;">1 · Write / Get</div>
+    <div id="udf-step-btn-1" onclick="_udfStepGo(1)" style="flex:1;padding:8px;text-align:center;font-size:10px;font-weight:700;cursor:pointer;background:var(--bg3);color:var(--text3);border-left:1px solid var(--border);transition:all 0.25s;">2 · Register</div>
+    <div id="udf-step-btn-2" onclick="_udfStepGo(2)" style="flex:1;padding:8px;text-align:center;font-size:10px;font-weight:700;cursor:pointer;background:var(--bg3);color:var(--text3);border-left:1px solid var(--border);transition:all 0.25s;">3 · Use</div>
+  </div>
+  <div id="udf-step-0" style="display:block;">
+    <div style="font-size:12px;color:var(--text1);margin-bottom:8px;font-weight:600;">Step 1 — Write your UDF or use a SQL UDF (no JAR needed)</div>
+    <pre>-- Option A: Pure SQL — no JAR, no Java, works immediately
+CREATE TEMPORARY FUNCTION classify_risk(score DOUBLE)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE
+    WHEN score >= 0.8 THEN 'HIGH'
+    WHEN score >= 0.5 THEN 'MEDIUM'
+    ELSE 'LOW'
+  END
+$$;
+
+-- Option B: Java/Python UDF
+-- Write the class, build a JAR, place it in /opt/flink/lib/</pre>
+  </div>
+  <div id="udf-step-1" style="display:none;">
+    <div style="font-size:12px;color:var(--text1);margin-bottom:8px;font-weight:600;">Step 2 — Register via the UDF Manager or directly in SQL</div>
+    <pre>-- Java/Python UDF: register after placing JAR in /opt/flink/lib/
+CREATE TEMPORARY FUNCTION mask_email
+AS 'com.yourcompany.udf.MaskEmail'
+LANGUAGE JAVA;
+
+-- Verify registration:
+SHOW USER FUNCTIONS;
+
+-- Or open ⨍ UDFs → Register UDF tab
+-- for a guided form with live SQL preview</pre>
+  </div>
+  <div id="udf-step-2" style="display:none;">
+    <div style="font-size:12px;color:var(--text1);margin-bottom:8px;font-weight:600;">Step 3 — Use the UDF in any Flink SQL query or pipeline</div>
+    <pre>-- Scalar UDF in SELECT
+SELECT user_id,
+       mask_email(email)        AS safe_email,
+       classify_risk(risk_score) AS risk_tier
+FROM user_events;
+
+-- UDF inside a streaming INSERT INTO pipeline
+INSERT INTO risk_alerts
+SELECT event_id, user_id, classify_risk(score) AS tier
+FROM transactions
+WHERE classify_risk(score) = 'HIGH';</pre>
+  </div>
+</div>
+<script>
+(function(){
+  var cur=0, timer=null;
+  window._udfStepGo = function(n){
+    clearInterval(timer);
+    cur=n;
+    [0,1,2].forEach(function(i){
+      var c=document.getElementById('udf-step-'+i);
+      var b=document.getElementById('udf-step-btn-'+i);
+      if(c)c.style.display=i===n?'block':'none';
+      if(b){b.style.background=i===n?'var(--accent)':'var(--bg3)';b.style.color=i===n?'#000':'var(--text3)';}
+    });
+  };
+  // Auto advance once through all steps then stop
+  var steps=[0,1,2],si=0;
+  timer=setInterval(function(){
+    si=(si+1)%3;
+    window._udfStepGo(steps[si]);
+    if(si===0)clearInterval(timer); // stop after one full loop
+  },3000);
+})();
+</script>`
+  },
+  {
+    icon: '📐', category: 'UDFs',
+    title: 'SQL UDFs — the fastest way to add custom logic',
+    body: `SQL UDFs require <strong>no JAR, no Java, no deployment</strong> — write the function body directly in Flink SQL and register it in seconds. Supported in Flink 1.17+.
+<pre style="margin-top:10px;">-- Classify a numeric score into a human-readable label
+CREATE TEMPORARY FUNCTION classify_score(score DOUBLE)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE
+    WHEN score >= 0.8 THEN 'CRITICAL'
+    WHEN score >= 0.5 THEN 'WARNING'
+    WHEN score >= 0.2 THEN 'LOW'
+    ELSE 'NORMAL'
+  END
+$$;
+
+-- Format a duration in seconds into a readable string
+CREATE TEMPORARY FUNCTION fmt_duration(secs BIGINT)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE
+    WHEN secs >= 3600 THEN CONCAT(CAST(secs/3600 AS STRING), 'h ', CAST((secs%3600)/60 AS STRING), 'm')
+    WHEN secs >= 60   THEN CONCAT(CAST(secs/60 AS STRING), 'm ', CAST(secs%60 AS STRING), 's')
+    ELSE CONCAT(CAST(secs AS STRING), 's')
+  END
+$$;
+
+-- Use in a pipeline:
+SELECT event_id, classify_score(risk), fmt_duration(session_length_s)
+FROM user_sessions;</pre>
+Open <strong>⨍ UDFs → ✎ SQL UDF</strong> for a form that builds the statement with live preview.`
+  },
+  {
+    icon: '⚡', category: 'UDFs',
+    title: 'UDF best practices for production pipelines',
+    body: `UDFs that run correctly in testing can cause subtle issues in production. Follow these rules:
+<br><br>
+<strong style="color:var(--accent);">✓ Always handle NULL inputs</strong>
+<pre>public String eval(String value) {
+    if (value == null) return null; // propagate nulls safely
+    return value.toUpperCase();
+}</pre>
+<strong style="color:var(--accent);">✓ Initialise connections in open(), not the constructor</strong>
+<pre>public void open(FunctionContext ctx) throws Exception {
+    // Called once per slot — NOT once per record
+    httpClient = HttpClient.newHttpClient();
+}</pre>
+<strong style="color:var(--accent);">✓ Mark deterministic unless you use random/time/side effects</strong>
+<pre>@Override public boolean isDeterministic() { return true; }</pre>
+<strong style="color:var(--accent);">✓ Use TEMPORARY for development, PERMANENT for production</strong>
+<pre>-- Dev / exploration:
+CREATE TEMPORARY FUNCTION my_fn AS '...' LANGUAGE JAVA;
+
+-- Production (stored in catalog, survives restarts):
+CREATE FUNCTION prod_catalog.prod_db.my_fn AS '...' LANGUAGE JAVA;</pre>
+Open <strong>⨍ UDFs → ⊞ Templates</strong> for the full best-practices template with all patterns.`
+  },
   // ── ADMIN ─────────────────────────────────────────────────────────────────
   {
     icon: '🛡', category: 'Admin',
@@ -1291,6 +1451,7 @@ function _renderTip(idx) {
     'Flink CEP':          '#fd9644',
     'Performance Tips':   'var(--yellow)',
     'Admin':              'var(--yellow)',
+    'UDFs':               '#4fa3e0',
   };
   const cats   = [...new Set(TIPS_DATA.map(t => t.category))];
   const tagsEl = document.getElementById('tips-tags');

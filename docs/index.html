@@ -197,6 +197,7 @@
     <li><a href="#connectors">Connectors</a></li>
     <li><a href="#pipeline">Pipeline Demo</a></li>
     <li><a href="#operator">Kube Operator</a></li>
+    <li><a href="#udf-manager">UDF Manager</a></li>
     <li><a href="#changelog">Changelog</a></li>
   </ul>
   <div class="nav-right">
@@ -257,6 +258,7 @@
       <a href="#features">All Features</a>
       <a href="#admin">Admin Session</a>
       <a href="#tips-modal">Tips &amp; Concepts Modal</a>
+      <a href="#udf-manager">UDF Manager</a>
       <a href="#snippets">Snippets Library</a>
       <a href="#job-graph">Job Graph</a>
       <a href="#performance">Performance</a>
@@ -480,6 +482,7 @@ EOF</code></pre>
 
       <h3>Themes &amp; UX</h3>
       <div class="feature-grid">
+        <div class="feature-card"><span class="fci">⨍</span><h3>UDF Manager</h3><p>Browse all registered functions, register JAR-based or Python UDFs, create SQL UDFs without writing a single line of Java, and insert professional UDF templates directly into the editor.</p></div>
         <div class="feature-card"><span class="fci">💡</span><h3>Tips &amp; Concepts Modal</h3><p>On first connect, a paginated modal walks through IDE features, Flink architecture, window types, state, connectors, and performance tips — like IntelliJ's "Tip of the Day".</p></div>
         <div class="feature-card"><span class="fci">🎨</span><h3>6 Themes</h3><p>Dark (default), Light, Monokai, Dracula, Nord, Contrast. Preference persisted across sessions.</p></div>
       </div>
@@ -830,7 +833,7 @@ metadata:
   name: prod-studio
   namespace: flink
 spec:
-  image: codedstreams/flinksql-studio:v1.0.0
+  image: codedstreams/flinksql-studio:v1.0.20
   replicas: 2
   gateway:
     host: flink-sql-gateway
@@ -880,14 +883,465 @@ spec:
     </section>
 
     <!-- CHANGELOG -->
+    <section class="doc-section" id="udf-manager">
+      <h2><span class="si">⨍</span>UDF Manager</h2>
+      <p>
+        The <strong>UDF Manager</strong> is a dedicated feature for the complete User-Defined Function
+        lifecycle — from building to uploading to registering to using — without leaving FlinkSQL Studio.
+        Access it from the topbar via the <code style="background:rgba(79,163,224,0.12);color:#4fa3e0;padding:2px 7px;border-radius:3px;">⨍ UDFs</code> button.
+        It has five tabs.
+      </p>
+
+      <!-- UDF Types -->
+      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">What are UDFs?</h3>
+      <p>UDFs extend Flink SQL with custom logic that built-in functions cannot express. Flink supports four types:</p>
+      <div class="feature-grid" style="margin-top:14px;">
+        <div class="feature-card" style="border-color:rgba(0,212,170,0.3);">
+          <span class="fci" style="color:var(--accent);">f(x)</span>
+          <h3>Scalar (UDF)</h3>
+          <p>One row in → one value out. Data masking, classification, format conversion. Can be written in pure SQL (no JAR), Java, Scala, or Python.</p>
+        </div>
+        <div class="feature-card" style="border-color:rgba(79,163,224,0.3);">
+          <span class="fci" style="color:#4fa3e0;">⇶</span>
+          <h3>Table (UDTF)</h3>
+          <p>One row in → many rows out. Used with <code>CROSS JOIN LATERAL TABLE(...)</code> to explode arrays or parse delimited fields.</p>
+        </div>
+        <div class="feature-card" style="border-color:rgba(245,166,35,0.3);">
+          <span class="fci" style="color:#f5a623;">∑</span>
+          <h3>Aggregate (UDAGG)</h3>
+          <p>Many rows in → one value out. Maintains an accumulator per group. Supports retraction for streaming tables. Example: VWAP.</p>
+        </div>
+        <div class="feature-card" style="border-color:rgba(176,109,255,0.3);">
+          <span class="fci" style="color:#b06dff;">⇄</span>
+          <h3>Async Table</h3>
+          <p>Non-blocking external enrichment. Issues many concurrent requests without blocking the pipeline. Ideal for REST API or HBase lookups.</p>
+        </div>
+      </div>
+
+      <!-- Tab: Library -->
+      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">📚 Library Tab — Browse &amp; Quick-Insert</h3>
+      <p>
+        Click <strong>⟳ Refresh</strong> to run <code>SHOW FUNCTIONS</code> and <code>SHOW USER FUNCTIONS</code>
+        against the active session. Results split into <strong>User-Defined</strong> (blue) and <strong>Built-in</strong>.
+        Use the search bar and type filter. Click any function name to <strong>insert it at the cursor</strong>
+        in the editor with parentheses ready.
+      </p>
+
+      <!-- Tab: Upload JAR -->
+      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">⬆ Upload JAR Tab — Deploy Directly to the Cluster</h3>
+      <p>
+        FlinkSQL Studio can upload a JAR file directly to the Flink JobManager via the same REST endpoint
+        that the Flink Web UI uses: <code>POST /jars/upload</code>. No SSH, no manual file copying.
+        Once uploaded, the JAR is available to all TaskManagers immediately.
+      </p>
+      <ol style="margin:10px 0 0 20px;font-size:13px;line-height:2;">
+        <li>Drag-and-drop your <code>.jar</code> file onto the drop zone, or click to browse.</li>
+        <li>Click <strong>⬆ Upload JAR to Flink Cluster</strong> — a live progress bar tracks the upload.</li>
+        <li>The <strong>JARs on cluster</strong> list refreshes automatically. Click <strong>Use →</strong> on any entry to pre-fill the Register tab.</li>
+        <li>Optionally delete JARs from the cluster using the <strong>Delete</strong> button on each row.</li>
+      </ol>
+      <div class="callout" style="margin-top:12px;background:rgba(245,166,35,0.06);border-left:3px solid var(--yellow,#f5a623);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
+        <strong style="color:var(--yellow,#f5a623);">Prerequisites:</strong> The Flink Web UI port (<code>8081</code>) must be proxied at
+        <code>/jobmanager-api/</code> in your nginx config. If you see a 404 error, check that the proxy is
+        configured. Self-hosted Docker clusters using the included <code>docker-compose.yml</code> have this
+        configured automatically.
+      </div>
+
+      <!-- Tab: Maven / Gradle -->
+      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">⬡ Maven / Gradle Tab — Dependency &amp; Build Config</h3>
+      <p>
+        Maven and Gradle resolve your UDF's dependencies and package everything into a single deployable JAR.
+        This tab generates the correct build configuration and commands so you never have to guess at
+        dependency scopes or version strings.
+      </p>
+
+      <div class="tab-group" style="margin-top:14px;">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'dep-maven')">Maven (pom.xml)</button>
+          <button class="tab-btn" onclick="switchTab(this,'dep-gradle')">Gradle (build.gradle)</button>
+          <button class="tab-btn" onclick="switchTab(this,'dep-concepts')">Key Concepts</button>
+        </div>
+
+        <div id="dep-maven" class="tab-pane active">
+          <pre class="code-block">&lt;dependencies&gt;
+
+    &lt;!--
+      Flink APIs — scope="provided"
+      These JARs are already on the cluster. DO NOT bundle them.
+      "provided" means: compile against them, but exclude from the output JAR.
+    --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.flink&lt;/groupId&gt;
+        &lt;artifactId&gt;flink-table-api-java&lt;/artifactId&gt;
+        &lt;version&gt;${flink.version}&lt;/version&gt;
+        &lt;scope&gt;provided&lt;/scope&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.flink&lt;/groupId&gt;
+        &lt;artifactId&gt;flink-table-common&lt;/artifactId&gt;
+        &lt;version&gt;${flink.version}&lt;/version&gt;
+        &lt;scope&gt;provided&lt;/scope&gt;
+    &lt;/dependency&gt;
+
+    &lt;!-- Your own third-party deps — these ARE bundled (default scope) --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;com.google.guava&lt;/groupId&gt;
+        &lt;artifactId&gt;guava&lt;/artifactId&gt;
+        &lt;version&gt;32.1.3-jre&lt;/version&gt;
+    &lt;/dependency&gt;
+
+&lt;/dependencies&gt;
+
+&lt;!-- Maven Shade Plugin: creates the shaded (fat) JAR --&gt;
+&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-shade-plugin&lt;/artifactId&gt;
+    &lt;version&gt;3.5.1&lt;/version&gt;
+    &lt;executions&gt;
+        &lt;execution&gt;
+            &lt;phase&gt;package&lt;/phase&gt;
+            &lt;goals&gt;&lt;goal&gt;shade&lt;/goal&gt;&lt;/goals&gt;
+            &lt;configuration&gt;
+                &lt;shadedArtifactAttached&gt;true&lt;/shadedArtifactAttached&gt;
+                &lt;shadedClassifierName&gt;shaded&lt;/shadedClassifierName&gt;
+            &lt;/configuration&gt;
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+&lt;/plugin&gt;
+
+&lt;!-- Build command: --&gt;
+&lt;!-- mvn clean package -DskipTests --&gt;
+&lt;!-- Output: target/my-udfs-1.0.0-shaded.jar --&gt;</pre>
+        </div>
+
+        <div id="dep-gradle" class="tab-pane">
+          <pre class="code-block">plugins {
+    id 'java'
+    // Shadow plugin: creates the fat JAR
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+dependencies {
+    /*
+     * compileOnly = Maven "provided"
+     * These JARs are already on the Flink cluster.
+     * DO NOT use 'implementation' for Flink APIs — it bundles them
+     * into your JAR and causes ClassLoader conflicts.
+     */
+    compileOnly "org.apache.flink:flink-table-api-java:${flinkVersion}"
+    compileOnly "org.apache.flink:flink-table-common:${flinkVersion}"
+
+    // Your own third-party deps — use 'implementation' (bundled)
+    implementation 'com.google.guava:guava:32.1.3-jre'
+}
+
+shadowJar {
+    archiveClassifier = 'shaded'
+    mergeServiceFiles()
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+}
+
+// Build command:
+// ./gradlew shadowJar
+// Output: build/libs/my-udfs-1.0.0-shaded.jar</pre>
+        </div>
+
+        <div id="dep-concepts" class="tab-pane">
+          <table class="params-table">
+            <thead><tr><th>Concept</th><th>Explanation</th></tr></thead>
+            <tbody>
+            <tr><td><code>provided</code> / <code>compileOnly</code></td><td>Flink&apos;s own JARs (<code>flink-table-api-java</code>, <code>flink-streaming-java</code>, etc.) exist on every TaskManager. Mark them provided so they compile your code but are <strong>not</strong> bundled into the output JAR. Bundling them causes <code>ClassCastException</code> at runtime.</td></tr>
+            <tr><td>Shaded / fat JAR</td><td>Your UDF JAR must contain all third-party dependencies (e.g. Guava, Jackson, HTTP client) inside a single file. Maven Shade Plugin and Gradle Shadow Plugin achieve this. The cluster just needs one file.</td></tr>
+            <tr><td>Relocation</td><td>If two JARs on the classpath contain the same class (dependency conflict), use Maven Shade <code>&lt;relocation&gt;</code> or Gradle Shadow <code>relocate()</code> to rename one package. Common with Guava and Jackson.</td></tr>
+            <tr><td>Flink version match</td><td>The <code>flink-table-api-java</code> version in your pom.xml must match the cluster&apos;s Flink version exactly. A mismatch causes <code>AbstractMethodError</code> or silent wrong behaviour.</td></tr>
+            <tr><td>Python UDFs</td><td>Python UDFs don&apos;t use Maven or Gradle. They require PyFlink installed on all TaskManagers (<code>pip install apache-flink==&lt;version&gt;</code>). Register them with <code>LANGUAGE PYTHON</code> pointing to a module path.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- The ⬡ Maven/Gradle tab in the IDE -->
+      <div class="callout" style="margin-top:14px;background:rgba(245,166,35,0.06);border-left:3px solid var(--yellow,#f5a623);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
+        <strong style="color:var(--yellow,#f5a623);">⬡ Maven / Gradle tab in the IDE:</strong>
+        Open <strong>⨍ UDFs → ⬡ Maven / Gradle</strong> to get a generated <code>pom.xml</code> or
+        <code>build.gradle</code> — fill in your group ID, artifact ID, Flink version, Java version,
+        and any extra dependencies, then copy the config and the build commands. The tab explains
+        exactly which file to upload after building.
+      </div>
+
+      <!-- Tab: Register -->
+      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">＋ Register Tab — Activate a JAR Function</h3>
+      <p>
+        After uploading a JAR (via the Upload JAR tab or manually), use this tab to write the
+        <code>CREATE FUNCTION</code> statement that makes the class available as a SQL function.
+      </p>
+      <ol style="margin:10px 0 0 20px;font-size:13px;line-height:2;">
+        <li>Enter the <strong>function name</strong> (what you will call in SQL).</li>
+        <li>Enter the <strong>fully-qualified class path</strong> (e.g. <code>com.yourcompany.udf.MaskEmail</code>).</li>
+        <li>Choose <strong>Language</strong>: Java, Scala, or Python.</li>
+        <li>Choose <strong>Scope</strong>: Temporary (session only), Temporary System (all catalogs), or Permanent (catalog-persisted).</li>
+        <li>Click <strong>⚡ Execute Registration</strong> to send the <code>CREATE FUNCTION</code> to the gateway, or <strong>Insert into Editor</strong> to review first.</li>
+      </ol>
+
+      <!-- Tab: SQL UDF -->
+      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">✎ SQL UDF Tab — No JAR, No Java</h3>
+      <p>Write a UDF entirely in Flink SQL. No JAR, no build step. Supported in Flink 1.17+.</p>
+      <div class="tab-group" style="margin-top:14px;">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'sqludf-ex1')">Classification</button>
+          <button class="tab-btn" onclick="switchTab(this,'sqludf-ex2')">Format Conversion</button>
+          <button class="tab-btn" onclick="switchTab(this,'sqludf-ex3')">Null-safe Logic</button>
+        </div>
+        <div id="sqludf-ex1" class="tab-pane active">
+          <pre class="code-block">CREATE TEMPORARY FUNCTION classify_risk(score DOUBLE)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE
+    WHEN score &gt;= 0.8 THEN 'CRITICAL'
+    WHEN score &gt;= 0.5 THEN 'WARNING'
+    WHEN score &gt;= 0.2 THEN 'LOW'
+    ELSE 'NORMAL'
+  END
+$$;
+
+SELECT event_id, score, classify_risk(score) AS tier
+FROM risk_events;</pre>
+        </div>
+        <div id="sqludf-ex2" class="tab-pane">
+          <pre class="code-block">CREATE TEMPORARY FUNCTION fmt_bytes(b BIGINT)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE
+    WHEN b &gt;= 1073741824 THEN CONCAT(CAST(b/1073741824 AS STRING), ' GB')
+    WHEN b &gt;= 1048576    THEN CONCAT(CAST(b/1048576 AS STRING),    ' MB')
+    WHEN b &gt;= 1024       THEN CONCAT(CAST(b/1024 AS STRING),       ' KB')
+    ELSE CONCAT(CAST(b AS STRING), ' B')
+  END
+$$;
+
+SELECT node_id, fmt_bytes(bytes_transferred) AS readable_size
+FROM network_events;</pre>
+        </div>
+        <div id="sqludf-ex3" class="tab-pane">
+          <pre class="code-block">CREATE TEMPORARY FUNCTION safe_region(region STRING, fallback STRING)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE
+    WHEN region IS NULL OR TRIM(region) = '' THEN fallback
+    ELSE UPPER(TRIM(region))
+  END
+$$;
+
+SELECT event_id, safe_region(region, 'UNKNOWN') AS normalised_region
+FROM events;</pre>
+        </div>
+      </div>
+
+      <!-- Tab: Templates -->
+      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">⊞ Templates Tab — Production-Ready Examples</h3>
+      <table class="params-table" style="margin-top:12px;">
+        <thead><tr><th>Group</th><th>Templates included</th></tr></thead>
+        <tbody>
+        <tr><td><strong>Scalar Functions</strong></td><td>SQL scalar (no JAR), Java scalar with open/close lifecycle, Python scalar with PyFlink decorator</td></tr>
+        <tr><td><strong>Table Functions (UDTF)</strong></td><td>Java SplitTags CSV exploder, SQL JSON array UNNEST pattern</td></tr>
+        <tr><td><strong>Aggregate Functions (UDAGG)</strong></td><td>Volume-weighted average price (VWAP) with full accumulator and retraction support</td></tr>
+        <tr><td><strong>Async &amp; Lookup Functions</strong></td><td>Non-blocking async HTTP enrichment UDF, temporal lookup join with JDBC caching</td></tr>
+        <tr><td><strong>Utility &amp; Best Practices</strong></td><td>SHOW FUNCTIONS reference, temporary vs permanent scope guide, full best-practices template</td></tr>
+        </tbody>
+      </table>
+
+      <!-- Complete workflow summary -->
+      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">Complete JAR UDF Workflow</h3>
+      <div style="display:flex;flex-direction:column;gap:0;margin-top:12px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span>
+          <div><strong>Write the UDF</strong> in Java/Scala/Python. Extend <code>ScalarFunction</code>, <code>TableFunction</code>, or <code>AggregateFunction</code>.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span>
+          <div><strong>Generate build config</strong> — open <strong>⬡ Maven / Gradle</strong>, fill in your details, copy the generated <code>pom.xml</code> or <code>build.gradle</code>.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span>
+          <div><strong>Build the shaded JAR</strong>: <code>mvn clean package -DskipTests</code> or <code>./gradlew shadowJar</code>.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</span>
+          <div><strong>Upload to cluster</strong> — open <strong>⬆ Upload JAR</strong>, drag the shaded JAR, click Upload. Live progress bar. No SSH.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">5</span>
+          <div><strong>Register</strong> — open <strong>＋ Register UDF</strong>, fill in function name and class path, click <strong>⚡ Execute Registration</strong>.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">6</span>
+          <div><strong>Use in SQL</strong> — open <strong>📚 Library</strong>, click Refresh, click the function name to insert at cursor. Write your pipeline.</div>
+        </div>
+      </div>
+
+      <!-- Demo -->
+      <h3 style="margin-top:32px;color:var(--text0);font-size:15px;" id="udf-demo">Demo — Fraud Detection Pipeline with SQL UDFs</h3>
+      <p>
+        The UDF Manager ships with a complete demo SQL file: <strong>udf-fraud-detection-demo.sql</strong>.
+        It demonstrates all five tabs using a real-time payment fraud detection scenario — 50 transactions
+        per second, 7 SQL UDFs, 4 running Flink jobs, 5 Kafka topics.
+      </p>
+      <table class="params-table" style="margin-top:12px;">
+        <thead><tr><th>Tab</th><th>Content</th><th>UDFs used</th></tr></thead>
+        <tbody>
+        <tr><td><strong>Tab 1</strong> — Setup</td><td>Session config: runtime mode, checkpointing, mini-batch</td><td>—</td></tr>
+        <tr><td><strong>Tab 2</strong> — Register UDFs</td><td>7 <code>CREATE TEMPORARY FUNCTION</code> statements (SQL, no JAR)</td><td>All 7 defined here</td></tr>
+        <tr><td><strong>Tab 3</strong> — Tables</td><td>datagen source + 4 Kafka sinks + 1 Kafka source (cleansed)</td><td>—</td></tr>
+        <tr><td><strong>Tab 4</strong> — Verify</td><td><code>SHOW USER FUNCTIONS</code> + live datagen SELECT with all UDFs</td><td>All 7 previewed</td></tr>
+        <tr><td><strong>Tab 5</strong> — Pipelines 1 &amp; 2</td><td>PII masking → Kafka; risk classification → Kafka</td><td>mask_card, mask_email, normalize_currency, classify_risk, amount_band, velocity_flag</td></tr>
+        <tr><td><strong>Tab 6</strong> — Pipelines 3 &amp; 4</td><td>TUMBLE(1 min) fraud KPI window; SLA scoring pipeline</td><td>classify_risk, amount_band, sla_tier, velocity_flag</td></tr>
+        <tr><td><strong>Tab 7</strong> — Live Monitor</td><td>All 7 UDFs in one SELECT — enable ✦ Colour Describe for row coloring</td><td>All 7 applied</td></tr>
+        </tbody>
+      </table>
+
+      <div class="tab-group" style="margin-top:16px;">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'demo-udf1')">UDF Registration</button>
+          <button class="tab-btn" onclick="switchTab(this,'demo-udf2')">PII Masking Pipeline</button>
+          <button class="tab-btn" onclick="switchTab(this,'demo-udf3')">Fraud KPI Window</button>
+          <button class="tab-btn" onclick="switchTab(this,'demo-udf4')">Live Monitor SELECT</button>
+        </div>
+        <div id="demo-udf1" class="tab-pane active">
+          <pre class="code-block">-- Register all 7 SQL UDFs — no JAR, no Java required
+
+CREATE TEMPORARY FUNCTION classify_risk(score DOUBLE)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE WHEN score &gt;= 0.80 THEN 'CRITICAL'
+       WHEN score &gt;= 0.55 THEN 'HIGH'
+       WHEN score &gt;= 0.30 THEN 'MEDIUM'
+       ELSE 'LOW' END $$;
+
+CREATE TEMPORARY FUNCTION mask_card(card STRING)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE WHEN card IS NULL OR CHAR_LENGTH(card) &lt; 8 THEN '****-****-****-****'
+       ELSE CONCAT(SUBSTRING(card,1,4),'-****-****-',
+                   SUBSTRING(card,CHAR_LENGTH(card)-3,4)) END $$;
+
+CREATE TEMPORARY FUNCTION mask_email(email STRING)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE WHEN email IS NULL OR POSITION('@' IN email) &lt;= 2 THEN '**@***.***'
+       ELSE CONCAT(SUBSTRING(email,1,2),'***',
+                   SUBSTRING(email,POSITION('@' IN email))) END $$;
+
+CREATE TEMPORARY FUNCTION amount_band(amt DOUBLE)
+RETURNS STRING LANGUAGE SQL AS $$
+  CASE WHEN amt &gt;= 10000 THEN 'WHALE'
+       WHEN amt &gt;= 2500  THEN 'LARGE'
+       WHEN amt &gt;= 500   THEN 'MEDIUM'
+       WHEN amt &gt;= 50    THEN 'SMALL'
+       ELSE 'MICRO' END $$;
+
+-- Verify all 7 are registered:
+SHOW USER FUNCTIONS;</pre>
+        </div>
+        <div id="demo-udf2" class="tab-pane">
+          <pre class="code-block">-- Pipeline 1: Cleanse raw events — mask PII, normalise fields
+-- UDFs: mask_card(), mask_email(), normalize_currency()
+INSERT INTO cleansed_sink
+SELECT
+    txn_id,
+    customer_id,
+    mask_card(card_number)           AS card_masked,
+    mask_email(email)                AS email_masked,
+    ROUND(amount_usd, 2)             AS amount_usd,
+    normalize_currency(currency_raw) AS currency,
+    merchant_id,
+    CASE merchant_country
+        WHEN 0 THEN 'US'  WHEN 1 THEN 'EU'
+        WHEN 2 THEN 'UK'  WHEN 3 THEN 'APAC'
+        WHEN 4 THEN 'LATAM' ELSE 'MEA'
+    END                              AS merchant_country,
+    CASE channel_raw
+        WHEN 0 THEN 'ONLINE' WHEN 1 THEN 'MOBILE'
+        WHEN 2 THEN 'POS'    ELSE 'ATM'
+    END                              AS channel,
+    ROUND(risk_score, 4)             AS risk_score,
+    latency_ms,
+    event_ts
+FROM raw_transactions;</pre>
+        </div>
+        <div id="demo-udf3" class="tab-pane">
+          <pre class="code-block">-- Pipeline 3: TUMBLE(1 min) fraud KPI aggregation
+-- UDFs used inside COUNT(CASE ...) aggregations
+INSERT INTO fraud_kpi_sink
+SELECT
+    TUMBLE_START(event_ts, INTERVAL '1' MINUTE)  AS window_start,
+    TUMBLE_END(event_ts,   INTERVAL '1' MINUTE)  AS window_end,
+    merchant_country,
+    channel,
+    COUNT(*)                                      AS total_txns,
+    ROUND(SUM(amount_usd), 2)                     AS total_volume_usd,
+    ROUND(AVG(risk_score), 4)                     AS avg_risk_score,
+    -- UDF inside aggregation: count CRITICAL transactions per window
+    COUNT(CASE WHEN classify_risk(risk_score) = 'CRITICAL' THEN 1 END) AS critical_count,
+    COUNT(CASE WHEN classify_risk(risk_score) = 'HIGH'     THEN 1 END) AS high_count,
+    -- UDF inside aggregation: count whale transactions per window
+    COUNT(CASE WHEN amount_band(amount_usd) = 'WHALE' THEN 1 END)     AS whale_count,
+    ROUND(
+      CAST(COUNT(CASE WHEN classify_risk(risk_score) IN ('CRITICAL','HIGH') THEN 1 END) AS DOUBLE)
+      / NULLIF(COUNT(*), 0) * 100.0
+    , 2)                                          AS fraud_rate_pct
+FROM cleansed_source
+GROUP BY TUMBLE(event_ts, INTERVAL '1' MINUTE), merchant_country, channel;</pre>
+        </div>
+        <div id="demo-udf4" class="tab-pane">
+          <pre class="code-block">-- Tab 7: All 7 UDFs in a single live SELECT
+-- Enable "✦ Colour Describe" — risk_tier and sla_tier drive row coloring:
+--   🔴 Red    = CRITICAL  🟡 Yellow = HIGH/MEDIUM  🟢 Green = LOW
+SELECT
+    txn_id,
+    customer_id,
+    card_masked,
+    ROUND(amount_usd, 2)                AS amount_usd,
+    currency,
+    merchant_country,
+    channel,
+    ROUND(risk_score, 3)                AS risk_score,
+    classify_risk(risk_score)           AS risk_tier,
+    amount_band(amount_usd)             AS amount_band,
+    velocity_flag(latency_ms)           AS velocity,
+    sla_tier(latency_ms, risk_score)    AS sla_tier,
+    latency_ms,
+    event_ts
+FROM cleansed_source;</pre>
+        </div>
+      </div>
+
+      <div class="callout" style="margin-top:16px;background:rgba(0,212,170,0.06);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
+        <strong style="color:var(--accent);">Also in Tips &amp; Concepts:</strong>
+        The <strong>UDFs</strong> category (💡 Tips → UDFs) includes a 3-step auto-advancing walkthrough
+        (Write → Register → Use), a SQL UDF quick-start, and a production best-practices summary — all
+        with runnable SQL code examples.
+      </div>
+    </section>
+
     <section class="doc-section" id="changelog">
       <h2><span class="si">📝</span>Changelog</h2>
       <div class="version-list">
         <div class="version-card">
           <div class="version-header">
-            <span class="version-tag">v1.0.19</span>
+            <span class="version-tag">v1.0.20</span>
             <span class="version-date">March 2026</span>
             <span class="version-label current">current</span>
+          </div>
+          <ul>
+            <li><strong>UDF Manager</strong> — full user-defined function lifecycle feature: Library (browse + quick-insert), Register (JAR/Python with live SQL preview), SQL UDF creator (no JAR needed), and professional Templates library with 10 annotated examples across 5 groups</li>
+            <li><strong>✦ Colour Describe</strong> — intelligent row coloring toggle in the results toolbar; detects column semantics (status, fraud, signal quality, severity, latency, packet loss) and applies colour coding with PDF-safe inline styles; legend appears inline with the pagination bar</li>
+            <li><strong>Meaningful job names</strong> — pipeline.name now derives from the sink table name (e.g. <code>[session] trade_events_kafka</code>) instead of a generic label</li>
+            <li><strong>Per-job checkboxes</strong> in the Job Resource Comparison chart — toggle individual job lines on/off</li>
+            <li><strong>Metric selector wired</strong> in expanded comparison modal — dropdown now triggers chart redraw correctly</li>
+            <li><strong>Dual-line live events chart</strong> — IN (blue) and OUT (teal) lines both visible with correct fill areas</li>
+            <li><strong>Tips expanded</strong> — added UDFs (4 tips with 3-step auto-slider), Pipeline Design (3), Flink APIs (3), Flink CEP (5) categories; all connector tips made fully generic with auth patterns shown</li>
+            <li><strong>Audit log</strong> — cancel job actions now recorded in the admin audit trail immediately</li>
+            <li><strong>Gateway session discovery</strong> — admin sidebar fetches all sessions from <code>GET /v1/sessions</code> with multi-format response handling</li>
+          </ul>
+        </div>
+        <div class="version-card">
+          <div class="version-header">
+            <span class="version-tag">v1.0.19</span>
+            <span class="version-date">March 2026</span>
           </div>
           <ul>
             <li><strong>Admin Session</strong> — privileged connect mode with full cluster job visibility, admin badge in topbar, session activity modal, technical and business/management PDF reports</li>
@@ -919,7 +1373,7 @@ spec:
           </ul>
         </div>
         <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.1–v1.0.16</span><span class="version-date">December 2025 – January 2026</span></div>
+          <div class="version-header"><span class="version-tag">v1.0.1 – v1.0.16</span><span class="version-date">December 2025 – January 2026</span></div>
           <ul>
             <li>Initial build: SQL editor, session management, Results / Log / Operations tabs</li>
             <li>Snippet library, query history, catalog browser, performance tracking panel</li>
