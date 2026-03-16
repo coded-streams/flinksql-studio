@@ -26,7 +26,6 @@
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-track{background:var(--bg1)}
     ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
-
     .nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
     .nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}
     .logo-mark{width:26px;height:26px;background:var(--logo-bg);border:1px solid rgba(0,212,170,0.35);clip-path:var(--logo-clip);display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -40,7 +39,6 @@
     .nav-btn:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
     .nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
     .nav-btn.primary:hover{background:var(--accent3);color:#000}
-
     .hero{background:var(--bg0);padding:80px 32px 64px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
     .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(0,212,170,0.07) 0%,transparent 70%);pointer-events:none}
     .hero-logo{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:24px}
@@ -60,7 +58,6 @@
     .btn-primary:hover{background:var(--accent3);text-decoration:none;color:#000}
     .btn-outline{background:transparent;border-color:var(--border2);color:var(--text1)}
     .btn-outline:hover{border-color:var(--accent);color:var(--accent);text-decoration:none}
-
     .page{display:flex;max-width:1280px;margin:0 auto}
     .toc{width:220px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:24px 0 24px 16px;border-right:1px solid var(--border)}
     .toc-section{margin-bottom:18px}
@@ -68,23 +65,23 @@
     .toc a{display:block;font-size:12px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}
     .toc a:hover{color:var(--text0);text-decoration:none;border-left-color:var(--border2)}
     .toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
-
+    .toc a.toc-new{color:var(--green)}
+    .toc a.toc-new::after{content:' ✦';font-size:9px;opacity:0.7}
     .content{flex:1;min-width:0;padding:40px 48px 96px}
     .doc-section{margin-bottom:64px}
     h2{font-size:23px;font-weight:700;color:var(--text0);letter-spacing:-0.5px;margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
     h2 .si{width:30px;height:30px;border-radius:7px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    h2 .new-badge{font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(63,185,80,0.12);border:1px solid rgba(63,185,80,0.3);color:var(--green);margin-left:6px}
+    h2 .updated-badge{font-size:9px;font-family:var(--mono);font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:rgba(79,163,224,0.12);border:1px solid rgba(79,163,224,0.3);color:var(--blue);margin-left:6px}
     h3{font-size:16px;font-weight:600;color:var(--text0);margin:28px 0 10px}
     h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 7px}
     p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
     ul.doc-ul{margin:6px 0 14px 20px}
     ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}
     ul.doc-ul li strong{color:var(--text1)}
-
     code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
     pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:18px 22px;overflow-x:auto;margin:14px 0;position:relative}
     pre code{background:none;border:none;padding:0;font-size:13px;color:var(--text1);line-height:1.7}
-    .pre-label{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;display:block}
-
     .callout{border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13px;line-height:1.7;display:flex;gap:11px;align-items:flex-start}
     .callout-icon{font-size:15px;flex-shrink:0;margin-top:1px}
     .callout-body{flex:1}
@@ -97,7 +94,6 @@
     .callout.info strong{color:var(--blue)}
     .callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2);color:var(--text1)}
     .callout.danger strong{color:var(--red)}
-
     .feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:13px;margin:18px 0}
     .feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .15s,transform .15s;position:relative;overflow:hidden}
     .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .15s}
@@ -106,7 +102,6 @@
     .fci{font-size:20px;margin-bottom:8px;display:block}
     .feature-card h3{margin:0 0 5px;color:var(--text0);font-size:14px}
     .feature-card p{font-size:13px;margin:0;color:var(--text2);line-height:1.6}
-
     .table-wrap{overflow-x:auto;margin:14px 0;border-radius:var(--radius);border:1px solid var(--border)}
     table{width:100%;border-collapse:collapse;font-size:13px}
     thead tr{background:var(--bg2)}
@@ -115,7 +110,6 @@
     tr:last-child td{border-bottom:none}
     tr:hover td{background:rgba(255,255,255,0.02)}
     td code{font-size:11px}
-
     .tab-group{margin:18px 0}
     .tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}
     .tab-btn{font-family:var(--mono);font-size:12px;padding:7px 15px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}
@@ -123,9 +117,7 @@
     .tab-btn:hover:not(.active){color:var(--text1);background:var(--bg3)}
     .tab-pane{display:none}
     .tab-pane.active{display:block}
-
     .mermaid-wrap{background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin:14px 0;overflow-x:auto;display:flex;justify-content:center}
-
     .steps{margin:18px 0}
     .step{display:flex;gap:15px;margin-bottom:26px;position:relative}
     .step::before{content:'';position:absolute;left:16px;top:38px;width:2px;bottom:-6px;background:var(--border)}
@@ -133,7 +125,6 @@
     .step-num{width:34px;height:34px;border-radius:50%;background:var(--bg2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;z-index:1}
     .step-body{flex:1;padding-top:5px}
     .step-body h4{margin-top:0;margin-bottom:5px}
-
     .tag{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-right:4px}
     .tag.setup{background:rgba(79,163,224,0.1);color:var(--blue);border:1px solid rgba(79,163,224,0.25)}
     .tag.config{background:rgba(155,114,207,0.1);color:var(--purple);border:1px solid rgba(155,114,207,0.25)}
@@ -143,13 +134,11 @@
     .tag.pattern{background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.25)}
     .tag.perf{background:rgba(240,165,0,0.08);color:var(--orange);border:1px solid rgba(240,165,0,0.2)}
     .tag.admin{background:rgba(240,165,0,0.1);color:var(--yellow);border:1px solid rgba(240,165,0,0.3)}
-
     .deploy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:13px;margin:18px 0}
     .deploy-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
     .deploy-card-icon{font-size:26px;margin-bottom:9px;display:block}
     .deploy-card h3{margin:0 0 7px;font-size:15px;color:var(--text0)}
     .deploy-card p{font-size:13px;margin-bottom:11px;color:var(--text2)}
-
     .version-list{display:flex;flex-direction:column;gap:11px;margin:14px 0}
     .version-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px}
     .version-header{display:flex;align-items:center;gap:11px;margin-bottom:11px}
@@ -160,19 +149,23 @@
     .version-card ul{margin-left:17px}
     .version-card li{font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.6}
     .version-card li strong{color:var(--text1)}
-
-    /* About section */
     .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:18px 0}
     .about-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
     .about-card h3{margin:0 0 10px;font-size:15px;color:var(--text0)}
     .about-card p{font-size:13px;color:var(--text2);line-height:1.8;margin:0}
-
+    /* Fix table steps */
+    .workflow-steps{display:flex;flex-direction:column;gap:0;margin-top:12px}
+    .workflow-step{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none}
+    .workflow-step:first-child{border-top:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0}
+    .workflow-step:last-child{border-radius:0 0 var(--radius) var(--radius)}
+    .workflow-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#000}
+    /* Colour Describe specifics */
+    .cd-operator-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
     footer{border-top:1px solid var(--border);background:var(--bg0);padding:36px 32px;text-align:center}
     .footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
     footer p{font-size:13px;color:var(--text3);margin-bottom:5px}
     footer a{color:var(--text2)}
     footer a:hover{color:var(--accent)}
-
     @media(max-width:900px){.toc{display:none}.content{padding:24px 16px 64px}.hero-title{font-size:30px}.about-grid{grid-template-columns:1fr}}
   </style>
 </head>
@@ -199,6 +192,7 @@
     <li><a href="#operator">Kube Operator</a></li>
     <li><a href="#project-manager">Project Manager</a></li>
     <li><a href="#udf-manager">UDF Manager</a></li>
+    <li><a href="#colour-describe">Colour Describe</a></li>
     <li><a href="#changelog">Changelog</a></li>
   </ul>
   <div class="nav-right">
@@ -230,6 +224,7 @@
     <span class="badge teal">Confluent Cloud</span>
     <span class="badge yellow">Admin Session</span>
     <span class="badge teal">PDF Reports</span>
+    <span class="badge teal">🎨 Colour Describe</span>
   </div>
   <div class="hero-cta">
     <a href="#quickstart" class="btn btn-primary">Get Started →</a>
@@ -261,6 +256,7 @@
       <a href="#tips-modal">Tips &amp; Concepts Modal</a>
       <a href="#project-manager">Project Manager</a>
       <a href="#udf-manager">UDF Manager</a>
+      <a href="#colour-describe" class="toc-new">Colour Describe</a>
       <a href="#snippets">Snippets Library</a>
       <a href="#job-graph">Job Graph</a>
       <a href="#performance">Performance</a>
@@ -284,27 +280,15 @@
 
   <main class="content">
 
-    <!-- ABOUT -->
+    <!-- ═══════════════════════════════ ABOUT ═══════════════════════════════ -->
     <section class="doc-section" id="about">
       <h2><span class="si">ℹ</span>About Str:::lab Studio</h2>
       <p>Str:::lab Studio is a browser-based SQL Studio that connects to any Flink SQL Gateway. It provides a complete development, monitoring, and administration experience — without the overhead of a full platform deployment. Works with local Docker, Kubernetes, and any self-hosted Flink cluster.</p>
       <div class="about-grid">
-        <div class="about-card">
-          <h3>What it is</h3>
-          <p>A zero-dependency single-file HTML application served by nginx. All SQL execution is driven by the Flink SQL Gateway REST API. Results stream live into the browser. Session state is managed client-side in <code>localStorage</code>.</p>
-        </div>
-        <div class="about-card">
-          <h3>Who it's for</h3>
-          <p>Streaming data engineers and platform teams who want a proper IDE experience for Apache Flink SQL — query editing, live result streaming, real-time job monitoring, checkpoint tracking, and professional reporting — all from a browser.</p>
-        </div>
-        <div class="about-card">
-          <h3>Open source</h3>
-          <p>Created by <strong style="color:var(--text0);">Nestor A. A</strong> — open source project under the MIT license. Community contributions and issue reports welcome at <a href="https://github.com/coded-streams/strlabstudio" target="_blank">github.com/coded-streams/strlabstudio</a>.</p>
-        </div>
-        <div class="about-card">
-          <h3>Kube Operator</h3>
-          <p>The <strong style="color:var(--text0);">Str:::lab Studio Kube Operator</strong> manages Studio deployments as first-class Kubernetes CRDs. Install via Helm from <a href="https://github.com/coded-streams/strlabstudio-operator" target="_blank">strlabstudio-operator</a>.</p>
-        </div>
+        <div class="about-card"><h3>What it is</h3><p>A zero-dependency single-file HTML application served by nginx. All SQL execution is driven by the Flink SQL Gateway REST API. Results stream live into the browser. Session state is managed client-side in <code>localStorage</code>.</p></div>
+        <div class="about-card"><h3>Who it's for</h3><p>Streaming data engineers and platform teams who want a proper IDE experience for Apache Flink SQL — query editing, live result streaming, real-time job monitoring, checkpoint tracking, and professional reporting — all from a browser.</p></div>
+        <div class="about-card"><h3>Open source</h3><p>Created by <strong style="color:var(--text0);">Nestor A. A</strong> — open source under MIT. Community contributions welcome at <a href="https://github.com/coded-streams/strlabstudio" target="_blank">github.com/coded-streams/strlabstudio</a>.</p></div>
+        <div class="about-card"><h3>Kube Operator</h3><p>The <strong style="color:var(--text0);">Str:::lab Studio Kube Operator</strong> manages Studio deployments as first-class Kubernetes CRDs. Install via Helm from <a href="https://github.com/coded-streams/strlabstudio-operator" target="_blank">strlabstudio-operator</a>.</p></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
         <span style="background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3);color:var(--accent);font-size:10px;padding:3px 8px;border-radius:2px;font-family:var(--mono);">Flink 1.16+</span>
@@ -315,7 +299,7 @@
       </div>
     </section>
 
-    <!-- QUICKSTART -->
+    <!-- ══════════════════════════ QUICKSTART ══════════════════════════════ -->
     <section class="doc-section" id="quickstart">
       <h2><span class="si">⚡</span>Quickstart</h2>
       <div class="tab-group">
@@ -329,7 +313,7 @@
 cd strlabstudio
 docker compose up -d
 open http://localhost:3030</code></pre>
-          <p>Starts: JobManager, TaskManager(s), SQL Gateway, CORS proxy, and the Studio nginx container. On first load, a <strong>Tips &amp; Concepts</strong> modal walks you through key features.</p>
+          <p>Starts: JobManager, TaskManager(s), SQL Gateway, CORS proxy, and the Studio nginx container.</p>
         </div>
         <div id="qs-standalone" class="tab-pane">
           <pre><code>python3 -m http.server 8080
@@ -358,12 +342,8 @@ EOF</code></pre>
       </div>
       <div class="callout tip">
         <span class="callout-icon">💡</span>
-        <div class="callout-body">
-          <strong>First thing every session</strong>
-          Open Snippets → CONFIG → ⚡ Recommended Streaming Config and click Insert. Sets runtime mode, parallelism, checkpointing, state TTL, and MiniBatch in one shot.
-        </div>
+        <div class="callout-body"><strong>First thing every session</strong> Open Snippets → CONFIG → ⚡ Recommended Streaming Config and click Insert. Sets runtime mode, parallelism, checkpointing, state TTL, and MiniBatch in one shot.</div>
       </div>
-
       <h3 id="connection-modes">Connection Modes</h3>
       <div class="table-wrap">
         <table>
@@ -375,16 +355,9 @@ EOF</code></pre>
           </tbody>
         </table>
       </div>
-      <div class="callout info">
-        <span class="callout-icon">🛡</span>
-        <div class="callout-body">
-          <strong>Existing Sessions — auto-loaded</strong>
-          On the connect screen, click <em>Test Connection</em> first — the IDE will auto-populate a dropdown of existing sessions on the gateway so you can reconnect without copy-pasting a UUID.
-        </div>
-      </div>
     </section>
 
-    <!-- ARCHITECTURE -->
+    <!-- ══════════════════════════ ARCHITECTURE ══════════════════════════════ -->
     <section class="doc-section" id="architecture">
       <h2><span class="si">🏗</span>Architecture</h2>
       <p>Str:::lab Studio is a static HTML file served by nginx. All SQL execution happens via the Flink SQL Gateway REST API. The browser manages all session state client-side.</p>
@@ -419,7 +392,6 @@ EOF</code></pre>
           style S fill:#1a2130,stroke:#f0a500,color:#f0f6fc
         </div>
       </div>
-
       <h3 id="state-management">State &amp; Session Management</h3>
       <div class="table-wrap">
         <table>
@@ -431,90 +403,83 @@ EOF</code></pre>
           <tr><td>Admin passcode</td><td><code>localStorage</code> (encrypted default)</td><td>✅ Yes</td></tr>
           <tr><td>SQL Gateway session handle</td><td>In-memory only</td><td>❌ Reconnect required</td></tr>
           <tr><td>Result rows</td><td>In-memory only</td><td>❌ Re-run query</td></tr>
-          <tr><td>Job–session mapping</td><td>In-memory (session lifetime)</td><td>❌ Lost on reload</td></tr>
+          <tr><td>Colour Describe rules</td><td>In-memory only</td><td>❌ Re-configure after reload</td></tr>
           <tr><td>Full workspace</td><td>JSON file (export/import)</td><td>✅ Via import</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- FEATURES -->
+    <!-- ══════════════════════════ FEATURES ══════════════════════════════ -->
     <section class="doc-section" id="features">
       <h2><span class="si">✦</span>All Features</h2>
-
       <h3>Editor</h3>
       <div class="feature-grid">
         <div class="feature-card"><span class="fci">🗂</span><h3>Multi-Tab Editor</h3><p>Write SQL across unlimited named tabs. Each tab has isolated editor content, results, logs, and performance metrics. Double-click to rename.</p></div>
         <div class="feature-card"><span class="fci">▶️</span><h3>Run Selection</h3><p>Highlight any portion of SQL and click <strong>▶ Selection</strong> to run only that fragment. Essential for multi-statement tabs.</p></div>
         <div class="feature-card"><span class="fci">🔁</span><h3>Format &amp; Explain</h3><p>Auto-format normalises whitespace. EXPLAIN Plan shows Flink's logical and physical execution plan before job submission.</p></div>
-        <div class="feature-card"><span class="fci">🚫</span><h3>Duplicate Submission Guard</h3><p>The IDE tracks running INSERT INTO statements. If you attempt to submit the same pipeline twice, execution is blocked with a warning. Check the Job Graph before resubmitting.</p></div>
+        <div class="feature-card"><span class="fci">🚫</span><h3>Duplicate Submission Guard</h3><p>Tracks running INSERT INTO statements. Submitting the same pipeline twice is blocked. Check the Job Graph before resubmitting.</p></div>
       </div>
-
       <h3>Sessions</h3>
       <div class="feature-grid">
-        <div class="feature-card"><span class="fci">🔄</span><h3>Session Persistence</h3><p>Sessions never expire from the IDE side due to inactivity — the heartbeat keeps them alive. Only explicit disconnect or connection loss ends a session.</p></div>
-        <div class="feature-card"><span class="fci">📋</span><h3>Load Existing Sessions</h3><p>After testing the connection, the IDE fetches all existing sessions from the gateway and presents them in a dropdown — no UUID copy-paste needed.</p></div>
-        <div class="feature-card"><span class="fci">🔗</span><h3>Session-Scoped Jobs</h3><p>Each regular session sees only the jobs it submitted. This prevents clutter from other users' pipelines. Admin sessions see all jobs across all sessions.</p></div>
-        <div class="feature-card"><span class="fci">🏷</span><h3>Job Tagging</h3><p>Every INSERT INTO pipeline automatically tags the Flink job name with the session label via <code>pipeline.name</code>, making jobs traceable in the Flink UI and Str:::lab Studio.</p></div>
+        <div class="feature-card"><span class="fci">🔄</span><h3>Session Persistence</h3><p>Sessions never expire from the IDE side due to inactivity — the heartbeat keeps them alive indefinitely.</p></div>
+        <div class="feature-card"><span class="fci">📋</span><h3>Load Existing Sessions</h3><p>After testing the connection, the IDE fetches all existing sessions from the gateway and presents them in a dropdown.</p></div>
+        <div class="feature-card"><span class="fci">🔗</span><h3>Session-Scoped Jobs</h3><p>Each regular session sees only the jobs it submitted. Admin sessions see all jobs across all sessions.</p></div>
+        <div class="feature-card"><span class="fci">🏷</span><h3>Job Tagging</h3><p>Every INSERT INTO pipeline automatically tags the Flink job name with the session label via <code>pipeline.name</code>.</p></div>
       </div>
-
       <h3 id="job-graph">Job Graph</h3>
       <div class="feature-grid">
         <div class="feature-card"><span class="fci">🔀</span><h3>Live DAG</h3><p>Real-time directed acyclic graph of any running Flink job. Nodes show operator type, parallelism, and record counts updating live.</p></div>
-        <div class="feature-card"><span class="fci">🔍</span><h3>Node Detail Modal</h3><p>Double-click any node for full metrics: status, records in/out/s, backpressure, JVM heap, subtask table. Includes a live throughput streaming chart.</p></div>
-        <div class="feature-card"><span class="fci">✕</span><h3>Cancel Job — with Confirmation</h3><p>Cancel button shows a confirmation dialog (<em>"Are you sure?"</em>) before sending the cancel signal to the JobManager. Cannot be undone after confirmation.</p></div>
-        <div class="feature-card"><span class="fci">📅</span><h3>Vertex Timeline</h3><p>Timeline view shows each operator's state transitions (CREATED → RUNNING → FINISHED) as a Gantt-style chart. Click any bar for subtask status detail.</p></div>
+        <div class="feature-card"><span class="fci">🔍</span><h3>Node Detail Modal</h3><p>Double-click any node for full metrics: status, records in/out/s, backpressure, JVM heap, subtask table, live throughput chart.</p></div>
+        <div class="feature-card"><span class="fci">✕</span><h3>Cancel Job — with Confirmation</h3><p>Cancel button shows a confirmation dialog before sending the cancel signal to the JobManager. Cannot be undone.</p></div>
+        <div class="feature-card"><span class="fci">📅</span><h3>Vertex Timeline</h3><p>Timeline view shows each operator's state transitions as a Gantt-style chart. Click any bar for subtask status detail.</p></div>
       </div>
-
       <h3 id="performance">Performance Monitoring</h3>
       <div class="feature-grid">
         <div class="feature-card"><span class="fci">📊</span><h3>Per-Query Timing</h3><p>Every statement timed from submission to first result. Bar charts show relative query durations with row count and status.</p></div>
-        <div class="feature-card"><span class="fci">🔋</span><h3>Checkpoint Health</h3><p>Checkpoint tab shows total/completed/failed counts, last checkpoint duration and state size, and a history sparkline. Configures with one snippet.</p></div>
-        <div class="feature-card"><span class="fci">🖥</span><h3>Cluster Resources</h3><p>Cluster tab shows CPU cores, physical memory, JVM heap, Flink version, task manager count, and slot utilisation gauges from the JobManager REST API.</p></div>
-        <div class="feature-card"><span class="fci">📈</span><h3>Live Throughput</h3><p>Throughput tab shows records in/out per second as animated sparklines with min/max labels. Toggle ▶ Live for auto-refresh every 2 seconds.</p></div>
+        <div class="feature-card"><span class="fci">🔋</span><h3>Checkpoint Health</h3><p>Checkpoint tab shows total/completed/failed counts, last duration and state size, and a history sparkline.</p></div>
+        <div class="feature-card"><span class="fci">🖥</span><h3>Cluster Resources</h3><p>Cluster tab shows CPU, memory, JVM heap, Flink version, task manager count, and slot utilisation gauges.</p></div>
+        <div class="feature-card"><span class="fci">📈</span><h3>Live Throughput</h3><p>Records in/out per second as animated sparklines. Toggle ▶ Live for auto-refresh every 2 seconds.</p></div>
       </div>
-
       <h3 id="reports">Reports</h3>
       <div class="feature-grid">
-        <div class="feature-card"><span class="fci">📄</span><h3>Session Report (Standard)</h3><p>Generate a PDF report of your session: queries executed, timing history, job list, cluster info, and checkpoint metrics. Includes the session ID and timestamp.</p></div>
-        <div class="feature-card"><span class="fci">🛡</span><h3>Admin Report — Technical</h3><p>Deep technical report: all active sessions, per-session job attribution, vertex-level metrics, JVM heap and CPU stats, checkpoint durations. For engineering teams.</p></div>
-        <div class="feature-card"><span class="fci">📊</span><h3>Admin Report — Business / Management</h3><p>Self-explaining metrics report with plain-language annotations. Focuses on resource utilisation, job health percentages, and throughput summaries. No SQL jargon.</p></div>
-        <div class="feature-card"><span class="fci">🖨</span><h3>Job Graph Report</h3><p>Per-job PDF report from the Job Graph tab — captures the DAG topology, vertex states, record counts, backpressure levels, and checkpoint history for a single job.</p></div>
+        <div class="feature-card"><span class="fci">📄</span><h3>Session Report</h3><p>Generate a PDF report: queries executed, timing history, job list, cluster info, checkpoint metrics, and — when active — Colour Describe rules.</p></div>
+        <div class="feature-card"><span class="fci">🛡</span><h3>Admin Report — Technical</h3><p>All active sessions, per-session job attribution, vertex-level metrics, JVM heap and CPU stats, checkpoint durations.</p></div>
+        <div class="feature-card"><span class="fci">📊</span><h3>Admin Report — Business</h3><p>Self-explaining metrics report with plain-language annotations. Resource utilisation, job health percentages, throughput summaries.</p></div>
+        <div class="feature-card"><span class="fci">🖨</span><h3>Job Graph Report</h3><p>Per-job PDF: DAG topology, vertex states, record counts, backpressure levels, and checkpoint history for a single job.</p></div>
       </div>
-
+      <h3>Results &amp; Visualisation</h3>
+      <div class="feature-grid">
+        <div class="feature-card"><span class="fci">🎨</span><h3>Colour Describe</h3><p>User-defined live row highlighting. Build rules (field + operator + value + color) applied to streaming result rows in real time. Legend rendered below the table. See <a href="#colour-describe">full docs →</a></p></div>
+        <div class="feature-card"><span class="fci">✦</span><h3>Auto Colour</h3><p>Semantic row colouring based on built-in column-name patterns: status, risk_score, latency_ms, cpu, signal_quality, severity, and more. One-click toggle.</p></div>
+        <div class="feature-card"><span class="fci">🔍</span><h3>Results Search &amp; Sort</h3><p>Live search across all result columns with match count. Toggle newest-first / oldest-first. Clear individual slots or all slots.</p></div>
+        <div class="feature-card"><span class="fci">🗂</span><h3>Multi-Slot Streaming</h3><p>Run multiple SELECT queries simultaneously. Each query gets its own result slot. Switch between slots via the stream selector bar.</p></div>
+      </div>
       <h3>Themes &amp; UX</h3>
       <div class="feature-grid">
-        <div class="feature-card"><span class="fci">⬡</span><h3>Project Manager</h3><p>Save, load, run, and delete named Str:::lab projects. Each project stores all editor tabs, SET configuration, catalog context, and metadata. Export to JSON for sharing or backup. Tracks storage usage per project.</p></div>
-        <div class="feature-card"><span class="fci">⨍</span><h3>UDF Manager</h3><p>Browse all registered functions, register JAR-based or Python UDFs, create SQL UDFs without writing a single line of Java, and insert professional UDF templates directly into the editor.</p></div>
-        <div class="feature-card"><span class="fci">💡</span><h3>Tips &amp; Concepts Modal</h3><p>On first connect, a paginated modal walks through IDE features, Flink architecture, window types, state, connectors, and performance tips — like IntelliJ's "Tip of the Day".</p></div>
+        <div class="feature-card"><span class="fci">⬡</span><h3>Project Manager</h3><p>Save, load, run, and delete named Str:::lab projects. Stores all editor tabs, SET config, catalog context, and metadata. Export to JSON.</p></div>
+        <div class="feature-card"><span class="fci">⨍</span><h3>UDF Manager</h3><p>Browse functions and views, register JAR UDFs, generate Maven/Gradle configs, build SQL expressions via View Builder, insert templates. See <a href="#udf-manager">full docs →</a></p></div>
+        <div class="feature-card"><span class="fci">💡</span><h3>Tips &amp; Concepts Modal</h3><p>On first connect, a paginated modal walks through IDE features, Flink architecture, window types, state, connectors, and performance tips.</p></div>
         <div class="feature-card"><span class="fci">🎨</span><h3>6 Themes</h3><p>Dark (default), Light, Monokai, Dracula, Nord, Contrast. Preference persisted across sessions.</p></div>
       </div>
     </section>
 
-    <!-- ADMIN SESSION -->
+    <!-- ══════════════════════════ ADMIN ══════════════════════════════ -->
     <section class="doc-section" id="admin">
       <h2><span class="si">🛡</span>Admin Session</h2>
-      <p>The Admin Session mode provides a privileged view of the entire Flink cluster — across all users and sessions. Access it from the connect screen by selecting the <span class="tag admin">Admin</span> mode and entering the admin passcode.</p>
-
+      <p>Provides a privileged view of the entire Flink cluster across all users and sessions. Access from the connect screen by selecting the <span class="tag admin">Admin</span> mode and entering the admin passcode.</p>
       <h3>Capabilities</h3>
       <ul class="doc-ul">
-        <li><strong>Full cluster job visibility</strong> — see ALL jobs running on the cluster, not just the ones submitted in this session.</li>
-        <li><strong>Per-session activity</strong> — the Sessions Activity modal shows each registered session's submitted jobs, query count, and running job status.</li>
-        <li><strong>Cross-session job attribution</strong> — jobs are tagged with their session name (visible in the Job Graph select dropdown).</li>
+        <li><strong>Full cluster job visibility</strong> — see ALL jobs running on the cluster.</li>
+        <li><strong>Per-session activity</strong> — Sessions Activity modal shows each session's submitted jobs, query count, and running job status.</li>
         <li><strong>Cancel any job</strong> — admins can cancel any running job on the cluster, with a confirmation dialog.</li>
-        <li><strong>Admin-grade PDF reports</strong> — choose between a <em>Technical Report</em> (engineering detail) or <em>Business/Management Report</em> (self-explanatory metrics). Both carry the admin's name and session ID.</li>
-        <li><strong>Change admin passcode</strong> — click the 🛡 ADMIN badge in the topbar to open Admin Settings where you can update your display name and change the passcode.</li>
+        <li><strong>Admin-grade PDF reports</strong> — Technical Report (engineering detail) or Business/Management Report (self-explanatory metrics).</li>
+        <li><strong>Change admin passcode</strong> — click the 🛡 ADMIN badge in the topbar to open Admin Settings.</li>
       </ul>
-
       <div class="callout warn">
         <span class="callout-icon">🔒</span>
-        <div class="callout-body">
-          <strong>Default passcode</strong>
-          The default admin passcode is <code>admin1234</code>. Change it immediately after first login via the Admin Settings modal (click the 🛡 badge in the topbar). The new passcode is persisted in browser localStorage.
-        </div>
+        <div class="callout-body"><strong>Default passcode</strong> The default admin passcode is <code>admin1234</code>. Change it immediately after first login via the Admin Settings modal (click the 🛡 badge in the topbar).</div>
       </div>
-
-      <h3>Session isolation model</h3>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Feature</th><th>Regular Session</th><th>Admin Session</th></tr></thead>
@@ -523,16 +488,15 @@ EOF</code></pre>
           <tr><td>Cancel job</td><td>Only own jobs</td><td>Any job on the cluster</td></tr>
           <tr><td>Session Activity modal</td><td>Not available</td><td>Full cross-session breakdown</td></tr>
           <tr><td>Report type</td><td>Standard session report</td><td>Technical or Business/Management report</td></tr>
-          <tr><td>Job tagging</td><td>Tagged with session name</td><td>Tagged as admin session</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- TIPS MODAL -->
+    <!-- ══════════════════════════ TIPS ══════════════════════════════ -->
     <section class="doc-section" id="tips-modal">
       <h2><span class="si">💡</span>Tips &amp; Concepts Modal</h2>
-      <p>On first connection, Str:::lab Studio displays a paginated <strong>Tips &amp; Concepts</strong> modal — inspired by JetBrains "Tip of the Day". It covers 16 topics across 6 categories:</p>
+      <p>On first connection, Str:::lab Studio displays a paginated <strong>Tips &amp; Concepts</strong> modal covering 16 topics across 6 categories:</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Category</th><th>Topics Covered</th></tr></thead>
@@ -546,10 +510,9 @@ EOF</code></pre>
           </tbody>
         </table>
       </div>
-      <p>Users can navigate tips with Prev/Next buttons or click category tags to jump directly to that section. A "Don't show on startup" checkbox suppresses the modal on future connections. The modal can be reopened at any time via the topbar — the <strong>ℹ About</strong> button also includes a tips launcher.</p>
     </section>
 
-    <!-- SNIPPETS -->
+    <!-- ══════════════════════════ SNIPPETS ══════════════════════════════ -->
     <section class="doc-section" id="snippets">
       <h2><span class="si">✂</span>Snippets Library</h2>
       <p>30+ built-in SQL templates accessible from the toolbar. Click any snippet to insert into the active editor tab.</p>
@@ -569,15 +532,12 @@ EOF</code></pre>
       </div>
     </section>
 
-    <!-- CONNECTORS -->
+    <!-- ══════════════════════════ CONNECTORS ══════════════════════════════ -->
     <section class="doc-section" id="connectors">
       <h2><span class="si">🔌</span>Connector JARs</h2>
       <div class="callout danger">
         <span class="callout-icon">🚨</span>
-        <div class="callout-body">
-          <strong>Version mismatch = <code>NoClassDefFoundError</code></strong>
-          Connector JAR versions must match your Flink runtime exactly. Every INSERT job will fail with a classloading error if the version is wrong.
-        </div>
+        <div class="callout-body"><strong>Version mismatch = <code>NoClassDefFoundError</code></strong> Connector JAR versions must match your Flink runtime exactly.</div>
       </div>
       <div class="table-wrap">
         <table>
@@ -597,29 +557,17 @@ EOF</code></pre>
           <button class="tab-btn" onclick="switchTab(this,'jar-sh')">Linux / macOS</button>
           <button class="tab-btn" onclick="switchTab(this,'jar-docker')">Dockerfile</button>
         </div>
-        <div id="jar-ps1" class="tab-pane active">
-          <pre><code>.\scripts\download-connectors.ps1
-# Auto-detects Flink version from running container.
-# Override: .\scripts\download-connectors.ps1 -FlinkVersion 1.19.1</code></pre>
-        </div>
-        <div id="jar-sh" class="tab-pane">
-          <pre><code>./scripts/download-connectors.sh
-# Override: ./scripts/download-connectors.sh --flink-version 1.19.1</code></pre>
-        </div>
-        <div id="jar-docker" class="tab-pane">
-          <pre><code>FROM flink:1.19.1-scala_2.12-java11
-USER root
-RUN apt-get update && apt-get install -y libgomp1 && rm -rf /var/lib/apt/lists/*
-COPY ./connectors/*.jar /opt/flink/lib/
-USER flink</code></pre>
-        </div>
+        <div id="jar-ps1" class="tab-pane active"><pre><code>.\scripts\download-connectors.ps1</code></pre></div>
+        <div id="jar-sh" class="tab-pane"><pre><code>./scripts/download-connectors.sh</code></pre></div>
+        <div id="jar-docker" class="tab-pane"><pre><code>FROM flink:1.19.1-scala_2.12-java11
+COPY ./connectors/*.jar /opt/flink/lib/</code></pre></div>
       </div>
     </section>
 
-    <!-- PIPELINE DEMO -->
+    <!-- ══════════════════════════ PIPELINE DEMO ══════════════════════════════ -->
     <section class="doc-section" id="pipeline">
       <h2><span class="si">🔀</span>Full Pipeline Demo</h2>
-      <p>A complete multi-stage streaming pipeline built entirely in Str:::lab Studio: datagen source → Kafka → enrichment with branching → windowed aggregation → live preview.</p>
+      <p>A complete multi-stage streaming pipeline: datagen source → Kafka → enrichment with branching → windowed aggregation → live preview.</p>
       <div class="mermaid-wrap">
         <div class="mermaid">
           flowchart LR
@@ -648,123 +596,13 @@ USER flink</code></pre>
           style PR fill:#1a2130,stroke:#3fb950,color:#f0f6fc
         </div>
       </div>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">0</div>
-          <div class="step-body">
-            <h4>Session Config — Snippets → ⚡ Recommended Streaming Config</h4>
-            <pre><code>SET 'execution.runtime-mode' = 'streaming';
-SET 'parallelism.default' = '1';
-SET 'pipeline.operator-chaining' = 'false';
-SET 'execution.checkpointing.interval' = '10000';</code></pre>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-body">
-            <h4>DDL Tab — Create all source and sink tables</h4>
-            <pre><code>CREATE TEMPORARY TABLE trade_gen (
-  trade_id STRING, symbol STRING, side STRING,
-  quantity DOUBLE, price DOUBLE, exchange STRING,
-  event_time TIMESTAMP(3),
-  WATERMARK FOR event_time AS event_time - INTERVAL '5' SECOND
-) WITH ('connector' = 'datagen', 'rows-per-second' = '5');</code></pre>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-body">
-            <h4>Producer Tab — Start datagen → Kafka (Job 1)</h4>
-            <pre><code>INSERT INTO trade_events_kafka
-SELECT trade_id, symbol, side, quantity, price, exchange, event_time
-FROM trade_gen;</code></pre>
-            <p style="font-size:12px;color:var(--text3);">Job Graph tab auto-opens. Studio tags the Flink job as <code>[session-name] Str:::lab Studio Pipeline</code>.</p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-body">
-            <h4>Enrichment Tab — Branching pipeline (Job 2)</h4>
-            <pre><code>EXECUTE STATEMENT SET BEGIN
-INSERT INTO enriched_trades_kafka
-SELECT trade_id, symbol, side,
-  ROUND(quantity * price, 2) AS trade_value,
-  CASE WHEN quantity * price >= 100000 THEN 'CRITICAL'
-       WHEN quantity * price >=  10000 THEN 'HIGH'
-       ELSE 'LOW' END AS risk_level, event_time
-FROM trade_events_source;
-
-INSERT INTO branch_alerts_sink
-SELECT trade_id, symbol, ROUND(quantity * price, 2) AS trade_value, event_time
-FROM trade_events_source WHERE quantity * price >= 10000;
-END;</code></pre>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">4</div>
-          <div class="step-body">
-            <h4>Aggregation Tab — Windowed summary (Job 3)</h4>
-            <pre><code>INSERT INTO trade_summary_kafka
-SELECT window_start, window_end, symbol, side,
-  COUNT(*) AS trade_count,
-  ROUND(SUM(quantity * price), 2) AS total_volume
-FROM TABLE(TUMBLE(TABLE enriched_trades_source,
-  DESCRIPTOR(event_time), INTERVAL '10' SECOND))
-GROUP BY window_start, window_end, symbol, side;</code></pre>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">5</div>
-          <div class="step-body">
-            <h4>Preview Tab — Live SELECT from Kafka (rows stream into Results)</h4>
-            <pre><code>SELECT trade_id, symbol, side, trade_value, risk_level, event_time
-FROM enriched_trades_view;</code></pre>
-            <div class="callout tip" style="margin-top:10px">
-              <span class="callout-icon">💡</span>
-              <div class="callout-body">
-                <strong>Always create a separate consumer-mode view to preview live data.</strong>
-                Sink tables can't be queried. Create a duplicate table with <code>scan.startup.mode = 'earliest-offset'</code> and a consumer group ID for SELECT queries.
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
 
-    <!-- KUBERNETES OPERATOR -->
+    <!-- ══════════════════════════ KUBE OPERATOR ══════════════════════════════ -->
     <section class="doc-section" id="operator">
       <h2><span class="si">☸️</span>Str:::lab Studio Kube Operator</h2>
-      <p>The <strong>Str:::lab Studio Kube Operator</strong> manages Str:::lab Studio deployments as first-class Kubernetes CRDs. Deploy and lifecycle-manage Studio instances with a single <code>kubectl apply</code>. Built with <a href="https://kopf.readthedocs.io/" target="_blank">Kopf</a> (Python).</p>
-      <p>Repository: <a href="https://github.com/coded-streams/strlabstudio-operator" target="_blank">github.com/coded-streams/strlabstudio-operator</a></p>
-
-      <div class="mermaid-wrap">
-        <div class="mermaid">
-          flowchart TD
-          CR["StrlabStudio CR\nkubectl apply"]
-          OP["Str:::lab Studio\nKube Operator\nKopf controller"]
-          DEP["Deployment\nnginx pods"]
-          SVC["Service\nClusterIP/NodePort/LB"]
-          POD["nginx Pod\nIDE + reverse proxy"]
-          GW["Flink SQL Gateway"]
-          JM["Flink JobManager"]
-          CR-->|"reconcile"|OP
-          OP-->|"creates / owns"|DEP
-          OP-->|"creates / owns"|SVC
-          DEP-->POD
-          POD-->GW
-          POD-->JM
-          style CR fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style OP fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-          style DEP fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-          style SVC fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-          style POD fill:#1a2130,stroke:#3fb950,color:#f0f6fc
-          style GW fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style JM fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-        </div>
-      </div>
-
+      <p>Manages Studio deployments as first-class Kubernetes CRDs. Repository: <a href="https://github.com/coded-streams/strlabstudio-operator" target="_blank">github.com/coded-streams/strlabstudio-operator</a></p>
       <h3>CRD Reference — <code>StrlabStudio</code></h3>
-      <p>Short name: <code>kubectl get fss</code> &nbsp;·&nbsp; Group: <code>codedstreams.io/v1alpha1</code></p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead>
@@ -776,46 +614,19 @@ FROM enriched_trades_view;</code></pre>
           <tr><td><code>spec.image</code></td><td>string</td><td>—</td><td><code>codedstreams/strlabstudio:latest</code></td><td>IDE Docker image</td></tr>
           <tr><td><code>spec.replicas</code></td><td>integer</td><td>—</td><td><code>1</code></td><td>Pod count (1–10)</td></tr>
           <tr><td><code>spec.service.type</code></td><td>string</td><td>—</td><td><code>ClusterIP</code></td><td><code>ClusterIP</code>, <code>NodePort</code>, or <code>LoadBalancer</code></td></tr>
-          <tr><td><code>spec.service.port</code></td><td>integer</td><td>—</td><td><code>80</code></td><td>Service port</td></tr>
-          <tr><td><code>spec.service.nodePort</code></td><td>integer</td><td>—</td><td>—</td><td>NodePort (30000–32767)</td></tr>
-          <tr><td><code>spec.resources.requests</code></td><td>object</td><td>—</td><td><code>{cpu:50m, memory:64Mi}</code></td><td>Pod resource requests</td></tr>
-          <tr><td><code>spec.resources.limits</code></td><td>object</td><td>—</td><td><code>{cpu:200m, memory:128Mi}</code></td><td>Pod resource limits</td></tr>
           </tbody>
         </table>
       </div>
-
       <div class="tab-group">
         <div class="tab-nav">
           <button class="tab-btn active" onclick="switchTab(this,'op-install')">Helm Install</button>
           <button class="tab-btn" onclick="switchTab(this,'op-basic')">Basic CR</button>
-          <button class="tab-btn" onclick="switchTab(this,'op-nodeport')">NodePort</button>
           <button class="tab-btn" onclick="switchTab(this,'op-prod')">Production</button>
         </div>
-        <div id="op-install" class="tab-pane active">
-          <pre><code>helm repo add strlabstudio https://coded-streams.github.io/strlabstudio-operator/charts
-helm repo update
+        <div id="op-install" class="tab-pane active"><pre><code>helm repo add strlabstudio https://coded-streams.github.io/strlabstudio-operator/charts
 helm install strlabstudio-operator strlabstudio/strlabstudio-operator \
-  --namespace flinksql-system --create-namespace
-
-kubectl get pods -n flinksql-system
-kubectl get crd strlabstudio.codedstreams.io</code></pre>
-        </div>
-        <div id="op-basic" class="tab-pane">
-          <pre><code>apiVersion: codedstreams.io/v1alpha1
-kind: StrlabStudio
-metadata:
-  name: dev-studio
-  namespace: flink
-spec:
-  gateway:
-    host: flink-sql-gateway
-    port: 8083
-  jobmanager:
-    host: flink-jobmanager
-    port: 8081</code></pre>
-        </div>
-        <div id="op-nodeport" class="tab-pane">
-          <pre><code>apiVersion: codedstreams.io/v1alpha1
+  --namespace flinksql-system --create-namespace</code></pre></div>
+        <div id="op-basic" class="tab-pane"><pre><code>apiVersion: codedstreams.io/v1alpha1
 kind: StrlabStudio
 metadata:
   name: dev-studio
@@ -824,572 +635,414 @@ spec:
   gateway:
     host: flink-sql-gateway
   jobmanager:
-    host: flink-jobmanager
-  service:
-    type: NodePort
-    nodePort: 30303</code></pre>
-        </div>
-        <div id="op-prod" class="tab-pane">
-          <pre><code>apiVersion: codedstreams.io/v1alpha1
+    host: flink-jobmanager</code></pre></div>
+        <div id="op-prod" class="tab-pane"><pre><code>apiVersion: codedstreams.io/v1alpha1
 kind: StrlabStudio
 metadata:
   name: prod-studio
   namespace: flink
 spec:
-  image: codedstreams/strlabstudio:v1.0.22
+  image: codedstreams/strlabstudio:v1.0.23
   replicas: 2
   gateway:
     host: flink-sql-gateway
     port: 8083
-  jobmanager:
-    host: flink-jobmanager
-    port: 8081
   service:
     type: LoadBalancer
     port: 80
   resources:
-    requests: {cpu: "100m", memory: "128Mi"}
-    limits:   {cpu: "500m", memory: "256Mi"}</code></pre>
-        </div>
+    limits: {cpu: "500m", memory: "256Mi"}</code></pre></div>
       </div>
     </section>
 
-    <!-- DEPLOY OPTIONS -->
+    <!-- ══════════════════════════ DEPLOY ══════════════════════════════ -->
     <section class="doc-section" id="deploy">
       <h2><span class="si">🚀</span>Deployment Options</h2>
       <div class="deploy-grid">
-        <div class="deploy-card">
-          <span class="deploy-card-icon">🐳</span>
-          <h3>Docker Compose</h3>
-          <p>Full stack in one command — Studio, Flink cluster, SQL Gateway, Kafka.</p>
-          <pre style="margin:0"><code>docker compose up -d</code></pre>
-        </div>
-        <div class="deploy-card">
-          <span class="deploy-card-icon">📄</span>
-          <h3>Standalone HTML</h3>
-          <p>Serve <code>studio/index.html</code> from any static server. Use Direct Gateway mode.</p>
-          <pre style="margin:0"><code>python3 -m http.server 8080</code></pre>
-        </div>
-        <div class="deploy-card">
-          <span class="deploy-card-icon">☸️</span>
-          <h3>Str:::lab Studio Kube Operator</h3>
-          <p>CRD-based deployment via Helm. GitOps-friendly. No PVC required.</p>
-          <pre style="margin:0"><code>helm install strlabstudio-operator \
-  strlabstudio/strlabstudio-operator</code></pre>
-        </div>
-        <div class="deploy-card">
-          <span class="deploy-card-icon">☁️</span>
-          <h3>Cloud Flink (Remote)</h3>
-          <p>Connect to Confluent Cloud, Ververica Cloud, or AWS Managed Flink with Direct Gateway + bearer token auth.</p>
-        </div>
+        <div class="deploy-card"><span class="deploy-card-icon">🐳</span><h3>Docker Compose</h3><p>Full stack in one command.</p><pre style="margin:0"><code>docker compose up -d</code></pre></div>
+        <div class="deploy-card"><span class="deploy-card-icon">📄</span><h3>Standalone HTML</h3><p>Serve from any static server.</p><pre style="margin:0"><code>python3 -m http.server 8080</code></pre></div>
+        <div class="deploy-card"><span class="deploy-card-icon">☸️</span><h3>Kube Operator</h3><p>CRD-based deployment via Helm.</p><pre style="margin:0"><code>helm install strlabstudio-operator \
+  strlabstudio/strlabstudio-operator</code></pre></div>
+        <div class="deploy-card"><span class="deploy-card-icon">☁️</span><h3>Cloud Flink (Remote)</h3><p>Connect to Confluent Cloud, Ververica Cloud, or AWS Managed Flink with Direct Gateway + bearer token auth.</p></div>
       </div>
     </section>
 
-    <!-- CHANGELOG -->
+    <!-- ══════════════════════════ PROJECT MANAGER ══════════════════════════════ -->
     <section class="doc-section" id="project-manager">
       <h2><span class="si">⬡</span>Project Manager</h2>
-      <p>
-        The <strong>Project Manager</strong> lets you save, load, run, and organise your Str:::lab work as named projects.
-        Access it from the topbar via the <code style="background:rgba(0,212,170,0.12);color:var(--accent);padding:2px 7px;border-radius:3px;">⬡ Projects</code> button.
-        Projects are stored in browser <code>localStorage</code> and can be exported and imported as JSON files.
-      </p>
-
-      <h3 style="margin-top:22px;color:var(--text0);font-size:15px;">What a project stores</h3>
-      <table class="params-table" style="margin-top:10px;">
-        <thead><tr><th>Field</th><th>Description</th></tr></thead>
-        <tbody>
-        <tr><td><strong>SQL tabs</strong></td><td>All editor tab titles and SQL content, snapshotted at save time</td></tr>
-        <tr><td><strong>SET config</strong></td><td>All <code>SET ...</code> statements from query history — runtime mode, checkpointing, mini-batch, etc.</td></tr>
-        <tr><td><strong>Catalog / Database</strong></td><td>Active <code>USE CATALOG</code> and <code>USE</code> context at save time</td></tr>
-        <tr><td><strong>Metadata</strong></td><td>Name, description, created/modified timestamps, run count, version tag</td></tr>
-        </tbody>
-      </table>
-
-      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">Three tabs</h3>
-
-      <div class="feature-grid" style="margin-top:12px;">
-        <div class="feature-card">
-          <span class="fci">📁</span>
-          <h3>Projects tab</h3>
-          <p>Lists all saved projects with size, tab count, last modified, and run count. Actions per project: <strong>Load</strong> (restore to editor), <strong>▶ Run</strong> (load + execute), <strong>⬇ Export</strong> (download JSON), <strong>🗑 Delete</strong>. Search bar filters by name or description.</p>
-        </div>
-        <div class="feature-card">
-          <span class="fci">＋</span>
-          <h3>New Project tab</h3>
-          <p>Create a named project with optional description. Checkboxes control whether to snapshot current editor tabs and current SET config from history. The active project is shown in the topbar.</p>
-        </div>
-        <div class="feature-card">
-          <span class="fci">🗄</span>
-          <h3>Storage tab</h3>
-          <p>Shows a progress bar of localStorage usage (5 MB limit). Per-project storage breakdown. Buttons to export all, import from file, or clear all projects. Export before clearing.</p>
-        </div>
-      </div>
-
-      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">Workflow</h3>
-      <ol style="margin:10px 0 0 20px;font-size:13px;line-height:2.2;">
-        <li>Write your SQL across tabs. Run <code>SET</code> statements to configure the session.</li>
-        <li>Open <strong>⬡ Projects → ＋ New Project</strong>. Name it, tick snapshot tabs + config, click <strong>⬡ Create Project</strong>.</li>
-        <li>The project appears in the list with an <strong>ACTIVE</strong> badge. The topbar shows the project name.</li>
-        <li>Continue working. Click <strong>💾 Save Current State</strong> (modal footer) to update the active project.</li>
-        <li>To restore: open <strong>⬡ Projects → Load</strong> on any project. This replaces the editor tabs.</li>
-        <li>To share: click <strong>⬇</strong> on any project row to download a <code>.json</code> file. Import on any other Studio instance.</li>
-      </ol>
-
-      <div class="callout" style="margin-top:14px;background:rgba(245,166,35,0.06);border-left:3px solid var(--yellow,#f5a623);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
-        <strong style="color:var(--yellow,#f5a623);">Storage limit:</strong> Browser localStorage is limited to ~5 MB.
-        Each project is typically 2–20 KB. Export projects you want to keep permanently — localStorage is
-        cleared when browser data is cleared. For large SQL files, keep scripts in version control and use
-        projects for session config and metadata only.
-      </div>
-    </section>
-
-    <section class="doc-section" id="udf-manager">
-      <h2><span class="si">⨍</span>UDF Manager</h2>
-      <p>
-        The <strong>UDF Manager</strong> is a dedicated feature for the complete User-Defined Function
-        lifecycle — from building to uploading to registering to using — without leaving Str:::lab Studio.
-        Access it from the topbar via the <code style="background:rgba(79,163,224,0.12);color:#4fa3e0;padding:2px 7px;border-radius:3px;">⨍ UDFs</code> button.
-        It has five tabs.
-      </p>
-
-      <!-- UDF Types -->
-      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">What are UDFs?</h3>
-      <p>UDFs extend Flink SQL with custom logic that built-in functions cannot express. Flink supports four types:</p>
+      <p>Save, load, run, and organise your Str:::lab work as named projects. Access via the <code style="background:rgba(0,212,170,0.12);color:var(--accent);padding:2px 7px;border-radius:3px;">⬡ Projects</code> button. Projects are stored in browser <code>localStorage</code> and can be exported and imported as JSON files.</p>
       <div class="feature-grid" style="margin-top:14px;">
-        <div class="feature-card" style="border-color:rgba(0,212,170,0.3);">
-          <span class="fci" style="color:var(--accent);">f(x)</span>
-          <h3>Scalar (UDF)</h3>
-          <p>One row in → one value out. Data masking, classification, format conversion. Can be written in pure SQL (no JAR), Java, Scala, or Python.</p>
-        </div>
-        <div class="feature-card" style="border-color:rgba(79,163,224,0.3);">
-          <span class="fci" style="color:#4fa3e0;">⇶</span>
-          <h3>Table (UDTF)</h3>
-          <p>One row in → many rows out. Used with <code>CROSS JOIN LATERAL TABLE(...)</code> to explode arrays or parse delimited fields.</p>
-        </div>
-        <div class="feature-card" style="border-color:rgba(245,166,35,0.3);">
-          <span class="fci" style="color:#f5a623;">∑</span>
-          <h3>Aggregate (UDAGG)</h3>
-          <p>Many rows in → one value out. Maintains an accumulator per group. Supports retraction for streaming tables. Example: VWAP.</p>
-        </div>
-        <div class="feature-card" style="border-color:rgba(176,109,255,0.3);">
-          <span class="fci" style="color:#b06dff;">⇄</span>
-          <h3>Async Table</h3>
-          <p>Non-blocking external enrichment. Issues many concurrent requests without blocking the pipeline. Ideal for REST API or HBase lookups.</p>
-        </div>
-      </div>
-
-      <!-- Tab: Library -->
-      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">📚 Library Tab — Browse &amp; Quick-Insert</h3>
-      <p>
-        Click <strong>⟳ Refresh</strong> to run <code>SHOW FUNCTIONS</code> and <code>SHOW USER FUNCTIONS</code>
-        against the active session. Results split into <strong>User-Defined</strong> (blue) and <strong>Built-in</strong>.
-        Use the search bar and type filter. Click any function name to <strong>insert it at the cursor</strong>
-        in the editor with parentheses ready.
-      </p>
-
-      <!-- Tab: Upload JAR -->
-      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">⬆ Upload JAR Tab — Deploy Directly to the Cluster</h3>
-      <p>
-        Str:::lab Studio can upload a JAR file directly to the Flink JobManager via the same REST endpoint
-        that the Flink Web UI uses: <code>POST /jars/upload</code>. No SSH, no manual file copying.
-        Once uploaded, the JAR is available to all TaskManagers immediately.
-      </p>
-      <ol style="margin:10px 0 0 20px;font-size:13px;line-height:2;">
-        <li>Drag-and-drop your <code>.jar</code> file onto the drop zone, or click to browse.</li>
-        <li>Click <strong>⬆ Upload JAR to Flink Cluster</strong> — a live progress bar tracks the upload.</li>
-        <li>The <strong>JARs on cluster</strong> list refreshes automatically. Click <strong>Use →</strong> on any entry to pre-fill the Register tab.</li>
-        <li>Optionally delete JARs from the cluster using the <strong>Delete</strong> button on each row.</li>
-      </ol>
-      <div class="callout" style="margin-top:12px;background:rgba(245,166,35,0.06);border-left:3px solid var(--yellow,#f5a623);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
-        <strong style="color:var(--yellow,#f5a623);">Prerequisites:</strong> The Flink Web UI port (<code>8081</code>) must be proxied at
-        <code>/jobmanager-api/</code> in your nginx config. If you see a 404 error, check that the proxy is
-        configured. Self-hosted Docker clusters using the included <code>docker-compose.yml</code> have this
-        configured automatically.
-      </div>
-
-      <!-- Tab: Maven / Gradle -->
-      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">⬡ Maven / Gradle Tab — Dependency &amp; Build Config</h3>
-      <p>
-        Maven and Gradle resolve your UDF's dependencies and package everything into a single deployable JAR.
-        This tab generates the correct build configuration and commands so you never have to guess at
-        dependency scopes or version strings.
-      </p>
-
-      <div class="tab-group" style="margin-top:14px;">
-        <div class="tab-bar">
-          <button class="tab-btn active" onclick="switchTab(this,'dep-maven')">Maven (pom.xml)</button>
-          <button class="tab-btn" onclick="switchTab(this,'dep-gradle')">Gradle (build.gradle)</button>
-          <button class="tab-btn" onclick="switchTab(this,'dep-concepts')">Key Concepts</button>
-        </div>
-
-        <div id="dep-maven" class="tab-pane active">
-          <pre class="code-block">&lt;dependencies&gt;
-
-    &lt;!--
-      Flink APIs — scope="provided"
-      These JARs are already on the cluster. DO NOT bundle them.
-      "provided" means: compile against them, but exclude from the output JAR.
-    --&gt;
-    &lt;dependency&gt;
-        &lt;groupId&gt;org.apache.flink&lt;/groupId&gt;
-        &lt;artifactId&gt;flink-table-api-java&lt;/artifactId&gt;
-        &lt;version&gt;${flink.version}&lt;/version&gt;
-        &lt;scope&gt;provided&lt;/scope&gt;
-    &lt;/dependency&gt;
-    &lt;dependency&gt;
-        &lt;groupId&gt;org.apache.flink&lt;/groupId&gt;
-        &lt;artifactId&gt;flink-table-common&lt;/artifactId&gt;
-        &lt;version&gt;${flink.version}&lt;/version&gt;
-        &lt;scope&gt;provided&lt;/scope&gt;
-    &lt;/dependency&gt;
-
-    &lt;!-- Your own third-party deps — these ARE bundled (default scope) --&gt;
-    &lt;dependency&gt;
-        &lt;groupId&gt;com.google.guava&lt;/groupId&gt;
-        &lt;artifactId&gt;guava&lt;/artifactId&gt;
-        &lt;version&gt;32.1.3-jre&lt;/version&gt;
-    &lt;/dependency&gt;
-
-&lt;/dependencies&gt;
-
-&lt;!-- Maven Shade Plugin: creates the shaded (fat) JAR --&gt;
-&lt;plugin&gt;
-    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-    &lt;artifactId&gt;maven-shade-plugin&lt;/artifactId&gt;
-    &lt;version&gt;3.5.1&lt;/version&gt;
-    &lt;executions&gt;
-        &lt;execution&gt;
-            &lt;phase&gt;package&lt;/phase&gt;
-            &lt;goals&gt;&lt;goal&gt;shade&lt;/goal&gt;&lt;/goals&gt;
-            &lt;configuration&gt;
-                &lt;shadedArtifactAttached&gt;true&lt;/shadedArtifactAttached&gt;
-                &lt;shadedClassifierName&gt;shaded&lt;/shadedClassifierName&gt;
-            &lt;/configuration&gt;
-        &lt;/execution&gt;
-    &lt;/executions&gt;
-&lt;/plugin&gt;
-
-&lt;!-- Build command: --&gt;
-&lt;!-- mvn clean package -DskipTests --&gt;
-&lt;!-- Output: target/my-udfs-1.0.0-shaded.jar --&gt;</pre>
-        </div>
-
-        <div id="dep-gradle" class="tab-pane">
-          <pre class="code-block">plugins {
-    id 'java'
-    // Shadow plugin: creates the fat JAR
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
-}
-
-dependencies {
-    /*
-     * compileOnly = Maven "provided"
-     * These JARs are already on the Flink cluster.
-     * DO NOT use 'implementation' for Flink APIs — it bundles them
-     * into your JAR and causes ClassLoader conflicts.
-     */
-    compileOnly "org.apache.flink:flink-table-api-java:${flinkVersion}"
-    compileOnly "org.apache.flink:flink-table-common:${flinkVersion}"
-
-    // Your own third-party deps — use 'implementation' (bundled)
-    implementation 'com.google.guava:guava:32.1.3-jre'
-}
-
-shadowJar {
-    archiveClassifier = 'shaded'
-    mergeServiceFiles()
-    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
-}
-
-// Build command:
-// ./gradlew shadowJar
-// Output: build/libs/my-udfs-1.0.0-shaded.jar</pre>
-        </div>
-
-        <div id="dep-concepts" class="tab-pane">
-          <table class="params-table">
-            <thead><tr><th>Concept</th><th>Explanation</th></tr></thead>
-            <tbody>
-            <tr><td><code>provided</code> / <code>compileOnly</code></td><td>Flink&apos;s own JARs (<code>flink-table-api-java</code>, <code>flink-streaming-java</code>, etc.) exist on every TaskManager. Mark them provided so they compile your code but are <strong>not</strong> bundled into the output JAR. Bundling them causes <code>ClassCastException</code> at runtime.</td></tr>
-            <tr><td>Shaded / fat JAR</td><td>Your UDF JAR must contain all third-party dependencies (e.g. Guava, Jackson, HTTP client) inside a single file. Maven Shade Plugin and Gradle Shadow Plugin achieve this. The cluster just needs one file.</td></tr>
-            <tr><td>Relocation</td><td>If two JARs on the classpath contain the same class (dependency conflict), use Maven Shade <code>&lt;relocation&gt;</code> or Gradle Shadow <code>relocate()</code> to rename one package. Common with Guava and Jackson.</td></tr>
-            <tr><td>Flink version match</td><td>The <code>flink-table-api-java</code> version in your pom.xml must match the cluster&apos;s Flink version exactly. A mismatch causes <code>AbstractMethodError</code> or silent wrong behaviour.</td></tr>
-            <tr><td>Python UDFs</td><td>Python UDFs don&apos;t use Maven or Gradle. They require PyFlink installed on all TaskManagers (<code>pip install apache-flink==&lt;version&gt;</code>). Register them with <code>LANGUAGE PYTHON</code> pointing to a module path.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- The ⬡ Maven/Gradle tab in the IDE -->
-      <div class="callout" style="margin-top:14px;background:rgba(245,166,35,0.06);border-left:3px solid var(--yellow,#f5a623);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
-        <strong style="color:var(--yellow,#f5a623);">⬡ Maven / Gradle tab in the IDE:</strong>
-        Open <strong>⨍ UDFs → ⬡ Maven / Gradle</strong> to get a generated <code>pom.xml</code> or
-        <code>build.gradle</code> — fill in your group ID, artifact ID, Flink version, Java version,
-        and any extra dependencies, then copy the config and the build commands. The tab explains
-        exactly which file to upload after building.
-      </div>
-
-      <!-- Tab: Register -->
-      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">＋ Register Tab — Activate a JAR Function</h3>
-      <p>
-        After uploading a JAR (via the Upload JAR tab or manually), use this tab to write the
-        <code>CREATE FUNCTION</code> statement that makes the class available as a SQL function.
-      </p>
-      <ol style="margin:10px 0 0 20px;font-size:13px;line-height:2;">
-        <li>Enter the <strong>function name</strong> (what you will call in SQL).</li>
-        <li>Enter the <strong>fully-qualified class path</strong> (e.g. <code>com.yourcompany.udf.MaskEmail</code>).</li>
-        <li>Choose <strong>Language</strong>: Java, Scala, or Python.</li>
-        <li>Choose <strong>Scope</strong>: Temporary (session only), Temporary System (all catalogs), or Permanent (catalog-persisted).</li>
-        <li>Click <strong>⚡ Execute Registration</strong> to send the <code>CREATE FUNCTION</code> to the gateway, or <strong>Insert into Editor</strong> to review first.</li>
-      </ol>
-
-      <!-- Tab: SQL UDF -->
-      <h3 style="margin-top:24px;color:var(--text0);font-size:15px;">✎ SQL UDF Tab — No JAR, No Java</h3>
-      <p>Write a UDF entirely in Flink SQL. No JAR, no build step. Supported in Flink 1.17+.</p>
-      <div class="tab-group" style="margin-top:14px;">
-        <div class="tab-bar">
-          <button class="tab-btn active" onclick="switchTab(this,'sqludf-ex1')">Classification</button>
-          <button class="tab-btn" onclick="switchTab(this,'sqludf-ex2')">Format Conversion</button>
-          <button class="tab-btn" onclick="switchTab(this,'sqludf-ex3')">Null-safe Logic</button>
-        </div>
-        <div id="sqludf-ex1" class="tab-pane active">
-          <pre class="code-block">CREATE TEMPORARY FUNCTION classify_risk(score DOUBLE)
-RETURNS STRING LANGUAGE SQL AS $$
-  CASE
-    WHEN score &gt;= 0.8 THEN 'CRITICAL'
-    WHEN score &gt;= 0.5 THEN 'WARNING'
-    WHEN score &gt;= 0.2 THEN 'LOW'
-    ELSE 'NORMAL'
-  END
-$$;
-
-SELECT event_id, score, classify_risk(score) AS tier
-FROM risk_events;</pre>
-        </div>
-        <div id="sqludf-ex2" class="tab-pane">
-          <pre class="code-block">CREATE TEMPORARY FUNCTION fmt_bytes(b BIGINT)
-RETURNS STRING LANGUAGE SQL AS $$
-  CASE
-    WHEN b &gt;= 1073741824 THEN CONCAT(CAST(b/1073741824 AS STRING), ' GB')
-    WHEN b &gt;= 1048576    THEN CONCAT(CAST(b/1048576 AS STRING),    ' MB')
-    WHEN b &gt;= 1024       THEN CONCAT(CAST(b/1024 AS STRING),       ' KB')
-    ELSE CONCAT(CAST(b AS STRING), ' B')
-  END
-$$;
-
-SELECT node_id, fmt_bytes(bytes_transferred) AS readable_size
-FROM network_events;</pre>
-        </div>
-        <div id="sqludf-ex3" class="tab-pane">
-          <pre class="code-block">CREATE TEMPORARY FUNCTION safe_region(region STRING, fallback STRING)
-RETURNS STRING LANGUAGE SQL AS $$
-  CASE
-    WHEN region IS NULL OR TRIM(region) = '' THEN fallback
-    ELSE UPPER(TRIM(region))
-  END
-$$;
-
-SELECT event_id, safe_region(region, 'UNKNOWN') AS normalised_region
-FROM events;</pre>
-        </div>
-      </div>
-
-      <!-- Tab: Templates -->
-      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">⊞ Templates Tab — Production-Ready Examples</h3>
-      <table class="params-table" style="margin-top:12px;">
-        <thead><tr><th>Group</th><th>Templates included</th></tr></thead>
-        <tbody>
-        <tr><td><strong>Scalar Functions</strong></td><td>SQL scalar (no JAR), Java scalar with open/close lifecycle, Python scalar with PyFlink decorator</td></tr>
-        <tr><td><strong>Table Functions (UDTF)</strong></td><td>Java SplitTags CSV exploder, SQL JSON array UNNEST pattern</td></tr>
-        <tr><td><strong>Aggregate Functions (UDAGG)</strong></td><td>Volume-weighted average price (VWAP) with full accumulator and retraction support</td></tr>
-        <tr><td><strong>Async &amp; Lookup Functions</strong></td><td>Non-blocking async HTTP enrichment UDF, temporal lookup join with JDBC caching</td></tr>
-        <tr><td><strong>Utility &amp; Best Practices</strong></td><td>SHOW FUNCTIONS reference, temporary vs permanent scope guide, full best-practices template</td></tr>
-        </tbody>
-      </table>
-
-      <!-- Complete workflow summary -->
-      <h3 style="margin-top:28px;color:var(--text0);font-size:15px;">Complete JAR UDF Workflow</h3>
-      <div style="display:flex;flex-direction:column;gap:0;margin-top:12px;">
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;">
-          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span>
-          <div><strong>Write the UDF</strong> in Java/Scala/Python. Extend <code>ScalarFunction</code>, <code>TableFunction</code>, or <code>AggregateFunction</code>.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
-          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span>
-          <div><strong>Generate build config</strong> — open <strong>⬡ Maven / Gradle</strong>, fill in your details, copy the generated <code>pom.xml</code> or <code>build.gradle</code>.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
-          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span>
-          <div><strong>Build the shaded JAR</strong>: <code>mvn clean package -DskipTests</code> or <code>./gradlew shadowJar</code>.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
-          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</span>
-          <div><strong>Upload to cluster</strong> — open <strong>⬆ Upload JAR</strong>, drag the shaded JAR, click Upload. Live progress bar. No SSH.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;">
-          <span style="width:22px;height:22px;border-radius:50%;background:var(--yellow,#f5a623);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">5</span>
-          <div><strong>Register</strong> — open <strong>＋ Register UDF</strong>, fill in function name and class path, click <strong>⚡ Execute Registration</strong>.</div>
-        </div>
-        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);">
-          <span style="width:22px;height:22px;border-radius:50%;background:var(--accent);color:#000;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">6</span>
-          <div><strong>Use in SQL</strong> — open <strong>📚 Library</strong>, click Refresh, click the function name to insert at cursor. Write your pipeline.</div>
-        </div>
-      </div>
-
-      <!-- Demo -->
-      <h3 style="margin-top:32px;color:var(--text0);font-size:15px;" id="udf-demo">Demo — Fraud Detection Pipeline with SQL UDFs</h3>
-      <p>
-        The UDF Manager ships with a complete demo SQL file: <strong>udf-fraud-detection-demo.sql</strong>.
-        It demonstrates all five tabs using a real-time payment fraud detection scenario — 50 transactions
-        per second, 7 SQL UDFs, 4 running Flink jobs, 5 Kafka topics.
-      </p>
-      <table class="params-table" style="margin-top:12px;">
-        <thead><tr><th>Tab</th><th>Content</th><th>UDFs used</th></tr></thead>
-        <tbody>
-        <tr><td><strong>Tab 1</strong> — Setup</td><td>Session config: runtime mode, checkpointing, mini-batch</td><td>—</td></tr>
-        <tr><td><strong>Tab 2</strong> — Register UDFs</td><td>7 <code>CREATE TEMPORARY FUNCTION</code> statements (SQL, no JAR)</td><td>All 7 defined here</td></tr>
-        <tr><td><strong>Tab 3</strong> — Tables</td><td>datagen source + 4 Kafka sinks + 1 Kafka source (cleansed)</td><td>—</td></tr>
-        <tr><td><strong>Tab 4</strong> — Verify</td><td><code>SHOW USER FUNCTIONS</code> + live datagen SELECT with all UDFs</td><td>All 7 previewed</td></tr>
-        <tr><td><strong>Tab 5</strong> — Pipelines 1 &amp; 2</td><td>PII masking → Kafka; risk classification → Kafka</td><td>mask_card, mask_email, normalize_currency, classify_risk, amount_band, velocity_flag</td></tr>
-        <tr><td><strong>Tab 6</strong> — Pipelines 3 &amp; 4</td><td>TUMBLE(1 min) fraud KPI window; SLA scoring pipeline</td><td>classify_risk, amount_band, sla_tier, velocity_flag</td></tr>
-        <tr><td><strong>Tab 7</strong> — Live Monitor</td><td>All 7 UDFs in one SELECT — enable ✦ Colour Describe for row coloring</td><td>All 7 applied</td></tr>
-        </tbody>
-      </table>
-
-      <div class="tab-group" style="margin-top:16px;">
-        <div class="tab-bar">
-          <button class="tab-btn active" onclick="switchTab(this,'demo-udf1')">UDF Registration</button>
-          <button class="tab-btn" onclick="switchTab(this,'demo-udf2')">PII Masking Pipeline</button>
-          <button class="tab-btn" onclick="switchTab(this,'demo-udf3')">Fraud KPI Window</button>
-          <button class="tab-btn" onclick="switchTab(this,'demo-udf4')">Live Monitor SELECT</button>
-        </div>
-        <div id="demo-udf1" class="tab-pane active">
-          <pre class="code-block">-- Register all 7 SQL UDFs — no JAR, no Java required
-
-CREATE TEMPORARY FUNCTION classify_risk(score DOUBLE)
-RETURNS STRING LANGUAGE SQL AS $$
-  CASE WHEN score &gt;= 0.80 THEN 'CRITICAL'
-       WHEN score &gt;= 0.55 THEN 'HIGH'
-       WHEN score &gt;= 0.30 THEN 'MEDIUM'
-       ELSE 'LOW' END $$;
-
-CREATE TEMPORARY FUNCTION mask_card(card STRING)
-RETURNS STRING LANGUAGE SQL AS $$
-  CASE WHEN card IS NULL OR CHAR_LENGTH(card) &lt; 8 THEN '****-****-****-****'
-       ELSE CONCAT(SUBSTRING(card,1,4),'-****-****-',
-                   SUBSTRING(card,CHAR_LENGTH(card)-3,4)) END $$;
-
-CREATE TEMPORARY FUNCTION mask_email(email STRING)
-RETURNS STRING LANGUAGE SQL AS $$
-  CASE WHEN email IS NULL OR POSITION('@' IN email) &lt;= 2 THEN '**@***.***'
-       ELSE CONCAT(SUBSTRING(email,1,2),'***',
-                   SUBSTRING(email,POSITION('@' IN email))) END $$;
-
-CREATE TEMPORARY FUNCTION amount_band(amt DOUBLE)
-RETURNS STRING LANGUAGE SQL AS $$
-  CASE WHEN amt &gt;= 10000 THEN 'WHALE'
-       WHEN amt &gt;= 2500  THEN 'LARGE'
-       WHEN amt &gt;= 500   THEN 'MEDIUM'
-       WHEN amt &gt;= 50    THEN 'SMALL'
-       ELSE 'MICRO' END $$;
-
--- Verify all 7 are registered:
-SHOW USER FUNCTIONS;</pre>
-        </div>
-        <div id="demo-udf2" class="tab-pane">
-          <pre class="code-block">-- Pipeline 1: Cleanse raw events — mask PII, normalise fields
--- UDFs: mask_card(), mask_email(), normalize_currency()
-INSERT INTO cleansed_sink
-SELECT
-    txn_id,
-    customer_id,
-    mask_card(card_number)           AS card_masked,
-    mask_email(email)                AS email_masked,
-    ROUND(amount_usd, 2)             AS amount_usd,
-    normalize_currency(currency_raw) AS currency,
-    merchant_id,
-    CASE merchant_country
-        WHEN 0 THEN 'US'  WHEN 1 THEN 'EU'
-        WHEN 2 THEN 'UK'  WHEN 3 THEN 'APAC'
-        WHEN 4 THEN 'LATAM' ELSE 'MEA'
-    END                              AS merchant_country,
-    CASE channel_raw
-        WHEN 0 THEN 'ONLINE' WHEN 1 THEN 'MOBILE'
-        WHEN 2 THEN 'POS'    ELSE 'ATM'
-    END                              AS channel,
-    ROUND(risk_score, 4)             AS risk_score,
-    latency_ms,
-    event_ts
-FROM raw_transactions;</pre>
-        </div>
-        <div id="demo-udf3" class="tab-pane">
-          <pre class="code-block">-- Pipeline 3: TUMBLE(1 min) fraud KPI aggregation
--- UDFs used inside COUNT(CASE ...) aggregations
-INSERT INTO fraud_kpi_sink
-SELECT
-    TUMBLE_START(event_ts, INTERVAL '1' MINUTE)  AS window_start,
-    TUMBLE_END(event_ts,   INTERVAL '1' MINUTE)  AS window_end,
-    merchant_country,
-    channel,
-    COUNT(*)                                      AS total_txns,
-    ROUND(SUM(amount_usd), 2)                     AS total_volume_usd,
-    ROUND(AVG(risk_score), 4)                     AS avg_risk_score,
-    -- UDF inside aggregation: count CRITICAL transactions per window
-    COUNT(CASE WHEN classify_risk(risk_score) = 'CRITICAL' THEN 1 END) AS critical_count,
-    COUNT(CASE WHEN classify_risk(risk_score) = 'HIGH'     THEN 1 END) AS high_count,
-    -- UDF inside aggregation: count whale transactions per window
-    COUNT(CASE WHEN amount_band(amount_usd) = 'WHALE' THEN 1 END)     AS whale_count,
-    ROUND(
-      CAST(COUNT(CASE WHEN classify_risk(risk_score) IN ('CRITICAL','HIGH') THEN 1 END) AS DOUBLE)
-      / NULLIF(COUNT(*), 0) * 100.0
-    , 2)                                          AS fraud_rate_pct
-FROM cleansed_source
-GROUP BY TUMBLE(event_ts, INTERVAL '1' MINUTE), merchant_country, channel;</pre>
-        </div>
-        <div id="demo-udf4" class="tab-pane">
-          <pre class="code-block">-- Tab 7: All 7 UDFs in a single live SELECT
--- Enable "✦ Colour Describe" — risk_tier and sla_tier drive row coloring:
---   🔴 Red    = CRITICAL  🟡 Yellow = HIGH/MEDIUM  🟢 Green = LOW
-SELECT
-    txn_id,
-    customer_id,
-    card_masked,
-    ROUND(amount_usd, 2)                AS amount_usd,
-    currency,
-    merchant_country,
-    channel,
-    ROUND(risk_score, 3)                AS risk_score,
-    classify_risk(risk_score)           AS risk_tier,
-    amount_band(amount_usd)             AS amount_band,
-    velocity_flag(latency_ms)           AS velocity,
-    sla_tier(latency_ms, risk_score)    AS sla_tier,
-    latency_ms,
-    event_ts
-FROM cleansed_source;</pre>
-        </div>
-      </div>
-
-      <div class="callout" style="margin-top:16px;background:rgba(0,212,170,0.06);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;color:var(--text1);line-height:1.7;">
-        <strong style="color:var(--accent);">Also in Tips &amp; Concepts:</strong>
-        The <strong>UDFs</strong> category (💡 Tips → UDFs) includes a 3-step auto-advancing walkthrough
-        (Write → Register → Use), a SQL UDF quick-start, and a production best-practices summary — all
-        with runnable SQL code examples.
+        <div class="feature-card"><span class="fci">📁</span><h3>Projects tab</h3><p>Lists all saved projects with size, tab count, last modified, and run count. Load, Run, Export, Delete per project. Search by name or description.</p></div>
+        <div class="feature-card"><span class="fci">＋</span><h3>New Project tab</h3><p>Create a named project. Checkboxes snapshot current editor tabs and SET config. Active project shown in the topbar.</p></div>
+        <div class="feature-card"><span class="fci">🗄</span><h3>Storage tab</h3><p>localStorage usage progress bar. Per-project storage breakdown. Export all, import from file, or clear all projects.</p></div>
       </div>
     </section>
 
+    <!-- ══════════════════════════ UDF MANAGER (v2) ══════════════════════════ -->
+    <section class="doc-section" id="udf-manager">
+      <h2><span class="si">⨍</span>UDF Manager <span class="updated-badge">v2 — March 2026</span></h2>
+      <p>
+        The <strong>UDF Manager</strong> provides the complete User-Defined Function lifecycle — browsing,
+        building, uploading, and registering — without leaving Str:::lab Studio.
+        Access it from the topbar via the <code style="background:rgba(79,163,224,0.12);color:#4fa3e0;padding:2px 7px;border-radius:3px;">⨍ UDFs</code> button.
+        Version 2 (March 2026) fixes four confirmed bugs, removes the invalid <code>LANGUAGE SQL</code>
+        option, adds a dedicated Views section to the Library tab, and redesigns the Colour Describe
+        feature as a professional rule-based modal.
+      </p>
+
+      <!-- Bug fix table -->
+      <h3>Bug Fixes in v2</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bug</th><th>Root cause</th><th>Fix</th><th>File</th></tr></thead>
+          <tbody>
+          <tr>
+            <td><strong>SHOW FUNCTIONS returns 0 rows</strong></td>
+            <td><code>isStatusOk</code> in <code>pollOperation</code> checked <code>resultColumns.length &lt;= 1</code> + value matching <code>"OK"/"TRUE"/""</code>. <code>SHOW FUNCTIONS</code> is single-column — some function names triggered the false-positive, causing early break before rows rendered.</td>
+            <td>Added <code>isGenuineDDL</code> flag (true only for <code>CREATE/DROP/ALTER/USE/SET/RESET/INSERT/EXECUTE</code>). <code>SHOW/SELECT/DESCRIBE/EXPLAIN</code> statements now always render all rows, never short-circuit.</td>
+            <td><code>execution.js</code></td>
+          </tr>
+          <tr>
+            <td><strong>Upload JAR port label stacks vertically</strong></td>
+            <td>"JM PORT (AUTO-DETECT)" label was too long — port input stacked below the URL field on a separate line.</td>
+            <td>Label shortened to "Port (auto)". Container uses <code>align-items: flex-end</code>. Port input fixed at <code>width: 90px</code>. Both inputs sit on one baseline.</td>
+            <td><code>udf-manager.js</code></td>
+          </tr>
+          <tr>
+            <td><strong>View Builder — "✗ Fill in form first" when form is filled</strong></td>
+            <td><code>_vbExecute()</code> checked <code>sql.startsWith('--')</code>. The Computed Column preview always starts with <code>"-- Paste this inside…"</code> — permanently treated as empty.</td>
+            <td>Replaced with <code>_vbIsEmpty()</code> which checks against exact placeholder strings. For <code>expr</code>/<code>col</code> modes, <code>_vbExecute</code> calls <code>_vbInsert()</code> directly.</td>
+            <td><code>udf-manager.js</code></td>
+          </tr>
+          <tr>
+            <td><strong>Library search returns "No functions found" after refresh</strong></td>
+            <td><code>SHOW VIEWS</code> fails silently on Flink &lt; 1.18. Cache was never populated; filter applied to empty array. Views also never appeared since they are not UDFs and <code>SHOW USER FUNCTIONS</code> never returns them.</td>
+            <td><code>SHOW VIEWS</code> failure caught gracefully. Separate <code>window._udfViewCache</code> populated independently. Dedicated "◫ Session Views" section in Library. Search filters across both caches.</td>
+            <td><code>udf-manager.js</code></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- LANGUAGE SQL callout -->
+      <div class="callout danger" style="margin-top:16px;">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body">
+          <strong>LANGUAGE SQL permanently removed</strong>
+          <code>FunctionLanguage.SQL</code> does not exist in any Flink release (1.15–1.20+).
+          <code>CREATE FUNCTION … LANGUAGE SQL</code> always throws
+          <em>"Unrecognized function language string SQL"</em>.
+          The Language dropdown in Register UDF now only shows <strong>Java</strong>, <strong>Scala</strong>, and <strong>Python</strong>.
+          For inline SQL logic, use the <strong>◫ View Builder</strong> tab instead.
+        </div>
+      </div>
+
+      <!-- Views vs UDFs -->
+      <h3>Views vs UDFs — what's the difference?</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Object</th><th>How to create</th><th>Where it appears</th><th>How to use</th></tr></thead>
+          <tbody>
+          <tr><td><strong>View</strong></td><td><code>CREATE TEMPORARY VIEW name AS SELECT …</code></td><td><code>SHOW VIEWS</code> · Library "◫ Session Views" (teal)</td><td><code>SELECT * FROM name</code> — queryable like a table</td></tr>
+          <tr><td><strong>JAR UDF</strong></td><td><code>CREATE FUNCTION name AS 'com.…' LANGUAGE JAVA</code></td><td><code>SHOW USER FUNCTIONS</code> · Library "⨍ User-Defined" (blue)</td><td><code>SELECT name(col) FROM …</code> — callable in expressions</td></tr>
+          <tr><td><strong>Built-in</strong></td><td>Pre-registered by Flink</td><td><code>SHOW FUNCTIONS</code> · Library "⨍ Built-in" (grey)</td><td><code>SELECT json_value(col, '$.x') FROM …</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <div class="callout-body">
+          <strong>Correct Flink-native alternative to LANGUAGE SQL</strong>
+          Use <code>CREATE TEMPORARY VIEW</code> to encapsulate any SQL expression and make it reusable by name across queries.
+          Views are session-scoped, appear in <code>SHOW VIEWS</code>, and can be queried exactly like tables.
+          This is the approach Flink itself recommends — there is no <code>LANGUAGE SQL</code> in Flink.
+        </div>
+      </div>
+
+      <!-- UDF types -->
+      <h3>UDF Types</h3>
+      <div class="feature-grid" style="margin-top:14px;">
+        <div class="feature-card" style="border-color:rgba(0,212,170,0.3);"><span class="fci" style="color:var(--accent);">f(x)</span><h3>Scalar (UDF)</h3><p>One row in → one value out. Classification, masking, format conversion. Written in Java, Scala, or Python.</p></div>
+        <div class="feature-card" style="border-color:rgba(79,163,224,0.3);"><span class="fci" style="color:#4fa3e0;">⇶</span><h3>Table (UDTF)</h3><p>One row in → many rows out. Used with <code>CROSS JOIN LATERAL TABLE(...)</code> to explode arrays or parse delimited fields.</p></div>
+        <div class="feature-card" style="border-color:rgba(245,166,35,0.3);"><span class="fci" style="color:#f5a623;">∑</span><h3>Aggregate (UDAGG)</h3><p>Many rows in → one value out. Maintains an accumulator per group. Supports retraction for streaming tables.</p></div>
+        <div class="feature-card" style="border-color:rgba(176,109,255,0.3);"><span class="fci" style="color:#b06dff;">⇄</span><h3>Async Table</h3><p>Non-blocking external enrichment. Issues many concurrent requests without blocking the pipeline.</p></div>
+      </div>
+
+      <!-- Tab reference -->
+      <h3>Tab Reference</h3>
+
+      <h4>📚 Library tab</h4>
+      <p>Click <strong>⟳ Refresh</strong> to run <code>SHOW FUNCTIONS</code>, <code>SHOW USER FUNCTIONS</code>, and <code>SHOW VIEWS</code> in parallel. Results appear in three sections:</p>
+      <ul class="doc-ul">
+        <li><strong style="color:var(--accent);">◫ Session Views</strong> (teal) — views from <code>SHOW VIEWS</code>. Click to insert <code>SELECT * FROM viewname</code>.</li>
+        <li><strong style="color:var(--blue);">⨍ User-Defined Functions</strong> (blue) — JAR functions from <code>SHOW USER FUNCTIONS</code>. Click to insert <code>name()</code> at cursor.</li>
+        <li><strong style="color:var(--text2);">⨍ Built-in Functions</strong> (grey) — all Flink built-ins. Search and filter across all three sections simultaneously.</li>
+      </ul>
+
+      <h4>⬆ Upload JAR tab</h4>
+      <p>Uploads your JAR to the Flink JobManager via <code>POST /jars/upload</code>. The JobManager REST URL section shows the Full URL Override and Port (auto) inputs on a single aligned row. Live progress bar tracks the upload. JARs on the cluster list with <strong>Use →</strong> and <strong>Delete</strong> buttons.</p>
+      <div class="callout warn">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body"><strong>Port 8081 vs 8083</strong> The JobManager REST API (port 8081, JAR uploads) is separate from the SQL Gateway (port 8083, SQL execution). Ensure <code>/jobmanager-api/</code> is proxied in your nginx config.</div>
+      </div>
+
+      <h4>⬡ Maven / Gradle tab</h4>
+      <p>Generates a complete <code>pom.xml</code> or <code>build.gradle</code> for your UDF project. Fill in Group ID, Artifact ID, Flink version, Java version, and any extra dependencies. Preview updates live. Copy button included.</p>
+
+      <h4>＋ Register UDF tab</h4>
+      <p>Registers a compiled function from a JAR or Python module. Language dropdown: <strong>Java, Scala, Python only</strong> (no SQL). Registration errors are now human-readable:</p>
+      <ul class="doc-ul">
+        <li><code>ClassNotFoundException</code> → "Class not found: … — Upload the JAR first via ⬆ Upload JAR."</li>
+        <li><code>VALIDATION ERROR</code> → the relevant validation line, not the full stack trace.</li>
+        <li><code>FunctionLanguage</code> error → "Invalid LANGUAGE value. Flink only supports JAVA, SCALA, PYTHON."</li>
+      </ul>
+
+      <h4>◫ View Builder tab</h4>
+      <p>The correct replacement for the removed <code>LANGUAGE SQL</code> approach. Three modes:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Mode</th><th>Generates</th><th>Use case</th></tr></thead>
+          <tbody>
+          <tr><td><strong>◫ Temporary View</strong></td><td><code>CREATE TEMPORARY VIEW name AS SELECT …</code></td><td>Reusable named expression. Session-scoped. Queryable like a table. Appears in Library → Views.</td></tr>
+          <tr><td><strong>ƒ Inline Expression</strong></td><td><code>CASE WHEN … END AS alias</code> snippet</td><td>Paste into any SELECT. Fill in WHEN branches one per line, click Insert Expression.</td></tr>
+          <tr><td><strong>⊕ Computed Column</strong></td><td><code>col_name AS CASE … END</code> DDL snippet</td><td>Paste into <code>CREATE TABLE</code> column list. Column derived at read time. Previously showed false "Fill in form" error — now fixed.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>⊞ Templates tab</h4>
+      <p>Production-ready patterns: Java scalar/table/aggregate UDFs, Python UDFs, inline SQL alternatives, computed columns, and lifecycle/utility snippets. Each template expands inline with Copy and Insert into Editor.</p>
+
+      <!-- Workflow -->
+      <h3>Complete JAR UDF Workflow</h3>
+      <div class="workflow-steps">
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">1</div><div><strong>Write the class</strong> — extend <code>ScalarFunction</code>, <code>TableFunction</code>, or <code>AggregateFunction</code>. See Templates for complete skeletons.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">2</div><div><strong>Generate build config</strong> — open ⬡ Maven / Gradle, fill in your details, copy the generated config.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">3</div><div><strong>Build</strong> — <code>mvn clean package -DskipTests</code> → <code>target/artifact-shaded.jar</code></div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">4</div><div><strong>Upload</strong> — open ⬆ Upload JAR, drag the shaded JAR, click Upload. Live progress bar. No SSH.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">5</div><div><strong>Register</strong> — open ＋ Register UDF, fill in name and class path, Language = Java (not SQL), click ⚡ Execute Registration.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--accent);">6</div><div><strong>Use in SQL</strong> — Library → ⟳ Refresh → click function to auto-insert at cursor. Write your pipeline.</div></div>
+      </div>
+
+      <!-- Demo table -->
+      <h3 style="margin-top:28px;" id="udf-demo">Demo — UDF Manager + Colour Describe (v2)</h3>
+      <p>Load <strong>strlab-udf-colour-demo.sql</strong> to test all v2 fixes in a real fraud-detection scenario.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tab</th><th>Content</th><th>Fixes verified</th></tr></thead>
+          <tbody>
+          <tr><td><strong>Tab 1</strong> — Setup</td><td>Session config: runtime mode, checkpointing, mini-batch</td><td>—</td></tr>
+          <tr><td><strong>Tab 2</strong> — Register UDFs</td><td><code>SHOW FUNCTIONS</code> row count test. Inline CASE expressions used throughout</td><td>SHOW FUNCTIONS fix</td></tr>
+          <tr><td><strong>Tab 3</strong> — Tables &amp; Views</td><td><code>raw_transactions</code> datagen source, <code>fraud_scored</code> view (Temporary View mode), <code>fraud_events_computed</code> (Computed Column DDL)</td><td>View Builder Temporary View, Computed Column fix</td></tr>
+          <tr><td><strong>Tab 4</strong> — Verify</td><td><code>SHOW FUNCTIONS</code>, <code>SHOW VIEWS</code>, Library search tests, query both views</td><td>Library Views section, search fix</td></tr>
+          <tr><td><strong>Tab 5</strong> — splitSQL Test</td><td>Multi-statement block with line + block comments. Register UDF friendly error demo</td><td>splitSQL fix, friendly error messages</td></tr>
+          <tr><td><strong>Tab 6</strong> — Pipeline (Kafka)</td><td>Risk enrichment INSERT from <code>fraud_scored</code> view + TUMBLE fraud KPI window</td><td>—</td></tr>
+          <tr><td><strong>Tab 7</strong> — Live Monitor</td><td>Full inline CASE SELECT — detailed Colour Describe step-by-step instructions with 5 rules</td><td>Colour Describe modal flow</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════ COLOUR DESCRIBE (NEW) ══════════════════ -->
+    <section class="doc-section" id="colour-describe">
+      <h2><span class="si">🎨</span>Colour Describe <span class="new-badge">New — v1.0.23</span></h2>
+      <p>
+        Colour Describe lets you visually highlight result rows in real time based on user-defined field
+        conditions — as rows stream in from a live Flink query. Rules are fully configurable: pick any
+        column, any operator, any value, and any color. Every matching row is highlighted immediately
+        and continues to be highlighted as new rows arrive.
+      </p>
+
+      <div class="callout tip">
+        <span class="callout-icon">🎨</span>
+        <div class="callout-body">
+          <strong>Two highlighting modes exist side-by-side</strong>
+          <strong>✦ Auto Colour</strong> applies built-in semantic rules based on column name patterns (status, risk_score, latency_ms…) — one click, no configuration.
+          <strong>🎨 Colour Describe</strong> lets you define your own rules for any column in any query. Both buttons are in the Results toolbar.
+        </div>
+      </div>
+
+      <h3>Activating Colour Describe</h3>
+      <p>
+        Click <strong>🎨 Colour Describe</strong> in the Results toolbar. This opens a configuration
+        modal — it does <em>not</em> immediately apply any colours. You must configure at least one rule
+        and click <strong>⚡ Apply &amp; Activate</strong> before any highlighting occurs.
+        When active, the button reads <strong>🎨 Colour Describe ●</strong>. Clicking it again (or clicking
+        <strong>✕ Turn off</strong> in the legend below the table) clears all highlighting instantly and
+        restores default row styling.
+      </p>
+
+      <h3>Modal workflow</h3>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Select a query slot</h4>
+            <p>
+              A dropdown lists all active result slots — live streaming queries and completed queries with rows.
+              Each entry shows the query label, live/done status (🔴 LIVE or ⬜ done), and row count.
+              Select the slot you want to apply highlighting to. All column names of that slot auto-populate the Field dropdown.
+            </p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Build a rule</h4>
+            <p>Fill in the four parts of a rule:</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Part</th><th>Options</th></tr></thead>
+                <tbody>
+                <tr><td><strong>Field</strong></td><td>Any column name from the selected query slot</td></tr>
+                <tr><td><strong>Operator</strong></td><td><code>==</code> <code>!=</code> <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code> <code>contains</code> <code>starts</code> <code>ends</code> <code>regex</code></td></tr>
+                <tr><td><strong>Value</strong></td><td>String or numeric. Numeric operators auto-detect when both sides parse as numbers.</td></tr>
+                <tr><td><strong>Label</strong></td><td>Short description shown in the legend (e.g. "CRITICAL risk")</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Pick a color</h4>
+            <p>
+              Eight preset swatches cover the most common semantic meanings: red (critical), amber (warning),
+              yellow (caution), teal (ok), blue (info), purple (notice), green (success), orange (highlight).
+              A custom color picker and live hex preview let you choose any color.
+            </p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Choose a style mode</h4>
+            <ul class="doc-ul">
+              <li><strong>Row background</strong> — fills the entire row with a translucent tint of the chosen color.</li>
+              <li><strong>Left border accent</strong> — adds a 4px solid left border in the chosen color, with a lighter background tint.</li>
+              <li><strong>Text color</strong> — changes all text in the row to the chosen color.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h4>Add, reorder, delete rules</h4>
+            <p>
+              Click <strong>＋ Add Rule</strong> to add to the list. Rules are evaluated <strong>top-to-bottom — first match wins</strong> per row.
+              Use the ↑↓ buttons to reorder. Click × to delete. There is no limit on the number of rules.
+            </p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <h4>Apply &amp; Activate</h4>
+            <p>
+              Click <strong>⚡ Apply &amp; Activate</strong>. All existing rows in the selected slot are immediately
+              re-coloured. New rows are coloured as they stream in. A colour legend appears below the result table
+              showing each rule's colour dot and label. The legend includes a <strong>✕ Turn off</strong> button.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Example rules -->
+      <h3>Example rule set — fraud monitor</h3>
+      <p>Applied to the live fraud detection SELECT in Tab 7 of the demo file:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Field</th><th>Op</th><th>Value</th><th>Color</th><th>Style</th><th>Label</th></tr></thead>
+          <tbody>
+          <tr><td>1</td><td><code>risk_tier</code></td><td><code>==</code></td><td>CRITICAL</td><td style="color:#ff4d6d;">● Red</td><td>Row background</td><td>CRITICAL risk</td></tr>
+          <tr><td>2</td><td><code>risk_tier</code></td><td><code>==</code></td><td>HIGH</td><td style="color:#f5a623;">● Amber</td><td>Left border accent</td><td>HIGH risk</td></tr>
+          <tr><td>3</td><td><code>amount_band</code></td><td><code>==</code></td><td>WHALE</td><td style="color:#4fa3e0;">● Blue</td><td>Text color</td><td>Whale transaction</td></tr>
+          <tr><td>4</td><td><code>sla_tier</code></td><td><code>==</code></td><td>BREACHED</td><td style="color:#b06dff;">● Purple</td><td>Row background</td><td>SLA breached</td></tr>
+          <tr><td>5</td><td><code>latency_ms</code></td><td><code>&gt;</code></td><td>500</td><td style="color:#ff9f43;">● Orange</td><td>Left border accent</td><td>High latency</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Auto Colour vs Colour Describe comparison -->
+      <h3>Auto Colour vs Colour Describe</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th>✦ Auto Colour</th><th>🎨 Colour Describe</th></tr></thead>
+          <tbody>
+          <tr><td><strong>Rules</strong></td><td>Built-in, based on column names (status, risk_score, latency_ms, cpu, severity…)</td><td>User-defined, any field, any operator, any color</td></tr>
+          <tr><td><strong>Setup</strong></td><td>One click — toggle on/off immediately</td><td>Modal-based configuration → Apply</td></tr>
+          <tr><td><strong>Legend</strong></td><td>Fixed: Critical / Warning / Healthy / Maintenance</td><td>Dynamic: shows each rule's label and color dot</td></tr>
+          <tr><td><strong>Works with</strong></td><td>Columns matching semantic name patterns only</td><td>Any column in any query</td></tr>
+          <tr><td><strong>PDF report</strong></td><td>Always included when active</td><td>Only included when active at report generation time</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PDF integration -->
+      <h3>PDF report integration</h3>
+      <p>
+        When Colour Describe is active and a session report is generated (Performance → Report → Generate PDF),
+        the report automatically includes a <strong>Colour Describe Rules</strong> section with:
+        rule definitions (field, operator, value, color, style mode, label) and a sample of up to
+        20 matched rows from the active slot.
+        If Colour Describe is toggled off before generating the report, this section is omitted entirely.
+      </p>
+      <div class="callout info">
+        <span class="callout-icon">ℹ</span>
+        <div class="callout-body">
+          <strong>Report status indicator</strong>
+          The report status line shows <code>🎨 Colour Describe included</code> when rules are active, so you can confirm before generating the PDF.
+        </div>
+      </div>
+
+      <!-- Developer integration -->
+      <h3>Integration point for results.js</h3>
+      <p>To enable live row highlighting in the Results table, call this function in <code>results.js</code> after each <code>&lt;tr&gt;</code> is created:</p>
+      <pre><code>// In the row rendering loop inside renderResults():
+applyColorDescribeToRow(rowEl, row.fields, state.resultColumns);</code></pre>
+      <p>Function signature:</p>
+      <pre><code>applyColorDescribeToRow(
+  rowEl:    HTMLTableRowElement,  // the &lt;tr&gt; element
+  rowData:  any[],                // cell values in column order
+  columns:  { name: string }[]    // column definitions
+)</code></pre>
+      <p>The function is a no-op when <code>window.colorDescribeActive</code> is <code>false</code>, so it is safe to call unconditionally on every row render.</p>
+    </section>
+
+    <!-- ══════════════════════════ CHANGELOG ══════════════════════════════ -->
     <section class="doc-section" id="changelog">
       <h2><span class="si">📝</span>Changelog</h2>
       <div class="version-list">
-        <div class="version-card">
+
+        <!-- v1.0.23 — NEW -->
+        <div class="version-card" style="border-color:rgba(63,185,80,0.3);">
           <div class="version-header">
-            <span class="version-tag">v1.0.22</span>
+            <span class="version-tag">v1.0.23</span>
             <span class="version-date">March 2026</span>
             <span class="version-label current">current</span>
           </div>
           <ul>
-            <li><strong>Brand rename</strong> — product renamed from FlinkSQL Studio to <strong>Str:::lab Studio</strong> across all UI, docs, localStorage keys (<code>strlabstudio_*</code>), export filenames, and Kubernetes CRDs; Apache Flink trademark attribution added to footer</li>
-            <li><strong>PDF report heading fixed</strong> — <code>window.open</code> interceptor rewrites any residual brand references in the generated PDF before printing, including the report H1 heading and all inline text</li>
-            <li><strong>LinkedIn banner</strong> — 1200×627px SVG brand image generated for social media (Str:::lab Studio wordmark with feature pills and mock terminal)</li>
+            <li><strong>execution.js — SHOW FUNCTIONS / SHOW VIEWS returning 0 rows fixed</strong>: <code>isStatusOk</code> false-positive in <code>pollOperation</code> now guarded by <code>isGenuineDDL</code> flag. <code>SHOW</code>, <code>SELECT</code>, <code>DESCRIBE</code>, <code>EXPLAIN</code> always render all result rows — never short-circuit.</li>
+            <li><strong>udf-manager.js — Upload JAR port label alignment fixed</strong>: URL and "Port (auto)" inputs now render on a single aligned row. Port input fixed at 90px width, <code>align-items: flex-end</code> on container.</li>
+            <li><strong>udf-manager.js — View Builder "Fill in form first" bug fixed</strong>: <code>_vbIsEmpty()</code> replaces generic <code>startsWith('--')</code> check. Computed Column Insert Expression now works correctly when the form is filled.</li>
+            <li><strong>udf-manager.js — Library: Views and UDFs now separated into distinct sections</strong>: "◫ Session Views" section (teal) sourced from <code>SHOW VIEWS</code>, separate from <code>SHOW USER FUNCTIONS</code>. <code>SHOW VIEWS</code> failure on Flink &lt; 1.18 handled gracefully. Search and type filter work across all three sections.</li>
+            <li><strong>udf-manager.js — Register UDF: friendly error messages</strong>: <code>ClassNotFoundException</code>, validation errors, and <code>FunctionLanguage</code> errors parsed into one-line human-readable messages instead of raw stack traces.</li>
+            <li><strong>LANGUAGE SQL permanently removed</strong>: <code>FunctionLanguage.SQL</code> does not exist in Flink. Removed from Register UDF dropdown. View Builder tab (◫ Temporary View / ƒ Inline Expression / ⊕ Computed Column) is the correct replacement.</li>
+            <li><strong>results-intelligence.js v4 — Colour Describe redesigned as professional modal</strong>: Clicking the button opens a modal with slot selector, field selector, 10-operator rule builder, 8-preset color swatches + custom hex picker, style mode selector (background / left border / text), reorderable rules list. Apply activates live highlighting + legend below the table. Toggle off clears all styling instantly. Report integration via <code>getColorDescribeReportData()</code>.</li>
+            <li><strong>execution.js — splitSQL block comment support added</strong>: <code>/* … */</code> block comments now stripped correctly. <code>$$</code> delimiter tracking prevents semicolons inside function bodies from splitting statements.</li>
+          </ul>
+        </div>
+
+        <div class="version-card">
+          <div class="version-header">
+            <span class="version-tag">v1.0.22</span>
+            <span class="version-date">March 2026</span>
+          </div>
+          <ul>
+            <li><strong>Brand rename</strong> — product renamed from FlinkSQL Studio to <strong>Str:::lab Studio</strong> across all UI, docs, localStorage keys, export filenames, and Kubernetes CRDs</li>
+            <li><strong>PDF report heading fixed</strong> — <code>window.open</code> interceptor rewrites any residual brand references in the generated PDF before printing</li>
+            <li><strong>LinkedIn banner</strong> — 1200×627px SVG brand image generated for social media</li>
           </ul>
         </div>
         <div class="version-card">
@@ -1398,22 +1051,9 @@ FROM cleansed_source;</pre>
             <span class="version-date">March 2026</span>
           </div>
           <ul>
-            <li><strong>⬡ Project Manager</strong> — create, load, run, save, and delete named Str:::lab projects; stores SQL tabs, SET config, catalog context, run count; export/import as JSON; per-project storage breakdown; name uniqueness enforced on create and import</li>
-            <li><strong>Tooltips</strong> on all Project Manager buttons, checkboxes, and tab headers</li>
-            <li><strong>JAR Upload fix</strong> — FormData now sends <code>application/x-java-archive</code> Content-Type (fixes Flink HTTP 500); configurable JobManager URL override field for non-standard ports</li>
-            <li><strong>Maven / Gradle tab</strong> — generates complete <code>pom.xml</code> / <code>build.gradle</code> with correct provided/compileOnly scopes, shade/shadow plugin, and annotated build commands</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header">
-            <span class="version-tag">v1.0.20</span>
-            <span class="version-date">March 2026</span>
-          </div>
-          <ul>
-            <li><strong>⬡ Project Manager</strong> — create, load, run, save, and delete Str:::lab projects; each project stores SQL tabs, SET config, catalog/database context, and metadata; export/import as JSON; storage usage tracking with per-project breakdown</li>
-            <li><strong>JAR Upload fix</strong> — FormData now sends <code>application/x-java-archive</code> Content-Type on the jarfile part (fixes HTTP 500 from Flink JobManager); configurable JobManager URL override field added for direct/remote clusters on non-standard ports</li>
-            <li><strong>_getJmBase() rewrite</strong> — correctly resolves JobManager URL in proxy mode (nginx swap), direct mode (port swap to 8081), and remote mode (user override field); no longer crashes with red error on tab open when not connected</li>
-            <li><strong>Maven / Gradle tab</strong> — generates complete <code>pom.xml</code> / <code>build.gradle</code> with correct provided/compileOnly scopes, shade/shadow plugin, and build commands; explains why Flink JARs must not be bundled</li>
+            <li><strong>⬡ Project Manager</strong> — create, load, run, save, and delete named Str:::lab projects; stores SQL tabs, SET config, catalog context; export/import as JSON; storage tracking</li>
+            <li><strong>JAR Upload fix</strong> — FormData sends <code>application/x-java-archive</code> Content-Type; configurable JobManager URL override field</li>
+            <li><strong>Maven / Gradle tab</strong> — generates complete <code>pom.xml</code> / <code>build.gradle</code> with correct provided/compileOnly scopes</li>
           </ul>
         </div>
         <div class="version-card">
@@ -1422,42 +1062,29 @@ FROM cleansed_source;</pre>
             <span class="version-date">March 2026</span>
           </div>
           <ul>
-            <li><strong>Admin Session</strong> — privileged connect mode with full cluster job visibility, admin badge in topbar, session activity modal, technical and business/management PDF reports</li>
-            <li><strong>Admin passcode management</strong> — default <code>admin1234</code>, changeable via Admin Settings modal after connecting</li>
-            <li><strong>Job scoping</strong> — regular sessions only see their own jobs; admin sees all cluster jobs with session attribution</li>
+            <li><strong>Admin Session</strong> — privileged connect mode with full cluster job visibility, admin badge, session activity modal, technical and business/management PDF reports</li>
             <li><strong>Duplicate submission guard</strong> — INSERT INTO / pipeline queries blocked if same statement already running</li>
-            <li><strong>Job tagging</strong> — <code>pipeline.name</code> SET injected automatically before INSERT statements with session label prefix</li>
-            <li><strong>Cancel job confirmation modal</strong> — explicit "Are you sure?" dialog before sending cancel signal to JobManager</li>
+            <li><strong>Job tagging</strong> — <code>pipeline.name</code> SET injected automatically before INSERT statements</li>
             <li><strong>Tips &amp; Concepts modal</strong> — 16 tips across 6 categories: IDE features, Flink architecture, window types, state, connectors, performance, admin</li>
-            <li><strong>Load existing sessions</strong> — connect screen auto-fetches sessions from gateway after Test Connection for dropdown selection</li>
-            <li><strong>Session persistence</strong> — heartbeat keeps sessions alive indefinitely; no idle expiry unless explicitly disconnected</li>
           </ul>
         </div>
         <div class="version-card">
           <div class="version-header"><span class="version-tag">v1.0.18</span><span class="version-date">March 2026</span></div>
           <ul>
             <li><strong>Results display fixed</strong> — <code>NOT_READY</code> / <code>EOS</code> handling; Kafka SELECT rows reliably stream into Results tab</li>
-            <li><strong>Mouse wheel zoom</strong> on Job Graph (20%–300%) with zoom-toward-cursor and % indicator</li>
-            <li><strong>Catalog context fix</strong> — sidebar refresh no longer hijacks active USE CATALOG context</li>
+            <li><strong>Mouse wheel zoom</strong> on Job Graph (20%–300%)</li>
             <li>Named workspace export, session isolation, Cancel Job button, full session export</li>
-            <li>⚡ Recommended Streaming Config snippet, INSERT auto-redirect to Job Graph</li>
           </ul>
         </div>
         <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.17</span><span class="version-date">February 2026</span></div>
-          <ul>
-            <li>Job Graph DAG — drag-to-pan, animated edges, fault highlighting, node double-click detail</li>
-            <li>Tab rename (double-click), per-session workspace isolation</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.1 – v1.0.16</span><span class="version-date">December 2025 – January 2026</span></div>
+          <div class="version-header"><span class="version-tag">v1.0.1 – v1.0.17</span><span class="version-date">December 2025 – February 2026</span></div>
           <ul>
             <li>Initial build: SQL editor, session management, Results / Log / Operations tabs</li>
             <li>Snippet library, query history, catalog browser, performance tracking panel</li>
-            <li>Dark/light theme toggle, workspace export/import, Job Graph tab first visual pipeline monitoring</li>
+            <li>Dark/light theme toggle, workspace export/import, Job Graph tab with visual pipeline monitoring</li>
           </ul>
         </div>
+
       </div>
     </section>
 
