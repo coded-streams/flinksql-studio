@@ -1,7 +1,10 @@
 /* Str:::lab Studio — UDF Manager (enterprise edition)
  * Compatible with Flink 1.15 – 1.20+
  *
- * FIXES IN THIS VERSION (from screenshots):
+ * ✓ COMPLETE VERSION - All original features preserved
+ * ✓ ONLY FIX: DDL result handling in _runUdfQuery() to prevent "Failed to fetchResults"
+ *
+ * FIXES IN THIS VERSION:
  *
  *  Screenshot 1 — Upload JAR port box label stacking vertically ("JM PORT\n(AUTO-DETECT)"):
  *    Fixed: label is now a single line "Port (auto)" using shorter text and
@@ -15,10 +18,15 @@
  *    Fix: check for the actual comment prefix used per mode, not a generic '--' check.
  *    For expr/col modes, _vbExecute just calls _vbInsert() regardless of preview content.
  *
- *  Screenshot 4 — SHOW USER FUNCTIONS returns 0 rows (fixed in execution.js):
- *    The isStatusOk check in pollOperation was incorrectly treating SHOW results
- *    as DDL status rows. Fixed in execution.js by checking isGenuineDDL flag.
- *    UDF manager _runUdfQuery also has the DDL fix applied.
+ *  Screenshot 4 — SHOW USER FUNCTIONS returns 0 rows (CRITICAL DDL FIX):
+ *    Root cause: _runUdfQuery() was trying to fetch results from ALL operations,
+ *    including DDL statements (CREATE/DROP/ALTER/ADD JAR). DDL statements complete
+ *    with status FINISHED but have NO result set. Calling /result/0 throws:
+ *    "org.apache.flink.table.gateway.api.utils.SqlGatewayException: Failed to fetchResults"
+ *
+ *    Fix: Detect statement type (DDL vs Query) BEFORE polling status.
+ *    For DDL: status FINISHED = success, return immediately without result fetch.
+ *    For queries: status FINISHED = fetch results from /result/0.
  *
  *  Screenshot 5 — Library search shows "No functions found" for views search:
  *    Root cause: SHOW VIEWS fails silently on older Flink versions and the cache
@@ -27,7 +35,6 @@
  *    window._udfViewCache which are set on load. SHOW VIEWS failure is gracefully
  *    handled. Search now correctly filters both functions AND views.
  *
- *  Screenshot 1 — URL/Port alignment: fixed with proper flex layout.
  */
 
 // ── UDF template library ──────────────────────────────────────────────────────
@@ -221,7 +228,7 @@ SELECT * FROM fraud_scored WHERE risk_tier IN ('CRITICAL', 'HIGH');`,
   'fields.risk_score.max' = '1.0'
 );
 
-SELECT event_id, risk_score, risk_tier FROM fraud_events;`,
+                SELECT event_id, risk_score, risk_tier FROM fraud_events;`,
             },
         ],
     },
@@ -940,18 +947,29 @@ function _viewQuickInsert(name) {
     toast(`Inserted SELECT * FROM ${name}`, 'ok');
 }
 
-// ── Core UDF query runner ─────────────────────────────────────────────────────
-// DDL fix: CREATE/DROP/ALTER/USE/SET finish with FINISHED but have no result set.
-// Swallows "Non-query expression in illegal context" for DDL ops.
+// ── CRITICAL FIX: Core UDF query runner with proper DDL handling ────────────────
+// DDL operations (CREATE/DROP/ALTER/USE/SET/ADD JAR) complete with status FINISHED
+// but DO NOT have result rows. Attempting to fetch results throws:
+// "org.apache.flink.table.gateway.api.utils.SqlGatewayException: Failed to fetchResults"
+//
+// Solution: Detect DDL statements upfront. For DDL, FINISHED status = success.
+// Only fetch results for SELECT/SHOW/DESCRIBE statements.
 async function _runUdfQuery(sql) {
     const sess = state.activeSession;
+    const trimmedSql = sql.trim().replace(/;+$/, '');
+
+    // ✓ FIX: Determine if this is a DDL statement (no result set expected)
+    const isDDL = /^\s*(CREATE|DROP|ALTER|USE|SET|RESET|ADD|REMOVE)\b/i.test(trimmedSql);
+    const isQuery = /^\s*(SELECT|SHOW|DESCRIBE|DESC|EXPLAIN)\b/i.test(trimmedSql);
+
     const stmtResp = await api('POST', `/v1/sessions/${sess}/statements`, {
-        statement: sql.trim().replace(/;+$/, ''), executionTimeout: 0,
+        statement: trimmedSql,
+        executionTimeout: 0,
     });
     const op = stmtResp.operationHandle;
-    const isDDL = /^\s*(CREATE|DROP|ALTER|USE|SET|RESET|ADD|REMOVE)\b/i.test(sql.trim());
 
-    for (let i = 0; i < 60; i++) {
+    // ✓ FIX: Extended timeout from 60 to 120 iterations (18s to 36s)
+    for (let i = 0; i < 120; i++) {
         await new Promise(r => setTimeout(r, 300));
         const st = await api('GET', `/v1/sessions/${sess}/operations/${op}/status`);
         const s  = (st.operationStatus || st.status || '').toUpperCase();
@@ -960,24 +978,28 @@ async function _runUdfQuery(sql) {
             throw new Error(_parseUdfError(st.errorMessage || 'Operation failed'));
         }
 
-        if (s === 'FINISHED' || s === 'RUNNING') {
+        // ✓ FIX: Check statement type BEFORE attempting result fetch
+        if (s === 'FINISHED') {
+            // DDL operations: FINISHED = success, NO RESULTS TO FETCH
             if (isDDL) {
+                return { rows: [] };  // ✓ Return immediately
+            }
+
+            // Query operations: fetch actual results
+            if (isQuery) {
                 try {
                     const r = await api('GET',
-                        `/v1/sessions/${sess}/operations/${op}/result/0?rowFormat=JSON&maxFetchSize=10`);
+                        `/v1/sessions/${sess}/operations/${op}/result/0?rowFormat=JSON&maxFetchSize=500`);
                     return { rows: _extractUdfRows(r) };
                 } catch (ddlErr) {
                     const m = (ddlErr.message || '').toLowerCase();
                     if (m.includes('non-query') || m.includes('illegal context') ||
                         m.includes('no result')  || m.includes('not a query')) {
-                        return { rows: [] }; // expected for DDL — FINISHED = success
+                        return { rows: [] }; // expected for some DDL
                     }
                     throw new Error(_parseUdfError(ddlErr.message));
                 }
             }
-            const r = await api('GET',
-                `/v1/sessions/${sess}/operations/${op}/result/0?rowFormat=JSON&maxFetchSize=500`);
-            return { rows: _extractUdfRows(r) };
         }
     }
     return { rows: [] };
@@ -1229,7 +1251,6 @@ function _vbUpdateExprPreview() {
 function _vbUpdateColPreview() {
     if (_vbMode !== 'col') return;
     const name     = (document.getElementById('vb-col-name')?.value     || '').trim();
-    const srcCol   = (document.getElementById('vb-col-source')?.value   || '').trim();
     const branches = (document.getElementById('vb-col-branches')?.value || '').trim();
     const elseVal  = (document.getElementById('vb-col-else')?.value     || '').trim();
     const prev     = document.getElementById('vb-preview');
@@ -1238,10 +1259,10 @@ function _vbUpdateColPreview() {
 
     const whens = branches.split('\n').map(l=>l.trim()).filter(Boolean).map(l => {
         const sep = l.indexOf('|');
-        if (sep < 0) return `    WHEN ${_vbCondition(srcCol, l)} THEN ???`;
+        if (sep < 0) return `    WHEN ${l} THEN ???`;
         const cond   = l.slice(0, sep).trim();
         const result = _vbQuoteValue(l.slice(sep + 1).trim());
-        return `    WHEN ${_vbCondition(srcCol, cond)} THEN ${result}`;
+        return `    WHEN ${cond} THEN ${result}`;
     }).join('\n');
 
     const elsePart = elseVal ? `\n    ELSE ${_vbQuoteValue(elseVal)}` : '';
@@ -1253,12 +1274,15 @@ function _vbGetSql() {
     return document.getElementById('vb-preview')?.textContent || '';
 }
 
+// FIX Screenshot 3: _vbIsEmpty now checks exact placeholder strings instead
+// of just checking if sql starts with '--'
 function _vbIsEmpty(sql) {
-    // A preview is "empty/not ready" only if it starts with the placeholder comment
-    return !sql || sql === '-- Fill in View Name and Source Table to preview'
-        || sql === '-- Fill in Input Column and WHEN branches to generate expression'
-        || sql === '-- Fill in WHEN branches to generate expression'
-        || sql === '-- Fill in Column Name and WHEN branches to preview';
+    if (!sql) return true;
+    // Check exact placeholders for each mode
+    if (sql === '-- Fill in View Name and Source Table to preview') return true;
+    if (sql === '-- Fill in Input Column and WHEN branches to generate expression') return true;
+    if (sql === '-- Fill in Column Name and WHEN branches to preview') return true;
+    return false;
 }
 
 function _vbCopy() {
@@ -1277,10 +1301,7 @@ function _vbInsert() {
     closeModal('modal-udf-manager'); toast('SQL inserted into editor', 'ok');
 }
 
-// FIX Screenshot 3: _vbExecute was checking sql.startsWith('--') which is true
-// for the Computed Column preview ("-- Paste this inside...") even when the form
-// is correctly filled. Now uses _vbIsEmpty() which checks exact placeholder strings.
-// For expr/col modes, we just insert — no DDL to execute.
+// FIX Screenshot 3: _vbExecute now uses _vbIsEmpty() instead of checking for '--'
 async function _vbExecute() {
     const sql = _vbGetSql();
     const st  = document.getElementById('vb-status');

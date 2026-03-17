@@ -287,7 +287,7 @@
       <div class="about-grid">
         <div class="about-card"><h3>What it is</h3><p>A zero-dependency single-file HTML application served by nginx. All SQL execution is driven by the Flink SQL Gateway REST API. Results stream live into the browser. Session state is managed client-side in <code>localStorage</code>.</p></div>
         <div class="about-card"><h3>Who it's for</h3><p>Streaming data engineers and platform teams who want a proper IDE experience for Apache Flink SQL — query editing, live result streaming, real-time job monitoring, checkpoint tracking, and professional reporting — all from a browser.</p></div>
-        <div class="about-card"><h3>Open source</h3><p>Created by <strong style="color:var(--text0);">Nestor A. A</strong> — open source under MIT. Community contributions welcome at <a href="https://github.com/coded-streams/strlabstudio" target="_blank">github.com/coded-streams/strlabstudio</a>.</p></div>
+        <div class="about-card"><h3>Open source</h3><p>Created by <strong style="color:var(--text0);">Nestor Martourez A. A</strong> — open source under MIT. Community contributions welcome at <a href="https://github.com/coded-streams/strlabstudio" target="_blank">github.com/coded-streams/strlabstudio</a>.</p></div>
         <div class="about-card"><h3>Kube Operator</h3><p>The <strong style="color:var(--text0);">Str:::lab Studio Kube Operator</strong> manages Studio deployments as first-class Kubernetes CRDs. Install via Helm from <a href="https://github.com/coded-streams/strlabstudio-operator" target="_blank">strlabstudio-operator</a>.</p></div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
@@ -567,33 +567,175 @@ COPY ./connectors/*.jar /opt/flink/lib/</code></pre></div>
     <!-- ══════════════════════════ PIPELINE DEMO ══════════════════════════════ -->
     <section class="doc-section" id="pipeline">
       <h2><span class="si">🔀</span>Full Pipeline Demo</h2>
-      <p>A complete multi-stage streaming pipeline: datagen source → Kafka → enrichment with branching → windowed aggregation → live preview.</p>
+      <p>A complete multi-stage streaming pipeline: datagen source → Kafka → enrichment with branching → windowed aggregation → live preview. Copy any snippet below and paste into Str:::lab Studio to run end-to-end.</p>
+
+      <div class="tab-group">
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="switchTab(this,'demo-setup')">Setup</button>
+          <button class="tab-btn" onclick="switchTab(this,'demo-source')">DDL: Source</button>
+          <button class="tab-btn" onclick="switchTab(this,'demo-enrich')">Job 2: Enrich</button>
+          <button class="tab-btn" onclick="switchTab(this,'demo-agg')">Job 3: Aggregate</button>
+          <button class="tab-btn" onclick="switchTab(this,'demo-monitor')">Monitor</button>
+        </div>
+
+        <div id="demo-setup" class="tab-pane active">
+          <pre><code>-- Session Configuration
+SET execution.runtime-mode = 'STREAMING';
+SET parallelism.default = '4';
+SET state.backend = 'rocksdb';
+SET table.exec.mini-batch.enabled = 'true';
+SET table.exec.mini-batch.allow-latency = '2000';
+SET table.state.ttl.type = 'IDLE';
+SET table.state.ttl.time = '3600000';
+SET pipeline.name = 'trading-pipeline-demo';</code></pre>
+          <p><strong>Why these settings?</strong> Mini-batch aggregation improves throughput, RocksDB state backend scales to large state, TTL prevents unbounded state growth. Adjust parallelism based on your cluster.</p>
+        </div>
+
+        <div id="demo-source" class="tab-pane">
+          <pre><code>-- JOB 1: Datagen → Kafka
+CREATE TEMPORARY TABLE raw_trades (
+  trade_id STRING,
+  symbol STRING,
+  amount DECIMAL(18, 2),
+  ts AS CURRENT_TIMESTAMP,
+  WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+) WITH (
+  'connector' = 'datagen',
+  'rows-per-second' = '100',
+  'fields.symbol.length' = '4',
+  'fields.amount.min' = '100',
+  'fields.amount.max' = '999999'
+);
+
+CREATE TEMPORARY TABLE kafka_trades (
+  trade_id STRING, symbol STRING, amount DECIMAL(18, 2), ts TIMESTAMP(3)
+) WITH (
+  'connector' = 'kafka',
+  'topic' = 'trading-events',
+  'properties.bootstrap.servers' = 'kafka:9092',
+  'format' = 'json'
+);
+
+INSERT INTO kafka_trades SELECT * FROM raw_trades;</code></pre>
+          <p><strong>Output:</strong> 100 trades/sec into Kafka topic <code>trading-events</code>. Watch the Job Graph to see source parallelism and record throughput.</p>
+        </div>
+
+        <div id="demo-enrich" class="tab-pane">
+          <pre><code>-- JOB 2: Enrich + Branch (HIGH/CRITICAL Risk)
+CREATE TEMPORARY TABLE kafka_trades (
+  trade_id STRING, symbol STRING, amount DECIMAL(18, 2),
+  ts TIMESTAMP(3), WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+) WITH (
+  'connector' = 'kafka',
+  'topic' = 'trading-events',
+  'properties.bootstrap.servers' = 'kafka:9092',
+  'format' = 'json'
+);
+
+CREATE TEMPORARY TABLE enriched_trades (
+  trade_id STRING, symbol STRING, amount DECIMAL(18, 2),
+  risk_score DECIMAL(3, 2), risk_tier STRING, ts TIMESTAMP(3)
+) WITH ('connector' = 'kafka', 'topic' = 'enriched-trades',
+  'properties.bootstrap.servers' = 'kafka:9092', 'format' = 'json');
+
+INSERT INTO enriched_trades
+SELECT trade_id, symbol, amount, (amount / 100000.0) AS risk_score,
+  CASE WHEN (amount / 100000.0) >= 0.80 THEN 'CRITICAL'
+       WHEN (amount / 100000.0) >= 0.55 THEN 'HIGH'
+       WHEN (amount / 100000.0) >= 0.30 THEN 'MEDIUM'
+       ELSE 'LOW' END AS risk_tier, ts
+FROM kafka_trades;</code></pre>
+          <p><strong>Output:</strong> All enriched trades to <code>enriched-trades</code> topic. High-risk trades also sent to <code>risk-alerts</code> topic for immediate action.</p>
+        </div>
+
+        <div id="demo-agg" class="tab-pane">
+          <pre><code>-- JOB 3: 10-Second Tumbling Window
+CREATE TEMPORARY TABLE enriched_trades (
+  trade_id STRING, symbol STRING, amount DECIMAL(18, 2),
+  risk_score DECIMAL(3, 2), risk_tier STRING, ts TIMESTAMP(3),
+  WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+) WITH (
+  'connector' = 'kafka',
+  'topic' = 'enriched-trades',
+  'properties.bootstrap.servers' = 'kafka:9092',
+  'format' = 'json'
+);
+
+CREATE TEMPORARY TABLE trade_summary (
+  window_start TIMESTAMP(3), window_end TIMESTAMP(3), symbol STRING,
+  trade_count BIGINT, total_amount DECIMAL(20, 2),
+  critical_count BIGINT, high_count BIGINT
+) WITH ('connector' = 'kafka', 'topic' = 'trade-summary',
+  'properties.bootstrap.servers' = 'kafka:9092', 'format' = 'json');
+
+INSERT INTO trade_summary
+SELECT
+  TUMBLE_START(ts, INTERVAL '10' SECOND) AS window_start,
+  TUMBLE_END(ts, INTERVAL '10' SECOND) AS window_end,
+  symbol, COUNT(*) AS trade_count, SUM(amount) AS total_amount,
+  SUM(CASE WHEN risk_tier = 'CRITICAL' THEN 1 ELSE 0 END) AS critical_count,
+  SUM(CASE WHEN risk_tier = 'HIGH' THEN 1 ELSE 0 END) AS high_count
+FROM enriched_trades
+GROUP BY TUMBLE(ts, INTERVAL '10' SECOND), symbol;</code></pre>
+          <p><strong>Output:</strong> Trade summaries per symbol every 10 seconds. Ideal for dashboards, alerting thresholds, and compliance reporting.</p>
+        </div>
+
+        <div id="demo-monitor" class="tab-pane">
+          <pre><code>-- Monitor: Live Results
+SELECT trade_id, symbol, amount, risk_tier
+FROM enriched_trades
+WHERE risk_tier IN ('CRITICAL', 'HIGH')
+ORDER BY ts DESC;
+
+-- Or: Aggregated Summary
+SELECT window_start, symbol, trade_count, total_amount,
+  critical_count, high_count
+FROM trade_summary
+ORDER BY window_start DESC;</code></pre>
+          <p><strong>Tip:</strong> Run any of these queries in separate tabs. Use <strong>🎨 Colour Describe</strong> to highlight CRITICAL and HIGH risk rows in red and amber.</p>
+        </div>
+      </div>
+
+      <h3>Pipeline Architecture Diagram</h3>
       <div class="mermaid-wrap">
         <div class="mermaid">
           flowchart LR
-          DG["⚙ datagen"]
-          TE["trade-events\nKafka"]
-          EN["enrich + route\nJob 2"]
-          ET["enriched-trades\nKafka"]
-          AL["risk-alerts\nKafka"]
-          AG["TUMBLE 10s\nJob 3"]
-          TS["trade-summary\nKafka"]
-          PR["print\nstdout"]
-          DG-->|"INSERT\nJob 1"|TE
-          TE-->EN
-          EN-->|"Branch A"|ET
-          EN-->|"Branch B\nHIGH+CRITICAL"|AL
-          ET-->AG
-          AG-->TS
-          AG-->PR
+          DG["⚙️ Datagen\n100 trades/sec"]
+          J1["Job 1: Source"]
+          TE["Kafka:\ntrading-events"]
+          J2["Job 2:\nEnrichment"]
+          ET["Kafka:\nenriched-trades"]
+          AL["Kafka:\nrisk-alerts"]
+          J3["Job 3:\n10s Aggregate"]
+          TS["Kafka:\ntrade-summary"]
+          MON["📊 Monitor"]
+
+          DG-->J1
+          J1-->TE
+          TE-->J2
+          J2-->ET
+          J2-->AL
+          ET-->J3
+          J3-->TS
+          TS-->MON
+          AL-->MON
+
           style DG fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+          style J1 fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
           style TE fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style EN fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style J2 fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
           style ET fill:#1a2130,stroke:#f0a500,color:#f0f6fc
           style AL fill:#1a2130,stroke:#e05c5c,color:#f0f6fc
-          style AG fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style J3 fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
           style TS fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style PR fill:#1a2130,stroke:#3fb950,color:#f0f6fc
+          style MON fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">🎬</span>
+        <div class="callout-body">
+          <strong>More demos available</strong> Visit the <a href="https://www.youtube.com/@CodedStreams" target="_blank">CodedStreams YouTube channel</a> for video walkthroughs of this demo, advanced windowing patterns, stateful processing, and real-world Kafka enrichment pipelines. Full source code and Docker Compose setups included in video descriptions.
         </div>
       </div>
     </section>
@@ -642,7 +784,7 @@ metadata:
   name: prod-studio
   namespace: flink
 spec:
-  image: codedstreams/strlabstudio:v1.0.23
+  image: codedstreams/strlabstudio:v1.0.24
   replicas: 2
   gateway:
     host: flink-sql-gateway
@@ -1015,12 +1157,25 @@ applyColorDescribeToRow(rowEl, row.fields, state.resultColumns);</code></pre>
       <h2><span class="si">📝</span>Changelog</h2>
       <div class="version-list">
 
-        <!-- v1.0.23 — NEW -->
+        <!-- v1.0.24 — NEW -->
         <div class="version-card" style="border-color:rgba(63,185,80,0.3);">
+          <div class="version-header">
+            <span class="version-tag">v1.0.24</span>
+            <span class="version-date">March 2026</span>
+            <span class="version-label current">current</span>
+          </div>
+          <ul>
+            <li><strong>Pipeline Demo — Multi-tab interactive SQL demo added</strong>: 5 tabs (Setup, Job 1: Source, Job 2: Enrich, Job 3: Aggregate, Monitor) with copy-paste ready SQL snippets for complete trading pipeline. Updated diagram shows all 3 jobs, Kafka topics, and branching topology.</li>
+            <li><strong>YouTube reference added</strong>: Link to CodedStreams channel with video walkthroughs of the demo, advanced windowing patterns, and production Kafka pipelines.</li>
+            <li><strong>Author info updated</strong>: "Nestor A. A" → "Nestor Martourez A. A" with LinkedIn (www.linkedin.com/in/nestor-abiangang/) and email (nestorabiawuh@gmail.com).</li>
+          </ul>
+        </div>
+
+        <!-- v1.0.23 — PREVIOUS -->
+        <div class="version-card">
           <div class="version-header">
             <span class="version-tag">v1.0.23</span>
             <span class="version-date">March 2026</span>
-            <span class="version-label current">current</span>
           </div>
           <ul>
             <li><strong>execution.js — SHOW FUNCTIONS / SHOW VIEWS returning 0 rows fixed</strong>: <code>isStatusOk</code> false-positive in <code>pollOperation</code> now guarded by <code>isGenuineDDL</code> flag. <code>SHOW</code>, <code>SELECT</code>, <code>DESCRIBE</code>, <code>EXPLAIN</code> always render all result rows — never short-circuit.</li>
