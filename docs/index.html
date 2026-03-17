@@ -153,14 +153,18 @@
     .about-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
     .about-card h3{margin:0 0 10px;font-size:15px;color:var(--text0)}
     .about-card p{font-size:13px;color:var(--text2);line-height:1.8;margin:0}
-    /* Fix table steps */
     .workflow-steps{display:flex;flex-direction:column;gap:0;margin-top:12px}
     .workflow-step{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-top:none}
     .workflow-step:first-child{border-top:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0}
     .workflow-step:last-child{border-radius:0 0 var(--radius) var(--radius)}
     .workflow-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;color:#000}
-    /* Colour Describe specifics */
-    .cd-operator-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+    .flow-path{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin:10px 0}
+    .flow-path-title{font-size:12px;font-weight:700;color:var(--text0);font-family:var(--mono);letter-spacing:0.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .flow-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;flex-wrap:wrap}
+    .flow-step{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:11px;color:var(--text1);white-space:nowrap}
+    .flow-step.highlight{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,0.08)}
+    .flow-step.warn-step{border-color:rgba(245,166,35,0.5);color:var(--yellow);background:rgba(245,166,35,0.07)}
+    .flow-arrow{color:var(--text3);font-size:13px}
     footer{border-top:1px solid var(--border);background:var(--bg0);padding:36px 32px;text-align:center}
     .footer-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
     footer p{font-size:13px;color:var(--text3);margin-bottom:5px}
@@ -192,6 +196,7 @@
     <li><a href="#operator">Kube Operator</a></li>
     <li><a href="#project-manager">Project Manager</a></li>
     <li><a href="#udf-manager">UDF Manager</a></li>
+    <li><a href="#udf-demo">UDF Demo</a></li>
     <li><a href="#colour-describe">Colour Describe</a></li>
     <li><a href="#changelog">Changelog</a></li>
   </ul>
@@ -256,6 +261,7 @@
       <a href="#tips-modal">Tips &amp; Concepts Modal</a>
       <a href="#project-manager">Project Manager</a>
       <a href="#udf-manager">UDF Manager</a>
+      <a href="#udf-demo" class="toc-new">UDF Demo</a>
       <a href="#colour-describe" class="toc-new">Colour Describe</a>
       <a href="#snippets">Snippets Library</a>
       <a href="#job-graph">Job Graph</a>
@@ -280,7 +286,7 @@
 
   <main class="content">
 
-    <!-- ═══════════════════════════════ ABOUT ═══════════════════════════════ -->
+    <!-- ABOUT -->
     <section class="doc-section" id="about">
       <h2><span class="si">ℹ</span>About Str:::lab Studio</h2>
       <p>Str:::lab Studio is a browser-based SQL Studio that connects to any Flink SQL Gateway. It provides a complete development, monitoring, and administration experience — without the overhead of a full platform deployment. Works with local Docker, Kubernetes, and any self-hosted Flink cluster.</p>
@@ -299,7 +305,7 @@
       </div>
     </section>
 
-    <!-- ══════════════════════════ QUICKSTART ══════════════════════════════ -->
+    <!-- QUICKSTART -->
     <section class="doc-section" id="quickstart">
       <h2><span class="si">⚡</span>Quickstart</h2>
       <div class="tab-group">
@@ -357,7 +363,7 @@ EOF</code></pre>
       </div>
     </section>
 
-    <!-- ══════════════════════════ ARCHITECTURE ══════════════════════════════ -->
+    <!-- ARCHITECTURE -->
     <section class="doc-section" id="architecture">
       <h2><span class="si">🏗</span>Architecture</h2>
       <p>Str:::lab Studio is a static HTML file served by nginx. All SQL execution happens via the Flink SQL Gateway REST API. The browser manages all session state client-side.</p>
@@ -404,13 +410,14 @@ EOF</code></pre>
           <tr><td>SQL Gateway session handle</td><td>In-memory only</td><td>❌ Reconnect required</td></tr>
           <tr><td>Result rows</td><td>In-memory only</td><td>❌ Re-run query</td></tr>
           <tr><td>Colour Describe rules</td><td>In-memory only</td><td>❌ Re-configure after reload</td></tr>
+          <tr><td>JAR classpath (ADD JAR)</td><td>SQL Gateway session (in-memory)</td><td>❌ Must re-run ADD JAR each new session</td></tr>
           <tr><td>Full workspace</td><td>JSON file (export/import)</td><td>✅ Via import</td></tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- ══════════════════════════ FEATURES ══════════════════════════════ -->
+    <!-- FEATURES -->
     <section class="doc-section" id="features">
       <h2><span class="si">✦</span>All Features</h2>
       <h3>Editor</h3>
@@ -458,13 +465,13 @@ EOF</code></pre>
       <h3>Themes &amp; UX</h3>
       <div class="feature-grid">
         <div class="feature-card"><span class="fci">⬡</span><h3>Project Manager</h3><p>Save, load, run, and delete named Str:::lab projects. Stores all editor tabs, SET config, catalog context, and metadata. Export to JSON.</p></div>
-        <div class="feature-card"><span class="fci">⨍</span><h3>UDF Manager</h3><p>Browse functions and views, register JAR UDFs, generate Maven/Gradle configs, build SQL expressions via View Builder, insert templates. See <a href="#udf-manager">full docs →</a></p></div>
+        <div class="feature-card"><span class="fci">⨍</span><h3>UDF Manager</h3><p>Upload JAR, browse classpath, register JAR UDFs, generate Maven/Gradle configs, build SQL views via View Builder, insert templates. See <a href="#udf-manager">full docs →</a></p></div>
         <div class="feature-card"><span class="fci">💡</span><h3>Tips &amp; Concepts Modal</h3><p>On first connect, a paginated modal walks through IDE features, Flink architecture, window types, state, connectors, and performance tips.</p></div>
         <div class="feature-card"><span class="fci">🎨</span><h3>6 Themes</h3><p>Dark (default), Light, Monokai, Dracula, Nord, Contrast. Preference persisted across sessions.</p></div>
       </div>
     </section>
 
-    <!-- ══════════════════════════ ADMIN ══════════════════════════════ -->
+    <!-- ADMIN -->
     <section class="doc-section" id="admin">
       <h2><span class="si">🛡</span>Admin Session</h2>
       <p>Provides a privileged view of the entire Flink cluster across all users and sessions. Access from the connect screen by selecting the <span class="tag admin">Admin</span> mode and entering the admin passcode.</p>
@@ -493,7 +500,7 @@ EOF</code></pre>
       </div>
     </section>
 
-    <!-- ══════════════════════════ TIPS ══════════════════════════════ -->
+    <!-- TIPS MODAL -->
     <section class="doc-section" id="tips-modal">
       <h2><span class="si">💡</span>Tips &amp; Concepts Modal</h2>
       <p>On first connection, Str:::lab Studio displays a paginated <strong>Tips &amp; Concepts</strong> modal covering 16 topics across 6 categories:</p>
@@ -512,7 +519,7 @@ EOF</code></pre>
       </div>
     </section>
 
-    <!-- ══════════════════════════ SNIPPETS ══════════════════════════════ -->
+    <!-- SNIPPETS -->
     <section class="doc-section" id="snippets">
       <h2><span class="si">✂</span>Snippets Library</h2>
       <p>30+ built-in SQL templates accessible from the toolbar. Click any snippet to insert into the active editor tab.</p>
@@ -532,7 +539,7 @@ EOF</code></pre>
       </div>
     </section>
 
-    <!-- ══════════════════════════ CONNECTORS ══════════════════════════════ -->
+    <!-- CONNECTORS -->
     <section class="doc-section" id="connectors">
       <h2><span class="si">🔌</span>Connector JARs</h2>
       <div class="callout danger">
@@ -564,11 +571,10 @@ COPY ./connectors/*.jar /opt/flink/lib/</code></pre></div>
       </div>
     </section>
 
-    <!-- ══════════════════════════ PIPELINE DEMO ══════════════════════════════ -->
+    <!-- PIPELINE DEMO -->
     <section class="doc-section" id="pipeline">
       <h2><span class="si">🔀</span>Full Pipeline Demo</h2>
-      <p>A complete multi-stage streaming pipeline: datagen source → Kafka → enrichment with branching → windowed aggregation → live preview. Copy any snippet below and paste into Str:::lab Studio to run end-to-end.</p>
-
+      <p>A complete multi-stage streaming pipeline: datagen source → Kafka → enrichment with branching → windowed aggregation → live preview.</p>
       <div class="tab-group">
         <div class="tab-nav">
           <button class="tab-btn active" onclick="switchTab(this,'demo-setup')">Setup</button>
@@ -577,10 +583,8 @@ COPY ./connectors/*.jar /opt/flink/lib/</code></pre></div>
           <button class="tab-btn" onclick="switchTab(this,'demo-agg')">Job 3: Aggregate</button>
           <button class="tab-btn" onclick="switchTab(this,'demo-monitor')">Monitor</button>
         </div>
-
         <div id="demo-setup" class="tab-pane active">
-          <pre><code>-- Session Configuration
-SET execution.runtime-mode = 'STREAMING';
+          <pre><code>SET execution.runtime-mode = 'STREAMING';
 SET parallelism.default = '4';
 SET state.backend = 'rocksdb';
 SET table.exec.mini-batch.enabled = 'true';
@@ -588,177 +592,53 @@ SET table.exec.mini-batch.allow-latency = '2000';
 SET table.state.ttl.type = 'IDLE';
 SET table.state.ttl.time = '3600000';
 SET pipeline.name = 'trading-pipeline-demo';</code></pre>
-          <p><strong>Why these settings?</strong> Mini-batch aggregation improves throughput, RocksDB state backend scales to large state, TTL prevents unbounded state growth. Adjust parallelism based on your cluster.</p>
         </div>
-
         <div id="demo-source" class="tab-pane">
-          <pre><code>-- JOB 1: Datagen → Kafka
-CREATE TEMPORARY TABLE raw_trades (
-  trade_id STRING,
-  symbol STRING,
-  amount DECIMAL(18, 2),
+          <pre><code>CREATE TEMPORARY TABLE raw_trades (
+  trade_id STRING, symbol STRING, amount DECIMAL(18,2),
   ts AS CURRENT_TIMESTAMP,
   WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
 ) WITH (
-  'connector' = 'datagen',
-  'rows-per-second' = '100',
-  'fields.symbol.length' = '4',
-  'fields.amount.min' = '100',
-  'fields.amount.max' = '999999'
+  'connector'='datagen','rows-per-second'='100',
+  'fields.symbol.length'='4',
+  'fields.amount.min'='100','fields.amount.max'='999999'
 );
-
-CREATE TEMPORARY TABLE kafka_trades (
-  trade_id STRING, symbol STRING, amount DECIMAL(18, 2), ts TIMESTAMP(3)
-) WITH (
-  'connector' = 'kafka',
-  'topic' = 'trading-events',
-  'properties.bootstrap.servers' = 'kafka:9092',
-  'format' = 'json'
-);
-
 INSERT INTO kafka_trades SELECT * FROM raw_trades;</code></pre>
-          <p><strong>Output:</strong> 100 trades/sec into Kafka topic <code>trading-events</code>. Watch the Job Graph to see source parallelism and record throughput.</p>
         </div>
-
         <div id="demo-enrich" class="tab-pane">
-          <pre><code>-- JOB 2: Enrich + Branch (HIGH/CRITICAL Risk)
-CREATE TEMPORARY TABLE kafka_trades (
-  trade_id STRING, symbol STRING, amount DECIMAL(18, 2),
-  ts TIMESTAMP(3), WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
-) WITH (
-  'connector' = 'kafka',
-  'topic' = 'trading-events',
-  'properties.bootstrap.servers' = 'kafka:9092',
-  'format' = 'json'
-);
-
-CREATE TEMPORARY TABLE enriched_trades (
-  trade_id STRING, symbol STRING, amount DECIMAL(18, 2),
-  risk_score DECIMAL(3, 2), risk_tier STRING, ts TIMESTAMP(3)
-) WITH ('connector' = 'kafka', 'topic' = 'enriched-trades',
-  'properties.bootstrap.servers' = 'kafka:9092', 'format' = 'json');
-
-INSERT INTO enriched_trades
-SELECT trade_id, symbol, amount, (amount / 100000.0) AS risk_score,
-  CASE WHEN (amount / 100000.0) >= 0.80 THEN 'CRITICAL'
-       WHEN (amount / 100000.0) >= 0.55 THEN 'HIGH'
-       WHEN (amount / 100000.0) >= 0.30 THEN 'MEDIUM'
+          <pre><code>INSERT INTO enriched_trades
+SELECT trade_id, symbol, amount,
+  (amount/100000.0) AS risk_score,
+  CASE WHEN (amount/100000.0) >= 0.80 THEN 'CRITICAL'
+       WHEN (amount/100000.0) >= 0.55 THEN 'HIGH'
+       WHEN (amount/100000.0) >= 0.30 THEN 'MEDIUM'
        ELSE 'LOW' END AS risk_tier, ts
 FROM kafka_trades;</code></pre>
-          <p><strong>Output:</strong> All enriched trades to <code>enriched-trades</code> topic. High-risk trades also sent to <code>risk-alerts</code> topic for immediate action.</p>
         </div>
-
         <div id="demo-agg" class="tab-pane">
-          <pre><code>-- JOB 3: 10-Second Tumbling Window
-CREATE TEMPORARY TABLE enriched_trades (
-  trade_id STRING, symbol STRING, amount DECIMAL(18, 2),
-  risk_score DECIMAL(3, 2), risk_tier STRING, ts TIMESTAMP(3),
-  WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
-) WITH (
-  'connector' = 'kafka',
-  'topic' = 'enriched-trades',
-  'properties.bootstrap.servers' = 'kafka:9092',
-  'format' = 'json'
-);
-
-CREATE TEMPORARY TABLE trade_summary (
-  window_start TIMESTAMP(3), window_end TIMESTAMP(3), symbol STRING,
-  trade_count BIGINT, total_amount DECIMAL(20, 2),
-  critical_count BIGINT, high_count BIGINT
-) WITH ('connector' = 'kafka', 'topic' = 'trade-summary',
-  'properties.bootstrap.servers' = 'kafka:9092', 'format' = 'json');
-
-INSERT INTO trade_summary
-SELECT
-  TUMBLE_START(ts, INTERVAL '10' SECOND) AS window_start,
-  TUMBLE_END(ts, INTERVAL '10' SECOND) AS window_end,
-  symbol, COUNT(*) AS trade_count, SUM(amount) AS total_amount,
-  SUM(CASE WHEN risk_tier = 'CRITICAL' THEN 1 ELSE 0 END) AS critical_count,
-  SUM(CASE WHEN risk_tier = 'HIGH' THEN 1 ELSE 0 END) AS high_count
+          <pre><code>INSERT INTO trade_summary
+SELECT TUMBLE_START(ts, INTERVAL '10' SECOND), TUMBLE_END(ts, INTERVAL '10' SECOND),
+  symbol, COUNT(*), SUM(amount),
+  SUM(CASE WHEN risk_tier='CRITICAL' THEN 1 ELSE 0 END),
+  SUM(CASE WHEN risk_tier='HIGH' THEN 1 ELSE 0 END)
 FROM enriched_trades
 GROUP BY TUMBLE(ts, INTERVAL '10' SECOND), symbol;</code></pre>
-          <p><strong>Output:</strong> Trade summaries per symbol every 10 seconds. Ideal for dashboards, alerting thresholds, and compliance reporting.</p>
         </div>
-
         <div id="demo-monitor" class="tab-pane">
-          <pre><code>-- Monitor: Live Results
-SELECT trade_id, symbol, amount, risk_tier
-FROM enriched_trades
-WHERE risk_tier IN ('CRITICAL', 'HIGH')
-ORDER BY ts DESC;
-
--- Or: Aggregated Summary
-SELECT window_start, symbol, trade_count, total_amount,
-  critical_count, high_count
-FROM trade_summary
-ORDER BY window_start DESC;</code></pre>
-          <p><strong>Tip:</strong> Run any of these queries in separate tabs. Use <strong>🎨 Colour Describe</strong> to highlight CRITICAL and HIGH risk rows in red and amber.</p>
+          <pre><code>SELECT trade_id, symbol, amount, risk_tier FROM enriched_trades
+WHERE risk_tier IN ('CRITICAL','HIGH') ORDER BY ts DESC;</code></pre>
         </div>
       </div>
-
-      <h3>Pipeline Architecture Diagram</h3>
-      <div class="mermaid-wrap">
-        <div class="mermaid">
-          flowchart LR
-          DG["⚙️ Datagen\n100 trades/sec"]
-          J1["Job 1: Source"]
-          TE["Kafka:\ntrading-events"]
-          J2["Job 2:\nEnrichment"]
-          ET["Kafka:\nenriched-trades"]
-          AL["Kafka:\nrisk-alerts"]
-          J3["Job 3:\n10s Aggregate"]
-          TS["Kafka:\ntrade-summary"]
-          MON["📊 Monitor"]
-
-          DG-->J1
-          J1-->TE
-          TE-->J2
-          J2-->ET
-          J2-->AL
-          ET-->J3
-          J3-->TS
-          TS-->MON
-          AL-->MON
-
-          style DG fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
-          style J1 fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style TE fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style J2 fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style ET fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style AL fill:#1a2130,stroke:#e05c5c,color:#f0f6fc
-          style J3 fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
-          style TS fill:#1a2130,stroke:#f0a500,color:#f0f6fc
-          style MON fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
-        </div>
-      </div>
-
       <div class="callout tip">
         <span class="callout-icon">🎬</span>
-        <div class="callout-body">
-          <strong>More demos available</strong> Visit the <a href="https://www.youtube.com/@CodedStreams" target="_blank">CodedStreams YouTube channel</a> for video walkthroughs of this demo, advanced windowing patterns, stateful processing, and real-world Kafka enrichment pipelines. Full source code and Docker Compose setups included in video descriptions.
-        </div>
+        <div class="callout-body"><strong>More demos</strong> Visit the <a href="https://www.youtube.com/@CodedStreams" target="_blank">CodedStreams YouTube channel</a> for video walkthroughs.</div>
       </div>
     </section>
 
-    <!-- ══════════════════════════ KUBE OPERATOR ══════════════════════════════ -->
+    <!-- KUBE OPERATOR -->
     <section class="doc-section" id="operator">
       <h2><span class="si">☸️</span>Str:::lab Studio Kube Operator</h2>
       <p>Manages Studio deployments as first-class Kubernetes CRDs. Repository: <a href="https://github.com/coded-streams/strlabstudio-operator" target="_blank">github.com/coded-streams/strlabstudio-operator</a></p>
-      <h3>CRD Reference — <code>StrlabStudio</code></h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead>
-          <tbody>
-          <tr><td><code>spec.gateway.host</code></td><td>string</td><td>✅</td><td>—</td><td>Flink SQL Gateway hostname</td></tr>
-          <tr><td><code>spec.gateway.port</code></td><td>integer</td><td>—</td><td><code>8083</code></td><td>SQL Gateway port</td></tr>
-          <tr><td><code>spec.jobmanager.host</code></td><td>string</td><td>—</td><td><code>localhost</code></td><td>JobManager REST hostname</td></tr>
-          <tr><td><code>spec.jobmanager.port</code></td><td>integer</td><td>—</td><td><code>8081</code></td><td>JobManager REST port</td></tr>
-          <tr><td><code>spec.image</code></td><td>string</td><td>—</td><td><code>codedstreams/strlabstudio:latest</code></td><td>IDE Docker image</td></tr>
-          <tr><td><code>spec.replicas</code></td><td>integer</td><td>—</td><td><code>1</code></td><td>Pod count (1–10)</td></tr>
-          <tr><td><code>spec.service.type</code></td><td>string</td><td>—</td><td><code>ClusterIP</code></td><td><code>ClusterIP</code>, <code>NodePort</code>, or <code>LoadBalancer</code></td></tr>
-          </tbody>
-        </table>
-      </div>
       <div class="tab-group">
         <div class="tab-nav">
           <button class="tab-btn active" onclick="switchTab(this,'op-install')">Helm Install</button>
@@ -784,7 +664,7 @@ metadata:
   name: prod-studio
   namespace: flink
 spec:
-  image: codedstreams/strlabstudio:v1.0.24
+  image: codedstreams/strlabstudio:v1.2.0
   replicas: 2
   gateway:
     host: flink-sql-gateway
@@ -797,7 +677,7 @@ spec:
       </div>
     </section>
 
-    <!-- ══════════════════════════ DEPLOY ══════════════════════════════ -->
+    <!-- DEPLOY -->
     <section class="doc-section" id="deploy">
       <h2><span class="si">🚀</span>Deployment Options</h2>
       <div class="deploy-grid">
@@ -809,10 +689,10 @@ spec:
       </div>
     </section>
 
-    <!-- ══════════════════════════ PROJECT MANAGER ══════════════════════════════ -->
+    <!-- PROJECT MANAGER -->
     <section class="doc-section" id="project-manager">
       <h2><span class="si">⬡</span>Project Manager</h2>
-      <p>Save, load, run, and organise your Str:::lab work as named projects. Access via the <code style="background:rgba(0,212,170,0.12);color:var(--accent);padding:2px 7px;border-radius:3px;">⬡ Projects</code> button. Projects are stored in browser <code>localStorage</code> and can be exported and imported as JSON files.</p>
+      <p>Save, load, run, and organise your Str:::lab work as named projects. Access via the <code>⬡ Projects</code> button. Projects are stored in browser <code>localStorage</code> and can be exported and imported as JSON files.</p>
       <div class="feature-grid" style="margin-top:14px;">
         <div class="feature-card"><span class="fci">📁</span><h3>Projects tab</h3><p>Lists all saved projects with size, tab count, last modified, and run count. Load, Run, Export, Delete per project. Search by name or description.</p></div>
         <div class="feature-card"><span class="fci">＋</span><h3>New Project tab</h3><p>Create a named project. Checkboxes snapshot current editor tabs and SET config. Active project shown in the topbar.</p></div>
@@ -820,180 +700,576 @@ spec:
       </div>
     </section>
 
-    <!-- ══════════════════════════ UDF MANAGER (v2) ══════════════════════════ -->
+    <!-- UDF MANAGER -->
     <section class="doc-section" id="udf-manager">
-      <h2><span class="si">⨍</span>UDF Manager <span class="updated-badge">v2 — March 2026</span></h2>
+      <h2><span class="si">⨍</span>UDF Manager <span class="updated-badge">v1.2.0 — March 2026</span></h2>
       <p>
         The <strong>UDF Manager</strong> provides the complete User-Defined Function lifecycle — browsing,
         building, uploading, and registering — without leaving Str:::lab Studio.
         Access it from the topbar via the <code style="background:rgba(79,163,224,0.12);color:#4fa3e0;padding:2px 7px;border-radius:3px;">⨍ UDFs</code> button.
-        Version 2 (March 2026) fixes four confirmed bugs, removes the invalid <code>LANGUAGE SQL</code>
-        option, adds a dedicated Views section to the Library tab, and redesigns the Colour Describe
-        feature as a professional rule-based modal.
+      </p>
+      <p>
+        Version 1.2.0 (March 2026) resolves the confirmed <code>ClassNotFoundException</code> and
+        <em>"Cannot run program python: error=2"</em> errors through a guided 3-step registration wizard
+        with mandatory classpath verification before <code>CREATE FUNCTION</code> is attempted.
       </p>
 
-      <!-- Bug fix table -->
-      <h3>Bug Fixes in v2</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Bug</th><th>Root cause</th><th>Fix</th><th>File</th></tr></thead>
-          <tbody>
-          <tr>
-            <td><strong>SHOW FUNCTIONS returns 0 rows</strong></td>
-            <td><code>isStatusOk</code> in <code>pollOperation</code> checked <code>resultColumns.length &lt;= 1</code> + value matching <code>"OK"/"TRUE"/""</code>. <code>SHOW FUNCTIONS</code> is single-column — some function names triggered the false-positive, causing early break before rows rendered.</td>
-            <td>Added <code>isGenuineDDL</code> flag (true only for <code>CREATE/DROP/ALTER/USE/SET/RESET/INSERT/EXECUTE</code>). <code>SHOW/SELECT/DESCRIBE/EXPLAIN</code> statements now always render all rows, never short-circuit.</td>
-            <td><code>execution.js</code></td>
-          </tr>
-          <tr>
-            <td><strong>Upload JAR port label stacks vertically</strong></td>
-            <td>"JM PORT (AUTO-DETECT)" label was too long — port input stacked below the URL field on a separate line.</td>
-            <td>Label shortened to "Port (auto)". Container uses <code>align-items: flex-end</code>. Port input fixed at <code>width: 90px</code>. Both inputs sit on one baseline.</td>
-            <td><code>udf-manager.js</code></td>
-          </tr>
-          <tr>
-            <td><strong>View Builder — "✗ Fill in form first" when form is filled</strong></td>
-            <td><code>_vbExecute()</code> checked <code>sql.startsWith('--')</code>. The Computed Column preview always starts with <code>"-- Paste this inside…"</code> — permanently treated as empty.</td>
-            <td>Replaced with <code>_vbIsEmpty()</code> which checks against exact placeholder strings. For <code>expr</code>/<code>col</code> modes, <code>_vbExecute</code> calls <code>_vbInsert()</code> directly.</td>
-            <td><code>udf-manager.js</code></td>
-          </tr>
-          <tr>
-            <td><strong>Library search returns "No functions found" after refresh</strong></td>
-            <td><code>SHOW VIEWS</code> fails silently on Flink &lt; 1.18. Cache was never populated; filter applied to empty array. Views also never appeared since they are not UDFs and <code>SHOW USER FUNCTIONS</code> never returns them.</td>
-            <td><code>SHOW VIEWS</code> failure caught gracefully. Separate <code>window._udfViewCache</code> populated independently. Dedicated "◫ Session Views" section in Library. Search filters across both caches.</td>
-            <td><code>udf-manager.js</code></td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- LANGUAGE SQL callout -->
-      <div class="callout danger" style="margin-top:16px;">
-        <span class="callout-icon">⚠</span>
+      <!-- Critical architecture note -->
+      <div class="callout danger">
+        <span class="callout-icon">🔴</span>
         <div class="callout-body">
-          <strong>LANGUAGE SQL permanently removed</strong>
-          <code>FunctionLanguage.SQL</code> does not exist in any Flink release (1.15–1.20+).
-          <code>CREATE FUNCTION … LANGUAGE SQL</code> always throws
-          <em>"Unrecognized function language string SQL"</em>.
-          The Language dropdown in Register UDF now only shows <strong>Java</strong>, <strong>Scala</strong>, and <strong>Python</strong>.
-          For inline SQL logic, use the <strong>◫ View Builder</strong> tab instead.
+          <strong>Two separate JVMs — this is the most important thing to understand</strong>
+          The <strong>JobManager REST API (port 8081)</strong> and the <strong>SQL Gateway (port 8083)</strong> are separate JVM processes, often in separate Docker containers. Uploading a JAR via <em>Upload JAR</em> copies it to the JobManager container. The SQL Gateway cannot see that file unless both containers share the same filesystem (shared volume mount).<br><br>
+          <code>ADD JAR '/path/to/jar'</code> must run inside a SQL Gateway session using a path that exists <em>on the Gateway container</em>. Until this completes successfully, <code>CREATE FUNCTION LANGUAGE JAVA</code> will always throw <code>ClassNotFoundException</code>.
         </div>
       </div>
 
-      <!-- Views vs UDFs -->
-      <h3>Views vs UDFs — what's the difference?</h3>
+      <!-- Workflow paths -->
+      <h3>The two UDF paths — which one do you need?</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0;">
+        <div class="flow-path">
+          <div class="flow-path-title"><span style="color:var(--blue);">📦</span> Path A — JAR UDF (Java/Scala/Python)</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">You have a compiled class extending <code>ScalarFunction</code>, <code>TableFunction</code>, or <code>AggregateFunction</code>. Requires building and uploading a JAR.</p>
+          <div class="flow-row">
+            <span class="flow-step">⬆ Upload JAR tab</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step highlight">ADD JAR runs auto</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-arrow" style="margin-left:8px;">↓</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-step">＋ Register → Step 1</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step">SHOW JARS verify</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-arrow" style="margin-left:8px;">↓</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-step">Step 2: fill details</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-step highlight">Step 3: ⚡ Register</span>
+          </div>
+          <div class="flow-row" style="margin-top:6px;">
+            <span class="flow-step warn-step">⚠ ADD JAR must succeed first</span>
+          </div>
+        </div>
+        <div class="flow-path">
+          <div class="flow-path-title"><span style="color:var(--accent);">◫</span> Path B — SQL View (no JAR)</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:10px;">You want to encapsulate a SQL expression — CASE WHEN logic, computed values, filtered tables — as a reusable named object. No compilation, no upload, no classpath.</p>
+          <div class="flow-row">
+            <span class="flow-step highlight">◫ View Builder tab</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-arrow" style="margin-left:8px;">↓</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-step">Fill name + source + columns</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-arrow" style="margin-left:8px;">↓</span>
+          </div>
+          <div class="flow-row">
+            <span class="flow-step highlight">⚡ Create View — done</span>
+          </div>
+          <div class="flow-row" style="margin-top:6px;">
+            <span class="flow-step" style="border-color:rgba(63,185,80,0.4);color:var(--green);">✓ No JAR · No ADD JAR · No registration</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error root cause -->
+      <h3>Root cause of ClassNotFoundException (confirmed fix in v1.2.0)</h3>
+      <div class="callout warn">
+        <span class="callout-icon">⚠</span>
+        <div class="callout-body">
+          <strong>Why you see "Cannot run program python: error=2"</strong>
+          This Python error is a <em>red herring</em>. It appears when you register a function with
+          <code>LANGUAGE SCALA</code> or <code>LANGUAGE PYTHON</code> as a workaround — those languages
+          skip Java validation at <code>CREATE FUNCTION</code> time, so the name gets written to the catalog
+          without the class being checked. Later when you <code>SELECT</code> using that function name,
+          Flink tries to instantiate the class, gets <code>ClassNotFoundException</code>, falls back to
+          <code>PythonFunctionFactory</code>, spawns <code>python</code> (not installed) → error=2.<br><br>
+          <strong>Both errors have the same root cause: the JAR is not on the SQL Gateway session classpath.
+            ADD JAR must be run with a path the Gateway container can see.</strong>
+        </div>
+      </div>
+
+      <!-- Register UDF tab: the 3-step wizard -->
+      <h3>Register UDF tab — the 3-step wizard</h3>
+      <p>The register tab is now a sequential wizard. The steps are ordered this way intentionally:</p>
+      <div class="workflow-steps">
+        <div class="workflow-step">
+          <div class="workflow-num" style="background:var(--blue);">1</div>
+          <div>
+            <strong>Step 1 — Verify classpath (do this after Upload JAR)</strong><br>
+            <span style="font-size:13px;color:var(--text2);">Click <strong>⟳ SHOW JARS</strong> to see what JARs are currently on the session classpath. If the list is empty, the JAR was either not uploaded yet, or uploaded to a different container than the Gateway. Use the path input and <strong>▶ ADD JAR</strong> button to manually load it. The expandable panel shows the three fix options for the separate-container case.</span>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-num" style="background:var(--blue);">2</div>
+          <div>
+            <strong>Step 2 — Function details</strong><br>
+            <span style="font-size:13px;color:var(--text2);">Fill in: Function Name, Language (Java/Scala/Python — never SQL), Scope (Temporary or Temporary System), and the full class path. The class path is case-sensitive: <code>com.streamsstudio.udf.AlertSeverityEnricher</code>. The SQL preview updates live below.</span>
+          </div>
+        </div>
+        <div class="workflow-step">
+          <div class="workflow-num" style="background:var(--accent);">3</div>
+          <div>
+            <strong>Step 3 — Preview &amp; Register</strong><br>
+            <span style="font-size:13px;color:var(--text2);">Click <strong>⚡ Register Function</strong>. Before executing <code>CREATE FUNCTION</code>, the wizard silently re-runs <code>SHOW JARS</code>. If the classpath is still empty, it tries <code>ADD JAR</code> automatically using the last uploaded path. If that also fails, it stops with exact fix instructions instead of letting Flink throw a confusing stack trace. On success it runs <code>SHOW USER FUNCTIONS</code> to verify registration.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <strong>The Upload JAR tab comes before Step 1.</strong>
+          The correct full sequence is: <strong>⬆ Upload JAR</strong> (Studio runs ADD JAR automatically after upload) → then come to <strong>＋ Register UDF</strong> → confirm Step 1 shows your JAR → fill Step 2 → click Register in Step 3. The Register tab wizard exists to catch the case where the automatic ADD JAR failed.
+        </div>
+      </div>
+
+      <!-- Tab reference -->
+      <h3>Tab Reference</h3>
+
+      <h4>⬆ Upload JAR tab — START HERE for JAR UDFs</h4>
+      <p>This is the entry point for all JAR-based UDFs. Drag your shaded JAR or click to browse. Studio uploads it to the JobManager via <code>POST /jars/upload</code>, then immediately attempts <code>ADD JAR</code> in the current Gateway session. If ADD JAR succeeds, the JAR path is pre-filled in the Register tab's Step 1 input and the step 1 badge turns green. If ADD JAR fails (separate containers), the Upload tab shows exact <code>docker cp</code> and shared volume instructions.</p>
+
+      <h4>📚 Library tab</h4>
+      <p>Click <strong>⟳ Refresh</strong> to run <code>SHOW FUNCTIONS</code>, <code>SHOW USER FUNCTIONS</code>, and <code>SHOW VIEWS</code> in parallel. Three sections: <strong style="color:var(--accent);">◫ Session Views</strong>, <strong style="color:var(--blue);">⨍ User UDFs</strong>, <strong style="color:var(--text2);">⨍ Built-in Functions</strong>. Click any item to insert it at cursor.</p>
+
+      <h4>⬡ Maven / Gradle tab</h4>
+      <p>Generates a complete <code>pom.xml</code> or <code>build.gradle</code> with correct <code>provided</code>/<code>compileOnly</code> Flink dependency scopes. Fill in Group ID, Artifact ID, Flink version, Java version, and extra dependencies. Preview updates live.</p>
+
+      <h4>◫ View Builder tab</h4>
+      <p>The replacement for the removed <code>LANGUAGE SQL</code> approach. Three modes:</p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Object</th><th>How to create</th><th>Where it appears</th><th>How to use</th></tr></thead>
+          <thead><tr><th>Mode</th><th>Generates</th><th>Use case</th></tr></thead>
           <tbody>
-          <tr><td><strong>View</strong></td><td><code>CREATE TEMPORARY VIEW name AS SELECT …</code></td><td><code>SHOW VIEWS</code> · Library "◫ Session Views" (teal)</td><td><code>SELECT * FROM name</code> — queryable like a table</td></tr>
-          <tr><td><strong>JAR UDF</strong></td><td><code>CREATE FUNCTION name AS 'com.…' LANGUAGE JAVA</code></td><td><code>SHOW USER FUNCTIONS</code> · Library "⨍ User-Defined" (blue)</td><td><code>SELECT name(col) FROM …</code> — callable in expressions</td></tr>
-          <tr><td><strong>Built-in</strong></td><td>Pre-registered by Flink</td><td><code>SHOW FUNCTIONS</code> · Library "⨍ Built-in" (grey)</td><td><code>SELECT json_value(col, '$.x') FROM …</code></td></tr>
+          <tr><td><strong>◫ Temporary View</strong></td><td><code>CREATE TEMPORARY VIEW name AS SELECT …</code></td><td>Reusable named expression. Session-scoped. Queryable like a table. Appears in Library → Views.</td></tr>
+          <tr><td><strong>ƒ Inline Expression</strong></td><td><code>CASE WHEN … END AS alias</code> snippet</td><td>Paste into any SELECT. Fill in WHEN branches, click Insert Expression.</td></tr>
+          <tr><td><strong>⊕ Computed Column</strong></td><td><code>col_name AS CASE … END</code> DDL snippet</td><td>Paste into <code>CREATE TABLE</code> column list. Column derived at read time.</td></tr>
           </tbody>
         </table>
       </div>
-      <div class="callout info">
-        <span class="callout-icon">ℹ</span>
+
+      <h4>⊞ Templates tab</h4>
+      <p>Production-ready patterns: Java scalar/table/aggregate UDFs, Python UDFs, inline SQL alternatives, computed columns, and diagnostic sequences. Each template expands inline with Copy and Insert into Editor.</p>
+
+      <!-- LANGUAGE SQL warning -->
+      <div class="callout danger" style="margin-top:16px;">
+        <span class="callout-icon">⚠</span>
         <div class="callout-body">
-          <strong>Correct Flink-native alternative to LANGUAGE SQL</strong>
-          Use <code>CREATE TEMPORARY VIEW</code> to encapsulate any SQL expression and make it reusable by name across queries.
-          Views are session-scoped, appear in <code>SHOW VIEWS</code>, and can be queried exactly like tables.
-          This is the approach Flink itself recommends — there is no <code>LANGUAGE SQL</code> in Flink.
+          <strong>LANGUAGE SQL does not exist in Flink</strong>
+          <code>FunctionLanguage.SQL</code> is not valid in any Flink release (1.15–1.20+).
+          <code>CREATE FUNCTION … LANGUAGE SQL</code> always throws <em>"Unrecognized function language string SQL"</em>.
+          The Language dropdown shows <strong>Java</strong>, <strong>Scala</strong>, and <strong>Python</strong> only.
+          For SQL-based logic, use <strong>◫ View Builder</strong> instead.
         </div>
       </div>
 
       <!-- UDF types -->
       <h3>UDF Types</h3>
       <div class="feature-grid" style="margin-top:14px;">
-        <div class="feature-card" style="border-color:rgba(0,212,170,0.3);"><span class="fci" style="color:var(--accent);">f(x)</span><h3>Scalar (UDF)</h3><p>One row in → one value out. Classification, masking, format conversion. Written in Java, Scala, or Python.</p></div>
-        <div class="feature-card" style="border-color:rgba(79,163,224,0.3);"><span class="fci" style="color:#4fa3e0;">⇶</span><h3>Table (UDTF)</h3><p>One row in → many rows out. Used with <code>CROSS JOIN LATERAL TABLE(...)</code> to explode arrays or parse delimited fields.</p></div>
-        <div class="feature-card" style="border-color:rgba(245,166,35,0.3);"><span class="fci" style="color:#f5a623;">∑</span><h3>Aggregate (UDAGG)</h3><p>Many rows in → one value out. Maintains an accumulator per group. Supports retraction for streaming tables.</p></div>
-        <div class="feature-card" style="border-color:rgba(176,109,255,0.3);"><span class="fci" style="color:#b06dff;">⇄</span><h3>Async Table</h3><p>Non-blocking external enrichment. Issues many concurrent requests without blocking the pipeline.</p></div>
+        <div class="feature-card" style="border-color:rgba(0,212,170,0.3);"><span class="fci" style="color:var(--accent);">f(x)</span><h3>Scalar (UDF)</h3><p>One row in → one value out. Classification, masking, format conversion. <code>extends ScalarFunction</code>.</p></div>
+        <div class="feature-card" style="border-color:rgba(79,163,224,0.3);"><span class="fci" style="color:#4fa3e0;">⇶</span><h3>Table (UDTF)</h3><p>One row in → many rows out. Used with <code>CROSS JOIN LATERAL TABLE(...)</code>. <code>extends TableFunction</code>.</p></div>
+        <div class="feature-card" style="border-color:rgba(245,166,35,0.3);"><span class="fci" style="color:#f5a623;">∑</span><h3>Aggregate (UDAGG)</h3><p>Many rows in → one value out. Maintains an accumulator per group. Supports retraction. <code>extends AggregateFunction</code>.</p></div>
+        <div class="feature-card" style="border-color:rgba(176,109,255,0.3);"><span class="fci" style="color:#b06dff;">◫</span><h3>SQL View</h3><p>Pure SQL — no JAR, no classpath. Reusable named SELECT. Appears in SHOW VIEWS and the Library. Session-scoped.</p></div>
       </div>
 
-      <!-- Tab reference -->
-      <h3>Tab Reference</h3>
-
-      <h4>📚 Library tab</h4>
-      <p>Click <strong>⟳ Refresh</strong> to run <code>SHOW FUNCTIONS</code>, <code>SHOW USER FUNCTIONS</code>, and <code>SHOW VIEWS</code> in parallel. Results appear in three sections:</p>
-      <ul class="doc-ul">
-        <li><strong style="color:var(--accent);">◫ Session Views</strong> (teal) — views from <code>SHOW VIEWS</code>. Click to insert <code>SELECT * FROM viewname</code>.</li>
-        <li><strong style="color:var(--blue);">⨍ User-Defined Functions</strong> (blue) — JAR functions from <code>SHOW USER FUNCTIONS</code>. Click to insert <code>name()</code> at cursor.</li>
-        <li><strong style="color:var(--text2);">⨍ Built-in Functions</strong> (grey) — all Flink built-ins. Search and filter across all three sections simultaneously.</li>
-      </ul>
-
-      <h4>⬆ Upload JAR tab</h4>
-      <p>Uploads your JAR to the Flink JobManager via <code>POST /jars/upload</code>. The JobManager REST URL section shows the Full URL Override and Port (auto) inputs on a single aligned row. Live progress bar tracks the upload. JARs on the cluster list with <strong>Use →</strong> and <strong>Delete</strong> buttons.</p>
-      <div class="callout warn">
-        <span class="callout-icon">⚠</span>
-        <div class="callout-body"><strong>Port 8081 vs 8083</strong> The JobManager REST API (port 8081, JAR uploads) is separate from the SQL Gateway (port 8083, SQL execution). Ensure <code>/jobmanager-api/</code> is proxied in your nginx config.</div>
-      </div>
-
-      <h4>⬡ Maven / Gradle tab</h4>
-      <p>Generates a complete <code>pom.xml</code> or <code>build.gradle</code> for your UDF project. Fill in Group ID, Artifact ID, Flink version, Java version, and any extra dependencies. Preview updates live. Copy button included.</p>
-
-      <h4>＋ Register UDF tab</h4>
-      <p>Registers a compiled function from a JAR or Python module. Language dropdown: <strong>Java, Scala, Python only</strong> (no SQL). Registration errors are now human-readable:</p>
-      <ul class="doc-ul">
-        <li><code>ClassNotFoundException</code> → "Class not found: … — Upload the JAR first via ⬆ Upload JAR."</li>
-        <li><code>VALIDATION ERROR</code> → the relevant validation line, not the full stack trace.</li>
-        <li><code>FunctionLanguage</code> error → "Invalid LANGUAGE value. Flink only supports JAVA, SCALA, PYTHON."</li>
-      </ul>
-
-      <h4>◫ View Builder tab</h4>
-      <p>The correct replacement for the removed <code>LANGUAGE SQL</code> approach. Three modes:</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Mode</th><th>Generates</th><th>Use case</th></tr></thead>
-          <tbody>
-          <tr><td><strong>◫ Temporary View</strong></td><td><code>CREATE TEMPORARY VIEW name AS SELECT …</code></td><td>Reusable named expression. Session-scoped. Queryable like a table. Appears in Library → Views.</td></tr>
-          <tr><td><strong>ƒ Inline Expression</strong></td><td><code>CASE WHEN … END AS alias</code> snippet</td><td>Paste into any SELECT. Fill in WHEN branches one per line, click Insert Expression.</td></tr>
-          <tr><td><strong>⊕ Computed Column</strong></td><td><code>col_name AS CASE … END</code> DDL snippet</td><td>Paste into <code>CREATE TABLE</code> column list. Column derived at read time. Previously showed false "Fill in form" error — now fixed.</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <h4>⊞ Templates tab</h4>
-      <p>Production-ready patterns: Java scalar/table/aggregate UDFs, Python UDFs, inline SQL alternatives, computed columns, and lifecycle/utility snippets. Each template expands inline with Copy and Insert into Editor.</p>
-
-      <!-- Workflow -->
+      <!-- Complete JAR workflow -->
       <h3>Complete JAR UDF Workflow</h3>
       <div class="workflow-steps">
-        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">1</div><div><strong>Write the class</strong> — extend <code>ScalarFunction</code>, <code>TableFunction</code>, or <code>AggregateFunction</code>. See Templates for complete skeletons.</div></div>
-        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">2</div><div><strong>Generate build config</strong> — open ⬡ Maven / Gradle, fill in your details, copy the generated config.</div></div>
-        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">3</div><div><strong>Build</strong> — <code>mvn clean package -DskipTests</code> → <code>target/artifact-shaded.jar</code></div></div>
-        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">4</div><div><strong>Upload</strong> — open ⬆ Upload JAR, drag the shaded JAR, click Upload. Live progress bar. No SSH.</div></div>
-        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">5</div><div><strong>Register</strong> — open ＋ Register UDF, fill in name and class path, Language = Java (not SQL), click ⚡ Execute Registration.</div></div>
-        <div class="workflow-step"><div class="workflow-num" style="background:var(--accent);">6</div><div><strong>Use in SQL</strong> — Library → ⟳ Refresh → click function to auto-insert at cursor. Write your pipeline.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">1</div><div><strong>Write the class</strong> — extend <code>ScalarFunction</code>, implement <code>eval()</code>. See ⊞ Templates for complete skeletons.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">2</div><div><strong>Generate build config</strong> — ⬡ Maven/Gradle tab → fill in Group ID, Artifact ID, Flink version → copy the generated <code>pom.xml</code> or <code>build.gradle</code>.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">3</div><div><strong>Build shaded JAR</strong> — <code>mvn clean package -DskipTests</code> → outputs <code>target/artifact-shaded.jar</code>. Must NOT bundle Flink core jars (use <code>provided</code> scope).</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">4</div><div><strong>Upload JAR</strong> — <strong>⬆ Upload JAR tab</strong> → drag the shaded JAR → click Upload. Studio runs <code>ADD JAR</code> automatically. Watch the result panel — if it shows green, the JAR is on the classpath and you can skip Step 1 in the wizard.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">5</div><div><strong>Confirm classpath</strong> — <strong>＋ Register UDF tab → Step 1</strong> → click ⟳ SHOW JARS. If your JAR is listed, proceed. If not, enter the path and click ADD JAR. See the expandable troubleshooting panel for the separate-container case.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--yellow);">6</div><div><strong>Register</strong> — <strong>Step 2</strong>: fill function name (e.g. <code>enrich_severity</code>), class path (e.g. <code>com.streamsstudio.udf.AlertSeverityEnricher</code>), Language = Java. <strong>Step 3</strong>: click ⚡ Register Function.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--accent);">7</div><div><strong>Use in SQL</strong> — Library → ⟳ Refresh → click function name to auto-insert at cursor. <code>SELECT enrich_severity(risk_score) FROM events;</code>. ⚠ <code>ADD JAR</code> is session-scoped. You must re-run it every new session before calling the function.</div></div>
       </div>
 
-      <!-- Demo table -->
-      <h3 style="margin-top:28px;" id="udf-demo">Demo — UDF Manager + Colour Describe (v2)</h3>
-      <p>Load <strong>strlab-udf-colour-demo.sql</strong> to test all v2 fixes in a real fraud-detection scenario.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Tab</th><th>Content</th><th>Fixes verified</th></tr></thead>
-          <tbody>
-          <tr><td><strong>Tab 1</strong> — Setup</td><td>Session config: runtime mode, checkpointing, mini-batch</td><td>—</td></tr>
-          <tr><td><strong>Tab 2</strong> — Register UDFs</td><td><code>SHOW FUNCTIONS</code> row count test. Inline CASE expressions used throughout</td><td>SHOW FUNCTIONS fix</td></tr>
-          <tr><td><strong>Tab 3</strong> — Tables &amp; Views</td><td><code>raw_transactions</code> datagen source, <code>fraud_scored</code> view (Temporary View mode), <code>fraud_events_computed</code> (Computed Column DDL)</td><td>View Builder Temporary View, Computed Column fix</td></tr>
-          <tr><td><strong>Tab 4</strong> — Verify</td><td><code>SHOW FUNCTIONS</code>, <code>SHOW VIEWS</code>, Library search tests, query both views</td><td>Library Views section, search fix</td></tr>
-          <tr><td><strong>Tab 5</strong> — splitSQL Test</td><td>Multi-statement block with line + block comments. Register UDF friendly error demo</td><td>splitSQL fix, friendly error messages</td></tr>
-          <tr><td><strong>Tab 6</strong> — Pipeline (Kafka)</td><td>Risk enrichment INSERT from <code>fraud_scored</code> view + TUMBLE fraud KPI window</td><td>—</td></tr>
-          <tr><td><strong>Tab 7</strong> — Live Monitor</td><td>Full inline CASE SELECT — detailed Colour Describe step-by-step instructions with 5 rules</td><td>Colour Describe modal flow</td></tr>
-          </tbody>
-        </table>
+      <!-- Complete View workflow -->
+      <h3>Complete SQL View Workflow</h3>
+      <div class="workflow-steps">
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--accent);">1</div><div><strong>Open View Builder</strong> — <strong>◫ View Builder tab</strong> in UDF Manager. Select <strong>◫ View</strong> mode.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--accent);">2</div><div><strong>Fill in the form</strong> — View Name (e.g. <code>signals_enriched</code>), Source Table (e.g. <code>tower_telemetry</code>), Computed Columns (e.g. <code>quality AS CASE WHEN rssi &gt; -70 THEN 'EXCELLENT' ELSE 'POOR' END</code>), optional WHERE clause.</div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--accent);">3</div><div><strong>Create</strong> — click <strong>⚡ Create View</strong>. The view is created in the current session. You can now query it: <code>SELECT * FROM signals_enriched;</code></div></div>
+        <div class="workflow-step"><div class="workflow-num" style="background:var(--accent);">4</div><div><strong>Verify</strong> — Library tab → ⟳ Refresh → your view appears in the <strong style="color:var(--accent);">◫ Session Views</strong> section. Click it to insert a SELECT query into the editor.</div></div>
       </div>
     </section>
 
-    <!-- ══════════════════════════ COLOUR DESCRIBE (NEW) ══════════════════ -->
+    <!-- UDF DEMO -->
+    <section class="doc-section" id="udf-demo">
+      <h2><span class="si">🧪</span>UDF Demo — AlertSeverityEnricher + Signal Quality View <span class="new-badge">v1.2.0</span></h2>
+      <p>
+        A complete walkthrough demo using the telecom network monitoring dataset. Demonstrates both UDF paths:
+        <strong>Path A</strong> registers <code>AlertSeverityEnricher</code> as a Java JAR UDF, and
+        <strong>Path B</strong> creates a <code>signals_enriched</code> SQL view — both applied to a live
+        datagen stream of tower telemetry. Copy each tab into Str:::lab Studio and run in order.
+      </p>
+
+      <div class="callout tip">
+        <span class="callout-icon">⨍</span>
+        <div class="callout-body">
+          <strong>How to use this demo</strong>
+          Create 7 tabs in Str:::lab Studio. Copy each block below into the corresponding tab. Run Tab 1 first, then Tab 2 (CREATE TABLE). For the JAR UDF path (Tabs 3–4), you need a compiled JAR — if you don't have one yet, skip to Tab 5 and use the pure SQL view path instead, which works with zero setup.
+        </div>
+      </div>
+
+      <div class="tab-group">
+        <div class="tab-nav">
+          <button class="tab-btn active" onclick="switchTab(this,'udf-tab1')">Tab 1 — Setup</button>
+          <button class="tab-btn" onclick="switchTab(this,'udf-tab2')">Tab 2 — Tables</button>
+          <button class="tab-btn" onclick="switchTab(this,'udf-tab3')">Tab 3 — JAR UDF</button>
+          <button class="tab-btn" onclick="switchTab(this,'udf-tab4')">Tab 4 — Use JAR UDF</button>
+          <button class="tab-btn" onclick="switchTab(this,'udf-tab5')">Tab 5 — SQL View</button>
+          <button class="tab-btn" onclick="switchTab(this,'udf-tab6')">Tab 6 — Use View</button>
+          <button class="tab-btn" onclick="switchTab(this,'udf-tab7')">Tab 7 — Verify All</button>
+        </div>
+
+        <div id="udf-tab1" class="tab-pane active">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:6px;">Session configuration. Run all statements together.</p>
+          <pre><code>-- ── Tab 1: Setup ────────────────────────────────────────────────────────────
+USE CATALOG default_catalog;
+USE `default`;
+
+SET 'execution.runtime-mode'               = 'streaming';
+SET 'parallelism.default'                  = '2';
+SET 'table.exec.mini-batch.enabled'        = 'true';
+SET 'table.exec.mini-batch.allow-latency'  = '500 ms';
+SET 'table.exec.mini-batch.size'           = '500';
+SET 'table.exec.state.ttl'                 = '3600000';
+SET 'table.exec.source.idle-timeout'       = '15000';</code></pre>
+        </div>
+
+        <div id="udf-tab2" class="tab-pane">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:6px;">Register the tower telemetry source table. Run once per session.</p>
+          <pre><code>-- ── Tab 2: Source table ─────────────────────────────────────────────────────
+CREATE TEMPORARY TABLE tower_telemetry (
+    event_id           VARCHAR,
+    tower_id           INT,
+    tower_raw_status   INT,   -- 0=ACTIVE 1=DEGRADED 2=MAINTENANCE 3=CONGESTED 4=OFFLINE
+    rssi_raw           DOUBLE, -- Signal strength: -120 (weak) to -40 (strong) dBm
+    sinr_raw           DOUBLE, -- Signal quality: 0 (poor) to 30 (excellent) dB
+    latency_ms         INT,    -- Round-trip latency in ms
+    packet_loss_pct    DOUBLE, -- Packet loss 0–15%
+    active_subscribers INT,
+    event_ts           TIMESTAMP(3),
+    WATERMARK FOR event_ts AS event_ts - INTERVAL '5' SECOND
+) WITH (
+    'connector'                      = 'datagen',
+    'rows-per-second'                = '50',
+    'fields.tower_id.min'            = '1',
+    'fields.tower_id.max'            = '200',
+    'fields.tower_raw_status.min'    = '0',
+    'fields.tower_raw_status.max'    = '4',
+    'fields.rssi_raw.min'            = '-120.0',
+    'fields.rssi_raw.max'            = '-40.0',
+    'fields.sinr_raw.min'            = '0.0',
+    'fields.sinr_raw.max'            = '30.0',
+    'fields.latency_ms.min'          = '5',
+    'fields.latency_ms.max'          = '350',
+    'fields.packet_loss_pct.min'     = '0.0',
+    'fields.packet_loss_pct.max'     = '15.0',
+    'fields.active_subscribers.min'  = '0',
+    'fields.active_subscribers.max'  = '2000'
+);
+
+-- Quick verify: should return 5 rows
+SELECT tower_id, rssi_raw, sinr_raw, latency_ms, packet_loss_pct FROM tower_telemetry LIMIT 5;</code></pre>
+        </div>
+
+        <div id="udf-tab3" class="tab-pane">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:6px;"><strong>PATH A — JAR UDF.</strong> Follow these steps exactly in the UDF Manager before running the SQL below.</p>
+
+          <div class="callout info" style="margin-bottom:12px;">
+            <span class="callout-icon">📦</span>
+            <div class="callout-body">
+              <strong>Do this first in the UDF Manager (before running any SQL in this tab)</strong>
+              <ol style="margin:6px 0 0 18px;font-size:13px;line-height:2;">
+                <li>Build your JAR: <code>mvn clean package -DskipTests</code> (see ⬡ Maven/Gradle tab for the pom.xml)</li>
+                <li>Open <strong>⬆ Upload JAR</strong> tab → drag <code>streams-studio-udf-shaded.jar</code> → click Upload</li>
+                <li>Watch the ADD JAR result panel. If it shows green → jump to step 5. If yellow → continue to step 4.</li>
+                <li>Open <strong>＋ Register UDF → Step 1</strong> → click ⟳ SHOW JARS. If empty, enter the path and click ADD JAR. Use the expandable troubleshooting section if the Gateway can't see the path.</li>
+                <li>Once Step 1 badge is green, run the SQL below.</li>
+              </ol>
+            </div>
+          </div>
+
+          <pre><code>-- ── Tab 3: Register JAR UDF ─────────────────────────────────────────────────
+-- This SQL is ONLY needed if you want to run it manually in the editor.
+-- The ＋ Register UDF wizard does this for you with classpath checking built-in.
+
+-- Step 1: Verify JAR is on classpath (should list your JAR after uploading)
+SHOW JARS;
+
+-- Step 2: Register the function (run ONLY after SHOW JARS returns your JAR)
+CREATE TEMPORARY FUNCTION IF NOT EXISTS enrich_severity
+AS 'com.streamsstudio.udf.AlertSeverityEnricher'
+LANGUAGE JAVA;
+
+-- Step 3: Verify registration
+SHOW USER FUNCTIONS;
+
+-- ── Java class reference ─────────────────────────────────────────────────────
+-- package com.streamsstudio.udf;
+-- import org.apache.flink.table.functions.ScalarFunction;
+--
+-- public class AlertSeverityEnricher extends ScalarFunction {
+--     public String eval(Double score) {
+--         if (score == null) return "UNKNOWN";
+--         if (score >= 0.80) return "CRITICAL";
+--         if (score >= 0.55) return "HIGH";
+--         if (score >= 0.30) return "MEDIUM";
+--         return "LOW";
+--     }
+-- }</code></pre>
+        </div>
+
+        <div id="udf-tab4" class="tab-pane">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:6px;"><strong>PATH A continued.</strong> Use the registered JAR UDF in a query. Requires Tab 3 to have completed successfully.</p>
+          <pre><code>-- ── Tab 4: Use JAR UDF in a query ───────────────────────────────────────────
+-- Calls enrich_severity() to classify towers by signal degradation score.
+-- The UDF takes a normalised 0.0–1.0 score (derived from packet_loss_pct).
+
+SELECT
+    event_id,
+    tower_id,
+    CASE tower_raw_status
+        WHEN 0 THEN 'ACTIVE' WHEN 1 THEN 'DEGRADED'
+        WHEN 2 THEN 'MAINTENANCE' WHEN 3 THEN 'CONGESTED'
+        ELSE 'OFFLINE'
+    END                                             AS tower_status,
+    ROUND(rssi_raw, 1)                              AS rssi_dbm,
+    ROUND(packet_loss_pct, 2)                       AS packet_loss_pct,
+    -- Call the Java UDF: normalise packet_loss_pct to 0.0–1.0 range
+    enrich_severity(packet_loss_pct / 15.0)         AS alert_severity,
+    active_subscribers,
+    event_ts
+FROM tower_telemetry
+LIMIT 20;
+
+-- ── Expected output ──────────────────────────────────────────────────────────
+-- alert_severity = CRITICAL when packet_loss_pct > 12.0  (>= 80% of 15)
+-- alert_severity = HIGH     when packet_loss_pct >  8.25 (>= 55%)
+-- alert_severity = MEDIUM   when packet_loss_pct >  4.5  (>= 30%)
+-- alert_severity = LOW      otherwise
+
+-- ── Troubleshooting ──────────────────────────────────────────────────────────
+-- If you see: "Could not find function 'enrich_severity'"
+--   → The function was not registered. Go back to Tab 3.
+-- If you see ClassNotFoundException or Python error
+--   → ADD JAR was not run. Go to Register UDF → Step 1 → ADD JAR.</code></pre>
+        </div>
+
+        <div id="udf-tab5" class="tab-pane">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:6px;"><strong>PATH B — SQL View.</strong> No JAR required. Creates the same enrichment logic as a reusable temporary view. Works immediately after Tab 2.</p>
+
+          <div class="callout tip" style="margin-bottom:12px;">
+            <span class="callout-icon">◫</span>
+            <div class="callout-body">
+              <strong>You can also create this view using the View Builder tab in UDF Manager</strong>
+              Open <strong>◫ View Builder</strong>, select <strong>◫ View</strong> mode, set View Name = <code>signals_enriched</code>, Source Table = <code>tower_telemetry</code>, add the computed columns below, click ⚡ Create View. The SQL below is exactly what the View Builder generates.
+            </div>
+          </div>
+
+          <pre><code>-- ── Tab 5: Create SQL View (no JAR needed) ──────────────────────────────────
+-- This view encapsulates the same enrichment logic as AlertSeverityEnricher
+-- but uses pure Flink SQL — no compilation, no upload, no classpath required.
+
+CREATE TEMPORARY VIEW signals_enriched AS
+SELECT
+    event_id,
+    tower_id,
+    -- Decode numeric status to human-readable string
+    CASE tower_raw_status
+        WHEN 0 THEN 'ACTIVE'
+        WHEN 1 THEN 'DEGRADED'
+        WHEN 2 THEN 'MAINTENANCE'
+        WHEN 3 THEN 'CONGESTED'
+        ELSE 'OFFLINE'
+    END                                             AS tower_status,
+    ROUND(rssi_raw, 1)                              AS rssi_dbm,
+    ROUND(sinr_raw, 1)                              AS sinr_db,
+    latency_ms,
+    ROUND(packet_loss_pct, 2)                       AS packet_loss_pct,
+    active_subscribers,
+    -- Signal quality index — same logic as AlertSeverityEnricher
+    CASE
+        WHEN rssi_raw > -70 AND sinr_raw > 20 AND packet_loss_pct < 1  THEN 'EXCELLENT'
+        WHEN rssi_raw > -85 AND sinr_raw > 10 AND packet_loss_pct < 3  THEN 'GOOD'
+        WHEN rssi_raw > -100 AND sinr_raw > 5 AND packet_loss_pct < 8  THEN 'FAIR'
+        ELSE 'POOR'
+    END                                             AS signal_quality,
+    -- Alert severity — exactly matches AlertSeverityEnricher.eval() logic
+    CASE
+        WHEN packet_loss_pct / 15.0 >= 0.80 THEN 'CRITICAL'
+        WHEN packet_loss_pct / 15.0 >= 0.55 THEN 'HIGH'
+        WHEN packet_loss_pct / 15.0 >= 0.30 THEN 'MEDIUM'
+        ELSE 'LOW'
+    END                                             AS alert_severity,
+    -- SLA classification
+    CASE
+        WHEN latency_ms < 20  AND packet_loss_pct < 0.5 THEN 'GOLD'
+        WHEN latency_ms < 50  AND packet_loss_pct < 1.0 THEN 'SILVER'
+        WHEN latency_ms < 100 AND packet_loss_pct < 3.0 THEN 'BRONZE'
+        ELSE 'BREACHED'
+    END                                             AS sla_class,
+    event_ts
+FROM tower_telemetry;
+
+-- Verify: view is now registered in this session
+SHOW VIEWS;</code></pre>
+        </div>
+
+        <div id="udf-tab6" class="tab-pane">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:6px;"><strong>PATH B continued.</strong> Query the view — it behaves exactly like a table.</p>
+          <pre><code>-- ── Tab 6: Query the SQL View ────────────────────────────────────────────────
+-- The view is queried just like any table.
+-- No function call syntax needed — enrichment is baked in.
+
+-- Live stream: all enriched tower events
+SELECT
+    tower_id,
+    tower_status,
+    rssi_dbm,
+    latency_ms,
+    packet_loss_pct,
+    signal_quality,
+    alert_severity,
+    sla_class,
+    event_ts
+FROM signals_enriched
+LIMIT 30;
+
+-- Filter: critical and high alerts only (equivalent to JAR UDF output in Tab 4)
+SELECT
+    tower_id,
+    tower_status,
+    packet_loss_pct,
+    alert_severity,
+    sla_class,
+    event_ts
+FROM signals_enriched
+WHERE alert_severity IN ('CRITICAL', 'HIGH')
+LIMIT 20;
+
+-- Aggregation: alert count by severity (no window — batch-style count on LIMIT)
+SELECT alert_severity, COUNT(*) AS cnt
+FROM signals_enriched
+GROUP BY alert_severity
+LIMIT 100;
+
+-- ── Tip ──────────────────────────────────────────────────────────────────────
+-- Use 🎨 Colour Describe on the results of the first query above.
+-- Set rules: alert_severity == CRITICAL → Red background
+--            alert_severity == HIGH → Amber border
+--            sla_class == BREACHED → Purple background
+--            signal_quality == POOR → Orange text</code></pre>
+        </div>
+
+        <div id="udf-tab7" class="tab-pane">
+          <p style="font-size:13px;color:var(--text2);margin-bottom:6px;">Verify everything is registered correctly. Run after both paths.</p>
+          <pre><code>-- ── Tab 7: Verify all UDF and view registrations ───────────────────────────
+
+-- 1. What JARs are on the session classpath?
+--    Should list your JAR if Path A was used.
+--    If empty → ADD JAR was not run → enrich_severity() calls will fail.
+SHOW JARS;
+
+-- 2. What user-defined functions are registered?
+--    Should include 'enrich_severity' if Tab 3 was completed.
+SHOW USER FUNCTIONS;
+
+-- 3. What views are registered?
+--    Should include 'signals_enriched' if Tab 5 was completed.
+SHOW VIEWS;
+
+-- 4. Side-by-side comparison: JAR UDF output vs SQL View output
+--    Both should produce identical alert_severity values.
+
+-- Path A (JAR UDF):
+SELECT tower_id, packet_loss_pct,
+    enrich_severity(packet_loss_pct / 15.0)   AS severity_from_jar
+FROM tower_telemetry LIMIT 10;
+
+-- Path B (SQL View):
+SELECT tower_id, packet_loss_pct,
+    alert_severity                             AS severity_from_view
+FROM signals_enriched LIMIT 10;
+
+-- 5. Drop and re-register if something went wrong:
+-- DROP TEMPORARY FUNCTION IF EXISTS enrich_severity;
+-- DROP TEMPORARY VIEW IF EXISTS signals_enriched;
+-- Then re-run Tabs 3 and 5.</code></pre>
+        </div>
+      </div>
+
+      <h3>UDF Demo — Architecture</h3>
+      <div class="mermaid-wrap">
+        <div class="mermaid">
+          flowchart LR
+          DG["⚙️ datagen\ntower_telemetry\n50 events/s"]
+          PA["Path A\nJAR UDF\nenrich_severity()"]
+          PB["Path B\nSQL View\nsignals_enriched"]
+          R1["Tab 4\nSELECT with\nUDF call"]
+          R2["Tab 6\nSELECT from\nview"]
+          VF["Tab 7\nVerify:\nSHOW JARS\nSHOW USER FUNCTIONS\nSHOW VIEWS"]
+
+          DG-->PA
+          DG-->PB
+          PA-->R1
+          PB-->R2
+          R1-->VF
+          R2-->VF
+
+          style DG fill:#1a2130,stroke:#9b72cf,color:#f0f6fc
+          style PA fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+          style PB fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style R1 fill:#1a2130,stroke:#4fa3e0,color:#f0f6fc
+          style R2 fill:#1a2130,stroke:#00d4aa,color:#f0f6fc
+          style VF fill:#1a2130,stroke:#f0a500,color:#f0f6fc
+        </div>
+      </div>
+
+      <h3>Demo tab summary</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tab</th><th>Content</th><th>Path</th><th>Requires</th></tr></thead>
+          <tbody>
+          <tr><td><strong>Tab 1</strong> — Setup</td><td>SET statements — runtime mode, mini-batch, state TTL</td><td>Both</td><td>—</td></tr>
+          <tr><td><strong>Tab 2</strong> — Tables</td><td><code>tower_telemetry</code> datagen source + LIMIT 5 verify</td><td>Both</td><td>Tab 1</td></tr>
+          <tr><td><strong>Tab 3</strong> — JAR UDF</td><td>Upload JAR → ADD JAR instructions → SHOW JARS → CREATE FUNCTION</td><td>Path A</td><td>Compiled JAR + Upload</td></tr>
+          <tr><td><strong>Tab 4</strong> — Use JAR UDF</td><td>SELECT with <code>enrich_severity()</code> call — live stream</td><td>Path A</td><td>Tab 3 complete</td></tr>
+          <tr><td><strong>Tab 5</strong> — SQL View</td><td>CREATE TEMPORARY VIEW signals_enriched — full enrichment in SQL</td><td>Path B</td><td>Tab 2 only</td></tr>
+          <tr><td><strong>Tab 6</strong> — Use View</td><td>SELECT from view, filter, aggregate — Colour Describe instructions</td><td>Path B</td><td>Tab 5 complete</td></tr>
+          <tr><td><strong>Tab 7</strong> — Verify</td><td>SHOW JARS · SHOW USER FUNCTIONS · SHOW VIEWS · side-by-side comparison</td><td>Both</td><td>Either path done</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">🎨</span>
+        <div class="callout-body">
+          <strong>Add Colour Describe to Tab 6</strong>
+          After running the first SELECT in Tab 6, click <strong>🎨 Colour Describe</strong> in the Results toolbar.
+          Add these rules: <code>alert_severity == CRITICAL</code> → Red background,
+          <code>alert_severity == HIGH</code> → Amber border,
+          <code>sla_class == BREACHED</code> → Purple background,
+          <code>signal_quality == POOR</code> → Orange text.
+          Click ⚡ Apply &amp; Activate. Every matching row highlights instantly as new events stream in.
+        </div>
+      </div>
+    </section>
+
+    <!-- COLOUR DESCRIBE -->
     <section class="doc-section" id="colour-describe">
       <h2><span class="si">🎨</span>Colour Describe <span class="new-badge">New — v1.0.23</span></h2>
-      <p>
-        Colour Describe lets you visually highlight result rows in real time based on user-defined field
-        conditions — as rows stream in from a live Flink query. Rules are fully configurable: pick any
-        column, any operator, any value, and any color. Every matching row is highlighted immediately
-        and continues to be highlighted as new rows arrive.
-      </p>
+      <p>Colour Describe lets you visually highlight result rows in real time based on user-defined field conditions — as rows stream in from a live Flink query.</p>
 
       <div class="callout tip">
         <span class="callout-icon">🎨</span>
@@ -1005,239 +1281,107 @@ spec:
       </div>
 
       <h3>Activating Colour Describe</h3>
-      <p>
-        Click <strong>🎨 Colour Describe</strong> in the Results toolbar. This opens a configuration
-        modal — it does <em>not</em> immediately apply any colours. You must configure at least one rule
-        and click <strong>⚡ Apply &amp; Activate</strong> before any highlighting occurs.
-        When active, the button reads <strong>🎨 Colour Describe ●</strong>. Clicking it again (or clicking
-        <strong>✕ Turn off</strong> in the legend below the table) clears all highlighting instantly and
-        restores default row styling.
-      </p>
+      <p>Click <strong>🎨 Colour Describe</strong> in the Results toolbar. This opens a configuration modal. You must configure at least one rule and click <strong>⚡ Apply &amp; Activate</strong> before any highlighting occurs. When active, the button reads <strong>🎨 Colour Describe ●</strong>.</p>
 
       <h3>Modal workflow</h3>
       <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-body">
-            <h4>Select a query slot</h4>
-            <p>
-              A dropdown lists all active result slots — live streaming queries and completed queries with rows.
-              Each entry shows the query label, live/done status (🔴 LIVE or ⬜ done), and row count.
-              Select the slot you want to apply highlighting to. All column names of that slot auto-populate the Field dropdown.
-            </p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-body">
-            <h4>Build a rule</h4>
-            <p>Fill in the four parts of a rule:</p>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Part</th><th>Options</th></tr></thead>
-                <tbody>
-                <tr><td><strong>Field</strong></td><td>Any column name from the selected query slot</td></tr>
-                <tr><td><strong>Operator</strong></td><td><code>==</code> <code>!=</code> <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code> <code>contains</code> <code>starts</code> <code>ends</code> <code>regex</code></td></tr>
-                <tr><td><strong>Value</strong></td><td>String or numeric. Numeric operators auto-detect when both sides parse as numbers.</td></tr>
-                <tr><td><strong>Label</strong></td><td>Short description shown in the legend (e.g. "CRITICAL risk")</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-body">
-            <h4>Pick a color</h4>
-            <p>
-              Eight preset swatches cover the most common semantic meanings: red (critical), amber (warning),
-              yellow (caution), teal (ok), blue (info), purple (notice), green (success), orange (highlight).
-              A custom color picker and live hex preview let you choose any color.
-            </p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">4</div>
-          <div class="step-body">
-            <h4>Choose a style mode</h4>
-            <ul class="doc-ul">
-              <li><strong>Row background</strong> — fills the entire row with a translucent tint of the chosen color.</li>
-              <li><strong>Left border accent</strong> — adds a 4px solid left border in the chosen color, with a lighter background tint.</li>
-              <li><strong>Text color</strong> — changes all text in the row to the chosen color.</li>
-            </ul>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">5</div>
-          <div class="step-body">
-            <h4>Add, reorder, delete rules</h4>
-            <p>
-              Click <strong>＋ Add Rule</strong> to add to the list. Rules are evaluated <strong>top-to-bottom — first match wins</strong> per row.
-              Use the ↑↓ buttons to reorder. Click × to delete. There is no limit on the number of rules.
-            </p>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-num">6</div>
-          <div class="step-body">
-            <h4>Apply &amp; Activate</h4>
-            <p>
-              Click <strong>⚡ Apply &amp; Activate</strong>. All existing rows in the selected slot are immediately
-              re-coloured. New rows are coloured as they stream in. A colour legend appears below the result table
-              showing each rule's colour dot and label. The legend includes a <strong>✕ Turn off</strong> button.
-            </p>
-          </div>
-        </div>
+        <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Select a query slot</h4><p>A dropdown lists all active result slots. Select the slot to apply highlighting to. All column names auto-populate the Field dropdown.</p></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Build a rule</h4><p>Pick Field, Operator (<code>==</code> <code>!=</code> <code>&gt;</code> <code>&gt;=</code> <code>&lt;</code> <code>&lt;=</code> <code>contains</code> <code>starts</code> <code>ends</code> <code>regex</code>), Value, and Label.</p></div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Pick a color</h4><p>Eight semantic presets (red, amber, yellow, teal, blue, purple, green, orange) plus custom hex picker.</p></div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Choose a style mode</h4><p>Row background, Left border accent, or Text color.</p></div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-body"><h4>Add, reorder, delete rules</h4><p>Rules evaluated top-to-bottom — first match wins per row. ↑↓ to reorder. No rule limit.</p></div></div>
+        <div class="step"><div class="step-num">6</div><div class="step-body"><h4>Apply &amp; Activate</h4><p>Click <strong>⚡ Apply &amp; Activate</strong>. Existing rows re-coloured immediately. New rows coloured as they stream in. Legend appears below the table with ✕ Turn off.</p></div></div>
       </div>
 
-      <!-- Example rules -->
       <h3>Example rule set — fraud monitor</h3>
-      <p>Applied to the live fraud detection SELECT in Tab 7 of the demo file:</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>#</th><th>Field</th><th>Op</th><th>Value</th><th>Color</th><th>Style</th><th>Label</th></tr></thead>
           <tbody>
           <tr><td>1</td><td><code>risk_tier</code></td><td><code>==</code></td><td>CRITICAL</td><td style="color:#ff4d6d;">● Red</td><td>Row background</td><td>CRITICAL risk</td></tr>
           <tr><td>2</td><td><code>risk_tier</code></td><td><code>==</code></td><td>HIGH</td><td style="color:#f5a623;">● Amber</td><td>Left border accent</td><td>HIGH risk</td></tr>
-          <tr><td>3</td><td><code>amount_band</code></td><td><code>==</code></td><td>WHALE</td><td style="color:#4fa3e0;">● Blue</td><td>Text color</td><td>Whale transaction</td></tr>
-          <tr><td>4</td><td><code>sla_tier</code></td><td><code>==</code></td><td>BREACHED</td><td style="color:#b06dff;">● Purple</td><td>Row background</td><td>SLA breached</td></tr>
-          <tr><td>5</td><td><code>latency_ms</code></td><td><code>&gt;</code></td><td>500</td><td style="color:#ff9f43;">● Orange</td><td>Left border accent</td><td>High latency</td></tr>
+          <tr><td>3</td><td><code>sla_class</code></td><td><code>==</code></td><td>BREACHED</td><td style="color:#b06dff;">● Purple</td><td>Row background</td><td>SLA breached</td></tr>
+          <tr><td>4</td><td><code>latency_ms</code></td><td><code>&gt;</code></td><td>500</td><td style="color:#ff9f43;">● Orange</td><td>Left border accent</td><td>High latency</td></tr>
           </tbody>
         </table>
       </div>
-
-      <!-- Auto Colour vs Colour Describe comparison -->
-      <h3>Auto Colour vs Colour Describe</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Feature</th><th>✦ Auto Colour</th><th>🎨 Colour Describe</th></tr></thead>
-          <tbody>
-          <tr><td><strong>Rules</strong></td><td>Built-in, based on column names (status, risk_score, latency_ms, cpu, severity…)</td><td>User-defined, any field, any operator, any color</td></tr>
-          <tr><td><strong>Setup</strong></td><td>One click — toggle on/off immediately</td><td>Modal-based configuration → Apply</td></tr>
-          <tr><td><strong>Legend</strong></td><td>Fixed: Critical / Warning / Healthy / Maintenance</td><td>Dynamic: shows each rule's label and color dot</td></tr>
-          <tr><td><strong>Works with</strong></td><td>Columns matching semantic name patterns only</td><td>Any column in any query</td></tr>
-          <tr><td><strong>PDF report</strong></td><td>Always included when active</td><td>Only included when active at report generation time</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- PDF integration -->
-      <h3>PDF report integration</h3>
-      <p>
-        When Colour Describe is active and a session report is generated (Performance → Report → Generate PDF),
-        the report automatically includes a <strong>Colour Describe Rules</strong> section with:
-        rule definitions (field, operator, value, color, style mode, label) and a sample of up to
-        20 matched rows from the active slot.
-        If Colour Describe is toggled off before generating the report, this section is omitted entirely.
-      </p>
-      <div class="callout info">
-        <span class="callout-icon">ℹ</span>
-        <div class="callout-body">
-          <strong>Report status indicator</strong>
-          The report status line shows <code>🎨 Colour Describe included</code> when rules are active, so you can confirm before generating the PDF.
-        </div>
-      </div>
-
-      <!-- Developer integration -->
-      <h3>Integration point for results.js</h3>
-      <p>To enable live row highlighting in the Results table, call this function in <code>results.js</code> after each <code>&lt;tr&gt;</code> is created:</p>
-      <pre><code>// In the row rendering loop inside renderResults():
-applyColorDescribeToRow(rowEl, row.fields, state.resultColumns);</code></pre>
-      <p>Function signature:</p>
-      <pre><code>applyColorDescribeToRow(
-  rowEl:    HTMLTableRowElement,  // the &lt;tr&gt; element
-  rowData:  any[],                // cell values in column order
-  columns:  { name: string }[]    // column definitions
-)</code></pre>
-      <p>The function is a no-op when <code>window.colorDescribeActive</code> is <code>false</code>, so it is safe to call unconditionally on every row render.</p>
     </section>
 
-    <!-- ══════════════════════════ CHANGELOG ══════════════════════════════ -->
+    <!-- CHANGELOG -->
     <section class="doc-section" id="changelog">
       <h2><span class="si">📝</span>Changelog</h2>
       <div class="version-list">
 
-        <!-- v1.0.24 — NEW -->
         <div class="version-card" style="border-color:rgba(63,185,80,0.3);">
           <div class="version-header">
-            <span class="version-tag">v1.0.24</span>
+            <span class="version-tag">v1.2.0</span>
             <span class="version-date">March 2026</span>
             <span class="version-label current">current</span>
           </div>
           <ul>
-            <li><strong>Pipeline Demo — Multi-tab interactive SQL demo added</strong>: 5 tabs (Setup, Job 1: Source, Job 2: Enrich, Job 3: Aggregate, Monitor) with copy-paste ready SQL snippets for complete trading pipeline. Updated diagram shows all 3 jobs, Kafka topics, and branching topology.</li>
-            <li><strong>YouTube reference added</strong>: Link to CodedStreams channel with video walkthroughs of the demo, advanced windowing patterns, and production Kafka pipelines.</li>
-            <li><strong>Author info updated</strong>: "Nestor A. A" → "Nestor Martourez A. A" with LinkedIn (www.linkedin.com/in/nestor-abiangang/) and email (nestorabiawuh@gmail.com).</li>
+            <li><strong>udf-manager.js — ClassNotFoundException definitively fixed</strong>: Root cause confirmed from gateway logs — <code>ClassNotFoundException: com.streamsstudio.udf.AlertSeverityEnricher at FlinkUserCodeClassLoader → FunctionCatalog.validateAndPrepareFunction</code>. The JAR was never on the SQL Gateway session classpath.</li>
+            <li><strong>Register UDF tab redesigned as a 3-step guided wizard</strong>: Step 1 (SHOW JARS + ADD JAR with path chips and expandable docker cp / shared volume / HTTP fix panel), Step 2 (function details), Step 3 (pre-flight classpath re-check before CREATE FUNCTION, auto ADD JAR retry, actionable error messages). Step badges turn green/red to show state.</li>
+            <li><strong>Error messages now identify root cause directly</strong>: <code>ClassNotFoundException</code> → "JAR not on session classpath — complete Step 1 first". <code>Python error=2</code> → "Flink fell back to Python because the Java class was not found — same fix". <code>already exists</code> → "Use Drop + Re-create option". All raw stack traces replaced with one-line plain-English messages.</li>
+            <li><strong>Upload JAR tab: ADD JAR candidate path fallback chain</strong>: After upload, Studio tries the path from the upload response, then <code>/tmp/flink-web-upload/jarname.jar</code>, then <code>/opt/flink/usrlib/jarname.jar</code>. If all fail, shows exact docker cp and shared volume instructions rather than silently failing.</li>
+            <li><strong>Upload JAR tab: pre-fills Register tab Step 1</strong>: After a successful ADD JAR following upload, the JAR path and Step 1 badge are updated automatically so the engineer can proceed directly to Step 2.</li>
+            <li><strong>New UDF demo added</strong>: 7-tab walkthrough covering Path A (JAR UDF) and Path B (SQL View) on the tower telemetry datagen dataset. Includes side-by-side comparison of JAR vs View output and Colour Describe integration instructions.</li>
+            <li><strong>Documentation updated to v1.2.0</strong>: Two-path UDF section, step-by-step wizard explanation, architecture callout explaining the two-JVM separation, complete JAR and View workflow tables, inline demo.</li>
           </ul>
         </div>
 
-        <!-- v1.0.23 — PREVIOUS -->
+        <div class="version-card">
+          <div class="version-header">
+            <span class="version-tag">v1.0.24</span>
+            <span class="version-date">March 2026</span>
+          </div>
+          <ul>
+            <li><strong>Pipeline Demo — Multi-tab interactive SQL demo added</strong>: 5 tabs with complete trading pipeline. Updated diagram shows all 3 jobs, Kafka topics, and branching topology.</li>
+            <li><strong>YouTube reference added</strong>: Link to CodedStreams channel with video walkthroughs.</li>
+            <li><strong>Author info updated</strong>: "Nestor A. A" → "Nestor Martourez A. A".</li>
+          </ul>
+        </div>
+
         <div class="version-card">
           <div class="version-header">
             <span class="version-tag">v1.0.23</span>
             <span class="version-date">March 2026</span>
           </div>
           <ul>
-            <li><strong>execution.js — SHOW FUNCTIONS / SHOW VIEWS returning 0 rows fixed</strong>: <code>isStatusOk</code> false-positive in <code>pollOperation</code> now guarded by <code>isGenuineDDL</code> flag. <code>SHOW</code>, <code>SELECT</code>, <code>DESCRIBE</code>, <code>EXPLAIN</code> always render all result rows — never short-circuit.</li>
-            <li><strong>udf-manager.js — Upload JAR port label alignment fixed</strong>: URL and "Port (auto)" inputs now render on a single aligned row. Port input fixed at 90px width, <code>align-items: flex-end</code> on container.</li>
-            <li><strong>udf-manager.js — View Builder "Fill in form first" bug fixed</strong>: <code>_vbIsEmpty()</code> replaces generic <code>startsWith('--')</code> check. Computed Column Insert Expression now works correctly when the form is filled.</li>
-            <li><strong>udf-manager.js — Library: Views and UDFs now separated into distinct sections</strong>: "◫ Session Views" section (teal) sourced from <code>SHOW VIEWS</code>, separate from <code>SHOW USER FUNCTIONS</code>. <code>SHOW VIEWS</code> failure on Flink &lt; 1.18 handled gracefully. Search and type filter work across all three sections.</li>
-            <li><strong>udf-manager.js — Register UDF: friendly error messages</strong>: <code>ClassNotFoundException</code>, validation errors, and <code>FunctionLanguage</code> errors parsed into one-line human-readable messages instead of raw stack traces.</li>
-            <li><strong>LANGUAGE SQL permanently removed</strong>: <code>FunctionLanguage.SQL</code> does not exist in Flink. Removed from Register UDF dropdown. View Builder tab (◫ Temporary View / ƒ Inline Expression / ⊕ Computed Column) is the correct replacement.</li>
-            <li><strong>results-intelligence.js v4 — Colour Describe redesigned as professional modal</strong>: Clicking the button opens a modal with slot selector, field selector, 10-operator rule builder, 8-preset color swatches + custom hex picker, style mode selector (background / left border / text), reorderable rules list. Apply activates live highlighting + legend below the table. Toggle off clears all styling instantly. Report integration via <code>getColorDescribeReportData()</code>.</li>
-            <li><strong>execution.js — splitSQL block comment support added</strong>: <code>/* … */</code> block comments now stripped correctly. <code>$$</code> delimiter tracking prevents semicolons inside function bodies from splitting statements.</li>
+            <li><strong>execution.js — SHOW FUNCTIONS / SHOW VIEWS returning 0 rows fixed</strong>: <code>isGenuineDDL</code> guard prevents false-positive short-circuit in <code>pollOperation</code>.</li>
+            <li><strong>udf-manager.js — Upload JAR port label alignment fixed</strong>.</li>
+            <li><strong>udf-manager.js — View Builder false "Fill in form first" bug fixed</strong>: <code>_vbIsEmpty()</code> replaces <code>startsWith('--')</code> check.</li>
+            <li><strong>udf-manager.js — Library: Views and UDFs separated into distinct sections</strong>: "◫ Session Views" sourced from SHOW VIEWS independently. SHOW VIEWS failure on Flink &lt; 1.18 handled gracefully.</li>
+            <li><strong>LANGUAGE SQL permanently removed</strong>: Not a valid Flink FunctionLanguage. View Builder is the correct replacement.</li>
+            <li><strong>results-intelligence.js v4 — Colour Describe redesigned as professional modal</strong>: Slot selector, rule builder, 8 color presets, style mode selector, reorderable rules, live legend, PDF integration.</li>
+            <li><strong>execution.js — splitSQL block comment support added</strong>.</li>
           </ul>
         </div>
 
         <div class="version-card">
-          <div class="version-header">
-            <span class="version-tag">v1.0.22</span>
-            <span class="version-date">March 2026</span>
-          </div>
+          <div class="version-header"><span class="version-tag">v1.0.22</span><span class="version-date">March 2026</span></div>
+          <ul><li><strong>Brand rename</strong> — FlinkSQL Studio → <strong>Str:::lab Studio</strong> across all UI, docs, localStorage keys, export filenames, and Kubernetes CRDs.</li></ul>
+        </div>
+
+        <div class="version-card">
+          <div class="version-header"><span class="version-tag">v1.0.21</span><span class="version-date">March 2026</span></div>
           <ul>
-            <li><strong>Brand rename</strong> — product renamed from FlinkSQL Studio to <strong>Str:::lab Studio</strong> across all UI, docs, localStorage keys, export filenames, and Kubernetes CRDs</li>
-            <li><strong>PDF report heading fixed</strong> — <code>window.open</code> interceptor rewrites any residual brand references in the generated PDF before printing</li>
-            <li><strong>LinkedIn banner</strong> — 1200×627px SVG brand image generated for social media</li>
+            <li><strong>⬡ Project Manager</strong> — create, load, run, save, delete named projects; export/import JSON; storage tracking.</li>
+            <li><strong>JAR Upload fix</strong> — <code>application/x-java-archive</code> Content-Type; configurable JobManager URL override.</li>
+            <li><strong>Maven / Gradle tab</strong> — generates complete build files with correct provided/compileOnly scopes.</li>
           </ul>
         </div>
+
         <div class="version-card">
-          <div class="version-header">
-            <span class="version-tag">v1.0.21</span>
-            <span class="version-date">March 2026</span>
-          </div>
+          <div class="version-header"><span class="version-tag">v1.0.19</span><span class="version-date">March 2026</span></div>
           <ul>
-            <li><strong>⬡ Project Manager</strong> — create, load, run, save, and delete named Str:::lab projects; stores SQL tabs, SET config, catalog context; export/import as JSON; storage tracking</li>
-            <li><strong>JAR Upload fix</strong> — FormData sends <code>application/x-java-archive</code> Content-Type; configurable JobManager URL override field</li>
-            <li><strong>Maven / Gradle tab</strong> — generates complete <code>pom.xml</code> / <code>build.gradle</code> with correct provided/compileOnly scopes</li>
+            <li><strong>Admin Session</strong> — privileged connect mode, full cluster visibility, cancel any job, technical and business PDF reports.</li>
+            <li><strong>Duplicate submission guard</strong>, <strong>Job tagging</strong>, <strong>Tips &amp; Concepts modal</strong>.</li>
           </ul>
         </div>
+
         <div class="version-card">
-          <div class="version-header">
-            <span class="version-tag">v1.0.19</span>
-            <span class="version-date">March 2026</span>
-          </div>
-          <ul>
-            <li><strong>Admin Session</strong> — privileged connect mode with full cluster job visibility, admin badge, session activity modal, technical and business/management PDF reports</li>
-            <li><strong>Duplicate submission guard</strong> — INSERT INTO / pipeline queries blocked if same statement already running</li>
-            <li><strong>Job tagging</strong> — <code>pipeline.name</code> SET injected automatically before INSERT statements</li>
-            <li><strong>Tips &amp; Concepts modal</strong> — 16 tips across 6 categories: IDE features, Flink architecture, window types, state, connectors, performance, admin</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.18</span><span class="version-date">March 2026</span></div>
-          <ul>
-            <li><strong>Results display fixed</strong> — <code>NOT_READY</code> / <code>EOS</code> handling; Kafka SELECT rows reliably stream into Results tab</li>
-            <li><strong>Mouse wheel zoom</strong> on Job Graph (20%–300%)</li>
-            <li>Named workspace export, session isolation, Cancel Job button, full session export</li>
-          </ul>
-        </div>
-        <div class="version-card">
-          <div class="version-header"><span class="version-tag">v1.0.1 – v1.0.17</span><span class="version-date">December 2025 – February 2026</span></div>
-          <ul>
-            <li>Initial build: SQL editor, session management, Results / Log / Operations tabs</li>
-            <li>Snippet library, query history, catalog browser, performance tracking panel</li>
-            <li>Dark/light theme toggle, workspace export/import, Job Graph tab with visual pipeline monitoring</li>
-          </ul>
+          <div class="version-header"><span class="version-tag">v1.0.1 – v1.0.18</span><span class="version-date">December 2025 – February 2026</span></div>
+          <ul><li>Initial build: SQL editor, session management, results streaming, snippets, query history, Job Graph, themes, workspace export/import.</li></ul>
         </div>
 
       </div>
