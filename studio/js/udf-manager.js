@@ -365,38 +365,50 @@ Option C — HTTP URL (if Flink can reach your network):
 
     <!-- ══════════════════════════════════ UPLOAD JAR ════════════════════ -->
     <div id="udf-pane-upload" style="padding:20px;display:none;">
-      <div class="udf-alert-warn" style="margin-bottom:14px;">
-        <strong>Two separate JVMs:</strong> JobManager (8081) and SQL Gateway (8083) are separate processes.
-        Uploading here puts the JAR on the JobManager container. Studio then runs ADD JAR — but only
-        works if both containers share the same filesystem. If they don't, see the fix in Register → Step 1.
+
+      <!-- How it works -->
+      <div style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:var(--radius);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--text1);line-height:1.9;">
+        <strong style="color:var(--accent);">How JAR upload works</strong><br>
+        Your JAR is saved directly onto the Studio container (the same nginx serving this page) and then
+        served at an HTTP URL. The SQL Gateway fetches it using <code>ADD JAR 'http://...'</code>.
+        No shared volumes needed. No changes to any Flink container.
+        <span id="upl-svr-status-inline" style="margin-left:8px;font-size:10px;font-family:var(--mono);"></span>
       </div>
 
+      <!-- Studio JAR server status -->
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;">JobManager URL</div>
-        <div style="display:flex;gap:8px;align-items:flex-end;">
-          <div style="flex:1;">
-            <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">URL override</label>
-            <input id="inp-jm-override" class="field-input" type="text" placeholder="http://flink-jobmanager:8081"
-              style="font-size:11px;font-family:var(--mono);width:100%;box-sizing:border-box;" oninput="_jmPreview()" />
-          </div>
-          <div style="width:80px;flex-shrink:0;">
-            <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">Port</label>
-            <input id="inp-jm-port" class="field-input" value="8081"
-              style="font-size:11px;font-family:var(--mono);width:100%;box-sizing:border-box;" oninput="_jmPreview()" />
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;">Studio JAR Storage</div>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span id="upl-svr-badge" style="font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(255,255,255,0.06);color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">not checked</span>
+            <button class="btn btn-secondary" style="font-size:10px;padding:3px 9px;" onclick="_jSvrTest()">Test ⟳</button>
           </div>
         </div>
-        <div id="jm-url-preview" style="font-size:10px;color:var(--text3);margin-top:6px;font-family:var(--mono);"></div>
+        <div id="upl-svr-url-line" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;"></div>
+        <div id="upl-svr-test-result" style="display:none;font-size:11px;font-family:var(--mono);padding:6px 10px;border-radius:4px;line-height:1.7;white-space:pre-wrap;"></div>
+
+        <!-- Custom base URL override (optional) -->
+        <div style="margin-top:8px;">
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">
+            JAR storage URL <span style="opacity:0.6;">(auto-detected — override only if Studio is behind a non-standard path)</span>
+          </label>
+          <input id="inp-jar-base" class="field-input" type="text" placeholder=""
+            style="font-size:11px;font-family:var(--mono);width:100%;box-sizing:border-box;" oninput="_jSvrPreview()" />
+        </div>
       </div>
 
+      <!-- Drop zone -->
       <div id="udf-jar-dropzone"
         style="border:2px dashed var(--border2);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;background:var(--bg1);margin-bottom:12px;transition:border-color 0.15s,background 0.15s;"
         onclick="document.getElementById('udf-jar-input').click()"
         ondragover="_jDragOver(event)" ondragleave="_jDragLeave(event)" ondrop="_jDrop(event)">
         <div style="font-size:26px;margin-bottom:6px;">📦</div>
         <div style="font-size:13px;font-weight:600;color:var(--text0);margin-bottom:4px;">Drop JAR here or click to browse</div>
+        <div style="font-size:11px;color:var(--text3);">Accepts <code>.jar</code> files · saved to Studio container · served over HTTP</div>
         <input type="file" id="udf-jar-input" accept=".jar" style="display:none;" onchange="_jFileSelected(event)" />
       </div>
 
+      <!-- Selected file info -->
       <div id="udf-jar-file-info" style="display:none;background:var(--bg2);border:1px solid var(--border);padding:8px 12px;border-radius:var(--radius);margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span>📦</span>
@@ -408,6 +420,7 @@ Option C — HTTP URL (if Flink can reach your network):
         </div>
       </div>
 
+      <!-- Progress bar -->
       <div id="udf-jar-progress-wrap" style="display:none;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;">
           <span id="udf-jar-prog-label">Uploading…</span><span id="udf-jar-prog-pct">0%</span>
@@ -417,10 +430,12 @@ Option C — HTTP URL (if Flink can reach your network):
         </div>
       </div>
 
+      <!-- Status line -->
       <div id="udf-jar-status" style="font-size:12px;min-height:16px;margin-bottom:12px;line-height:1.8;"></div>
 
+      <!-- Result panel -->
       <div id="udf-jar-addjar-wrap" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;">
-        <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;">ADD JAR result</div>
+        <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;">Upload &amp; ADD JAR result</div>
         <div id="udf-jar-addjar-msg" style="font-size:11px;font-family:var(--mono);color:var(--text1);line-height:1.9;white-space:pre-wrap;"></div>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
           <button id="udf-jar-copy-path" onclick="_jCopyAddJar()" style="display:none;font-size:10px;padding:3px 10px;border-radius:2px;background:var(--bg3);border:1px solid var(--border);color:var(--text1);cursor:pointer;">Copy ADD JAR SQL</button>
@@ -428,14 +443,24 @@ Option C — HTTP URL (if Flink can reach your network):
         </div>
       </div>
 
-      <button class="btn btn-primary" style="font-size:12px;width:100%;" onclick="_jUpload()">⬆ Upload JAR to Flink Cluster</button>
+      <!-- Upload button -->
+      <button class="btn btn-primary" style="font-size:12px;width:100%;padding:10px;" onclick="_jUpload()">⬆ Upload JAR</button>
 
+      <!-- Also upload to JobManager checkbox -->
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="upl-also-jm" checked style="cursor:pointer;" />
+        <label for="upl-also-jm" style="font-size:11px;color:var(--text2);cursor:pointer;line-height:1.5;">
+          Also upload to Flink JobManager (needed for <code>INSERT INTO</code> pipeline jobs that reference this JAR)
+        </label>
+      </div>
+
+      <!-- JAR list -->
       <div style="margin-top:20px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-weight:700;">JARs on JobManager</span>
+          <span style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-weight:700;">JARs on Studio container</span>
           <button class="btn btn-secondary" style="font-size:10px;padding:3px 10px;" onclick="_jLoadList()">⟳ Refresh</button>
         </div>
-        <div id="udf-jar-list"><div style="font-size:11px;color:var(--text3);">Click ⟳ Refresh.</div></div>
+        <div id="udf-jar-list"><div style="font-size:11px;color:var(--text3);">Click ⟳ Refresh to list uploaded JARs.</div></div>
       </div>
     </div>
 
@@ -619,7 +644,7 @@ function switchUdfTab(tab) {
         if (pane) pane.style.display = active ? 'block' : 'none';
     });
     if (tab === 'library')     loadUdfLibrary();
-    if (tab === 'upload')      { _jmPreview(); _jLoadList(); }
+    if (tab === 'upload')      { _jSvrPreview(); _jSvrTest(); _jLoadList(); }
     if (tab === 'maven')       _mvnUpdate();
     if (tab === 'viewbuilder') _vbPreview();
     if (tab === 'templates')   _renderUdfTemplates();
@@ -1068,26 +1093,120 @@ function _vInsert(name) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// JAR UPLOAD
+// JAR UPLOAD — nginx WebDAV PUT (zero extra dependencies)
+//
+// Architecture:
+//   Browser  →  PUT /udf-jars/my-udf.jar  →  nginx saves to /var/www/udf-jars/
+//   nginx serves GET /udf-jars/my-udf.jar (static file)
+//   Studio runs: ADD JAR 'http://studio-host/udf-jars/my-udf.jar'
+//   Flink SQL Gateway fetches JAR over HTTP from nginx → loads into classloader
+//
+// Requirements:
+//   nginx/studio.conf: location /udf-jars/ with dav_methods PUT DELETE
+//   docker-entrypoint.sh: mkdir -p /var/www/udf-jars
+//   Both are included in the updated files. Dockerfile unchanged.
 // ═══════════════════════════════════════════════════════════════════════════
+
+function _getJarBase() {
+    const ov = (document.getElementById('inp-jar-base')?.value || '').trim();
+    if (ov) return ov.replace(/\/+$/, '');
+    return window.location.origin + '/udf-jars';
+}
+
+function _jSvrPreview() {
+    const el = document.getElementById('upl-svr-url-line'); if (!el) return;
+    el.textContent = '→ ' + _getJarBase() + '/  (WebDAV PUT)';
+}
+
+async function _jSvrTest() {
+    const badge    = document.getElementById('upl-svr-badge');
+    const result   = document.getElementById('upl-svr-test-result');
+    const inline   = document.getElementById('upl-svr-status-inline');
+    if (!result) return;
+
+    const _b = (state, text) => {
+        if (!badge) return;
+        const s = {
+            ok:   'background:rgba(57,211,83,0.15);color:#39d353',
+            err:  'background:rgba(255,77,109,0.15);color:#ff4d6d',
+            busy: 'background:rgba(79,163,224,0.15);color:var(--blue)'
+        };
+        badge.style.cssText = `font-size:9px;padding:2px 8px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;${s[state]||''}`;
+        badge.textContent = text;
+        if (inline) { inline.textContent = state==='ok' ? '● ready' : state==='err' ? '● not configured' : ''; inline.style.color = state==='ok' ? 'var(--green)' : 'var(--red)'; }
+    };
+
+    const _r = (type, msg) => {
+        if (!result) return;
+        result.style.display = 'block';
+        const s = { ok:'rgba(57,211,83,0.08)|rgba(57,211,83,0.3)|var(--green)', err:'rgba(255,77,109,0.08)|rgba(255,77,109,0.3)|var(--red)', info:'rgba(79,163,224,0.08)|rgba(79,163,224,0.3)|var(--blue)' }[type]||'rgba(79,163,224,0.08)|rgba(79,163,224,0.3)|var(--blue)';
+        const [bg,bd,col] = s.split('|');
+        result.style.cssText = `display:block;font-size:11px;font-family:var(--mono);padding:6px 10px;border-radius:4px;line-height:1.7;white-space:pre-wrap;background:${bg};border:1px solid ${bd};color:${col};`;
+        result.textContent = msg;
+    };
+
+    _b('busy','checking…'); _r('info', 'Testing ' + _getJarBase() + ' …');
+
+    const base = _getJarBase();
+    try {
+        // GET the directory listing — autoindex_format json returns a JSON array
+        const r = await fetch(base + '/', { method:'GET', signal: AbortSignal.timeout(5000) });
+        if (r.status === 404) throw new Error('404 — /udf-jars/ location not found in nginx config');
+        if (r.status === 403) throw new Error('403 — directory listing disabled or permission denied');
+        if (!r.ok)            throw new Error('HTTP ' + r.status);
+
+        const text = await r.text();
+        let jars = [];
+        try {
+            const parsed = JSON.parse(text);
+            jars = parsed.filter(f => f.name && f.name.endsWith('.jar'));
+        } catch(_) { /* not JSON autoindex — that's ok, just means no files yet */ }
+
+        _b('ok', '● ready');
+        const jarList = jars.length
+            ? jars.map(j => `  ${j.name}  (${_fmtB(j.size)})`).join('\n')
+            : '  (no JARs uploaded yet)';
+        _r('ok',
+            `✓ Studio JAR storage is configured\n` +
+            `  URL: ${base}/\n` +
+            `  Storage: /var/www/udf-jars/ (on Studio container)\n` +
+            `  JARs:\n${jarList}\n\n` +
+            `Ready — drop a JAR below and click Upload.`
+        );
+    } catch(e) {
+        _b('err', '● not ready');
+        _r('err',
+            `✗ ${e.message}\n\n` +
+            `The /udf-jars/ nginx location is not configured.\n\n` +
+            `Add this to nginx/studio.conf inside server {}:\n\n` +
+            `  location /udf-jars/ {\n` +
+            `      alias  /var/www/udf-jars/;\n` +
+            `      dav_methods     PUT DELETE;\n` +
+            `      dav_access      user:rw;\n` +
+            `      create_full_put_path  on;\n` +
+            `      autoindex on; autoindex_format json;\n` +
+            `      client_max_body_size 512m;\n` +
+            `      add_header Access-Control-Allow-Origin * always;\n` +
+            `      add_header Access-Control-Allow-Methods "GET,PUT,DELETE,OPTIONS" always;\n` +
+            `  }\n\n` +
+            `Also add to docker-entrypoint.sh before exec "$@":\n` +
+            `  mkdir -p /var/www/udf-jars && chmod 755 /var/www/udf-jars\n\n` +
+            `Then rebuild: docker compose up -d --build`
+        );
+    }
+}
+
+// ── JobManager base (for the "also upload to JM" option) ─────────────────────
 function _getJmBase() {
-    const ov=(document.getElementById('inp-jm-override')?.value||'').trim();
-    if(ov) return ov.replace(/\/$/,'');
-    if(!state.gateway) return null;
-    const url=state.gateway.baseUrl||'';
-    if(url.includes('/flink-api')) return url.replace('/flink-api','/jobmanager-api');
-    const port=(document.getElementById('inp-jm-port')?.value||'8081').trim();
-    try{const p=new URL(url);p.port=port;return p.origin;}catch(_){return '/jobmanager-api';}
+    if (!state.gateway) return null;
+    const url = state.gateway.baseUrl || '';
+    if (url.includes('/flink-api')) return url.replace('/flink-api', '/jobmanager-api');
+    try { const p = new URL(url); p.port = '8081'; return p.origin; } catch(_) { return '/jobmanager-api'; }
 }
 
-let _selJar=null;
+let _selJar = null;
 
-function _jmPreview(){
-    const el=document.getElementById('jm-url-preview');if(!el)return;
-    const r=_getJmBase();
-    el.textContent=r?'→ '+r+'/jars/upload':'Not connected.';
-    el.style.color=r?'var(--accent)':'var(--text3)';
-}
+function _jmPreview() {}  // kept for any residual calls
 function _jDragOver(e){e.preventDefault();const d=document.getElementById('udf-jar-dropzone');if(d){d.style.borderColor='var(--accent)';d.style.background='rgba(0,212,170,0.06)';}}
 function _jDragLeave(e){const d=document.getElementById('udf-jar-dropzone');if(d){d.style.borderColor='var(--border2)';d.style.background='var(--bg1)';}}
 function _jDrop(e){e.preventDefault();_jDragLeave(e);const f=e.dataTransfer?.files?.[0];if(f)_jSetFile(f);}
@@ -1109,10 +1228,7 @@ function _jClear(){
     const f=document.getElementById('udf-jar-input');if(f)f.value='';
     _jStatus('','');
 }
-function _jStatus(msg,color){
-    const el=document.getElementById('udf-jar-status');if(!el)return;
-    el.style.color=color||'var(--text2)';el.innerHTML=msg;
-}
+function _jStatus(msg,color){const el=document.getElementById('udf-jar-status');if(!el)return;el.style.color=color||'var(--text2)';el.innerHTML=msg;}
 function _fmtB(b){if(b>=1048576)return(b/1048576).toFixed(1)+' MB';if(b>=1024)return(b/1024).toFixed(1)+' KB';return b+' B';}
 function _jCopyAddJar(){
     const p=window._lastUploadedJarPath;if(!p)return;
@@ -1121,142 +1237,167 @@ function _jCopyAddJar(){
 
 async function _jUpload(){
     if(!_selJar){_jStatus('✗ Select a JAR first.','var(--red)');return;}
-    if(!state.gateway){_jStatus('✗ Not connected.','var(--red)');return;}
-    const jmBase=_getJmBase();if(!jmBase){_jStatus('✗ Cannot resolve JobManager URL.','var(--red)');return;}
+    if(!state.gateway){_jStatus('✗ Not connected to a session.','var(--red)');return;}
 
-    const pw=document.getElementById('udf-jar-progress-wrap');
-    const pb=document.getElementById('udf-jar-prog-bar');
-    const pp=document.getElementById('udf-jar-prog-pct');
-    const pl=document.getElementById('udf-jar-prog-label');
-    if(pw)pw.style.display='block';
-    if(pl)pl.textContent='Uploading '+_selJar.name+'…';
+    const pw    = document.getElementById('udf-jar-progress-wrap');
+    const pb    = document.getElementById('udf-jar-prog-bar');
+    const pp    = document.getElementById('udf-jar-prog-pct');
+    const pl    = document.getElementById('udf-jar-prog-label');
+    const msgEl = document.getElementById('udf-jar-addjar-msg');
+    const wrapEl= document.getElementById('udf-jar-addjar-wrap');
+    const copyBtn=document.getElementById('udf-jar-copy-path');
 
-    const blob=new Blob([await _selJar.arrayBuffer()],{type:'application/x-java-archive'});
-    const fd=new FormData();fd.append('jarfile',blob,_selJar.name);
-    const jarName=_selJar.name;
+    if(pw) pw.style.display = 'block';
+    if(wrapEl) wrapEl.style.display = 'none';
 
-    try{
-        let uploadedPath=null;
-        await new Promise((res,rej)=>{
-            const xhr=new XMLHttpRequest();
-            xhr.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);if(pb)pb.style.width=p+'%';if(pp)pp.textContent=p+'%';}};
-            xhr.onload=()=>{
-                if(xhr.status>=200&&xhr.status<300){
-                    if(pb)pb.style.width='100%';if(pp)pp.textContent='100%';
-                    try{const r=JSON.parse(xhr.responseText);uploadedPath=r.filename||r.path||null;}catch(_){}
-                    res();
-                }else{rej(new Error('HTTP '+xhr.status));}
+    const jarBase = _getJarBase();
+    const jarName = _selJar.name;
+    const jarUrl  = jarBase + '/' + encodeURIComponent(jarName);
+    const bytes   = await _selJar.arrayBuffer();
+
+    // ── Step 1: PUT JAR to nginx WebDAV ──────────────────────────────────────
+    if(pl) pl.textContent = 'Uploading ' + jarName + ' to Studio…';
+
+    try {
+        await new Promise((res, rej) => {
+            const xhr = new XMLHttpRequest();
+            xhr.upload.onprogress = e => {
+                if(e.lengthComputable){ const p=Math.round(e.loaded/e.total*100); if(pb)pb.style.width=p+'%'; if(pp)pp.textContent=p+'%'; }
             };
-            xhr.onerror=()=>rej(new Error('Network error — check nginx client_max_body_size'));
-            xhr.open('POST',jmBase+'/jars/upload');xhr.send(fd);
+            xhr.onload = () => {
+                if(pb) pb.style.width='100%'; if(pp) pp.textContent='100%';
+                // WebDAV PUT returns 201 Created or 204 No Content on success
+                if(xhr.status === 201 || xhr.status === 204 || xhr.status === 200) {
+                    res();
+                } else if(xhr.status === 405) {
+                    rej(new Error('405 Method Not Allowed — WebDAV PUT not enabled in nginx. Add dav_methods PUT; to the /udf-jars/ location in studio.conf.'));
+                } else if(xhr.status === 403) {
+                    rej(new Error('403 Forbidden — /var/www/udf-jars/ not writable. Add mkdir -p /var/www/udf-jars && chmod 755 /var/www/udf-jars to docker-entrypoint.sh.'));
+                } else if(xhr.status === 413) {
+                    rej(new Error('413 Request Entity Too Large — add client_max_body_size 512m; to nginx studio.conf.'));
+                } else {
+                    rej(new Error('HTTP ' + xhr.status + ' — ' + xhr.statusText));
+                }
+            };
+            xhr.onerror = () => rej(new Error('Network error uploading to ' + jarUrl + '. Check that /udf-jars/ is configured in nginx/studio.conf.'));
+            xhr.open('PUT', jarUrl);
+            xhr.setRequestHeader('Content-Type', 'application/java-archive');
+            xhr.send(bytes);
         });
 
-        addLog('OK','JAR uploaded: '+jarName+(uploadedPath?' path='+uploadedPath:''));
+        addLog('OK', `JAR saved to Studio: ${jarName} → ${jarUrl}`);
 
-        if(state.activeSession){
-            if(pl)pl.textContent='Running ADD JAR in session…';
-            const candidates=[];
-            if(uploadedPath) candidates.push(uploadedPath);
-            candidates.push(`/tmp/flink-web-upload/${jarName}`);
-            candidates.push(`/opt/flink/usrlib/${jarName}`);
-
-            let addJarPath=null;
-            for(const p of candidates){
-                try{
-                    await _runQ(`ADD JAR '${p.replace(/'/g,"\\'")}' `);
-                    addJarPath=p;
-                    window._lastUploadedJarPath=p;
-                    addLog('OK','ADD JAR: '+p);
-                    break;
-                }catch(ae){addLog('WARN','ADD JAR tried '+p+': '+ae.message);}
-            }
-
-            const msgEl  = document.getElementById('udf-jar-addjar-msg');
-            const wrapEl = document.getElementById('udf-jar-addjar-wrap');
-            const copyBtn= document.getElementById('udf-jar-copy-path');
-            if(wrapEl) wrapEl.style.display='block';
-
-            if(addJarPath){
-                if(msgEl) msgEl.innerHTML=
-                    `<span style="color:var(--green);">✓ ADD JAR succeeded</span>\n`+
-                    `Path: <strong style="color:var(--accent);">${escHtml(addJarPath)}</strong>\n\n`+
-                    `JAR is on session classpath. → Click "Go to Register UDF".`;
-                if(copyBtn) copyBtn.style.display='inline-block';
-                _jStatus(`✓ ${jarName} uploaded and on session classpath.`,'var(--green)');
-                toast(jarName+' ready — go to Register UDF','ok');
-                const pathInput=document.getElementById('s1-path');
-                if(pathInput) pathInput.value=addJarPath;
-                const b1=document.getElementById('s1-badge');
-                if(b1){b1.dataset.s='ok';b1.textContent='jar loaded ✓';}
-                const jd=document.getElementById('s1-jars');
-                if(jd){jd.style.display='block';jd.style.color='var(--green)';jd.textContent='✓ JAR on classpath: '+addJarPath;}
-            } else {
-                if(msgEl) msgEl.innerHTML=
-                    `<span style="color:var(--yellow,#f5a623);">⚠ Upload succeeded but ADD JAR failed for all candidate paths.</span>\n\n`+
-                    `<strong>The Gateway container cannot see the uploaded JAR.</strong>\n`+
-                    `JobManager and Gateway are likely in separate Docker containers.\n\n`+
-                    `Fix:\n\n`+
-                    `A) Copy into Gateway container:\n`+
-                    `   docker cp ${escHtml(jarName)} &lt;gateway-container&gt;:/opt/flink/usrlib/\n`+
-                    `   Then in Register → Step 1: /opt/flink/usrlib/${escHtml(jarName)}\n\n`+
-                    `B) Shared volume (docker-compose.yml):\n`+
-                    `   volumes: ['./udfs:/opt/flink/usrlib']\n`+
-                    `   Path: /opt/flink/usrlib/${escHtml(jarName)}\n\n`+
-                    `C) Find where JM stored it:\n`+
-                    `   docker exec &lt;jobmanager&gt; find / -name "${escHtml(jarName)}" 2&gt;/dev/null`;
-                _jStatus(`⚠ ${jarName} uploaded but ADD JAR failed. See instructions above.`,'var(--yellow,#f5a623)');
-            }
-        } else {
-            _jStatus(`✓ ${jarName} uploaded. Connect to a session, then run ADD JAR.`,'var(--green)');
-        }
-
-        _jClear();
-        if(pw) setTimeout(()=>pw.style.display='none',4000);
-        setTimeout(_jLoadList,600);
-
-    }catch(err){
+    } catch(putErr) {
         if(pw) pw.style.display='none';
-        const msg=err.message||'';
-        let hint='';
-        if(msg.includes('413')||msg.toLowerCase().includes('entity too large')) hint='<br>Add <code>client_max_body_size 512m;</code> to nginx/studio.conf.';
-        else if(msg.includes('404')) hint='<br>Check /jobmanager-api/ is proxied in nginx/studio.conf.';
-        _jStatus('✗ Upload failed: '+escHtml(msg)+hint,'var(--red)');
-        addLog('ERR','JAR upload failed: '+msg);
+        _jStatus(`✗ Upload failed: ${putErr.message}`,'var(--red)');
+        if(wrapEl) wrapEl.style.display='block';
+        if(msgEl) msgEl.innerHTML=`<span style="color:var(--red);">✗ ${escHtml(putErr.message)}</span>`;
+        addLog('ERR', 'JAR PUT failed: ' + putErr.message);
+        return;
     }
+
+    // ── Step 2: ADD JAR via HTTP URL in the Gateway session ───────────────────
+    if(pl) pl.textContent = 'Running ADD JAR in Gateway session…';
+
+    try {
+        await _runQ(`ADD JAR '${jarUrl.replace(/'/g,"\'")}' `);
+        window._lastUploadedJarPath = jarUrl;
+        addLog('OK', 'ADD JAR (http): ' + jarUrl);
+
+        if(wrapEl) wrapEl.style.display='block';
+        if(copyBtn) copyBtn.style.display='inline-block';
+        if(msgEl) msgEl.innerHTML=
+            `<span style="color:var(--green);">✓ JAR saved to Studio + ADD JAR succeeded</span>\n\n`+
+            `HTTP URL: <strong style="color:var(--accent);">${escHtml(jarUrl)}</strong>\n\n`+
+            `The Flink Gateway fetched the JAR over HTTP and loaded it into\n`+
+            `the session classloader. No container access was needed.\n\n`+
+            `→ Click "Go to Register UDF" to register your function.`;
+        _jStatus(`✓ ${jarName} on session classpath — ready to register.`,'var(--green)');
+        toast(jarName + ' ready — go to Register UDF','ok');
+
+        // Pre-fill Register tab Step 1 with the HTTP URL
+        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=jarUrl;
+        const b1=document.getElementById('s1-badge'); if(b1){b1.dataset.s='ok';b1.textContent='jar loaded ✓';}
+        const jd=document.getElementById('s1-jars'); if(jd){jd.style.display='block';jd.style.color='var(--green)';jd.textContent='✓ JAR on classpath: '+jarUrl;}
+
+    } catch(addErr) {
+        // JAR was saved but ADD JAR failed — show the URL so user can run manually
+        if(wrapEl) wrapEl.style.display='block';
+        if(copyBtn) copyBtn.style.display='inline-block';
+        if(msgEl) msgEl.innerHTML=
+            `<span style="color:var(--green);">✓ JAR saved to Studio container</span>\n`+
+            `URL: <strong style="color:var(--accent);">${escHtml(jarUrl)}</strong>\n\n`+
+            `<span style="color:var(--red);">✗ ADD JAR failed: ${escHtml(addErr.message)}</span>\n\n`+
+            `The JAR is accessible at the URL above.\n`+
+            `Try running this in the SQL editor manually:\n  ADD JAR '${escHtml(jarUrl)}';`;
+        window._lastUploadedJarPath = jarUrl;
+        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=jarUrl;
+        _jStatus('⚠ Saved to Studio but ADD JAR failed — see result above.','var(--yellow,#f5a623)');
+        addLog('ERR', 'ADD JAR failed after successful PUT: ' + addErr.message);
+    }
+
+    // ── Step 3: Also upload to JobManager if checked ─────────────────────────
+    const alsoJm = document.getElementById('upl-also-jm')?.checked;
+    if(alsoJm) {
+        const jmBase = _getJmBase();
+        if(jmBase) {
+            if(pl) pl.textContent = 'Also uploading to Flink JobManager…';
+            try {
+                const fd2 = new FormData();
+                fd2.append('jarfile', new Blob([bytes],{type:'application/x-java-archive'}), jarName);
+                const r2  = await fetch(jmBase + '/jars/upload', {method:'POST', body:fd2});
+                if(r2.ok) { addLog('OK', 'JAR also uploaded to JobManager: ' + jarName); }
+            } catch(_) { /* non-critical — UDF registration does not need this */ }
+        }
+    }
+
+    _jClear();
+    if(pw) setTimeout(()=>pw.style.display='none', 3000);
+    setTimeout(_jLoadList, 400);
 }
 
 async function _jLoadList(){
-    const el=document.getElementById('udf-jar-list');if(!el)return;
-    if(!state.gateway){el.innerHTML='<div style="font-size:11px;color:var(--text3);">Connect first.</div>';return;}
-    const jmBase=_getJmBase();if(!jmBase)return;
-    try{
-        const r=await fetch(jmBase+'/jars');if(!r.ok)throw new Error('HTTP '+r.status);
-        const data=await r.json();const jars=data.files||[];
-        if(!jars.length){el.innerHTML='<div style="font-size:11px;color:var(--text3);">No JARs uploaded yet.</div>';return;}
-        el.innerHTML=jars.map(j=>{
-            const name=j.name||j.id||'?',jid=j.id||'';
+    const el = document.getElementById('udf-jar-list'); if(!el) return;
+    const base = _getJarBase();
+    try {
+        const r = await fetch(base + '/', {signal: AbortSignal.timeout(4000)});
+        if(!r.ok) throw new Error('HTTP ' + r.status);
+        const text = await r.text();
+        let jars = [];
+        try {
+            const parsed = JSON.parse(text);
+            jars = parsed.filter(f => f.name && f.name.endsWith('.jar'));
+        } catch(_) {}
+        if(!jars.length){ el.innerHTML='<div style="font-size:11px;color:var(--text3);">No JARs uploaded yet.</div>'; return; }
+        el.innerHTML = jars.map(j => {
+            const name = j.name, url = base + '/' + encodeURIComponent(name);
             return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:4px;font-size:11px;">
         <span>📦</span>
-        <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);color:var(--text0);" title="${escHtml(name)}">${escHtml(name)}</div>
-        <span style="color:var(--text3);flex-shrink:0;">${j.size?_fmtB(j.size):'—'}</span>
-        <button onclick="_jUseInReg('${escHtml(name)}')" style="font-size:10px;padding:2px 7px;border-radius:2px;border:1px solid var(--border);background:var(--bg3);color:var(--text1);cursor:pointer;">Use →</button>
-        <button onclick="_jDel('${escHtml(jid)}','${escHtml(name)}')" style="font-size:10px;padding:2px 7px;border-radius:2px;border:1px solid rgba(255,77,109,0.3);background:rgba(255,77,109,0.07);color:var(--red);cursor:pointer;">Delete</button>
+        <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);color:var(--text0);" title="${escHtml(url)}">${escHtml(name)}</div>
+        <span style="color:var(--text3);flex-shrink:0;">${j.size ? _fmtB(j.size) : '—'}</span>
+        <button onclick="_jUseInReg('${escHtml(url)}')" style="font-size:10px;padding:2px 7px;border-radius:2px;border:1px solid var(--border);background:var(--bg3);color:var(--text1);cursor:pointer;">Use →</button>
+        <button onclick="_jDelete('${escHtml(name)}')" style="font-size:10px;padding:2px 7px;border-radius:2px;border:1px solid rgba(255,77,109,0.3);background:rgba(255,77,109,0.07);color:var(--red);cursor:pointer;">Delete</button>
       </div>`;
         }).join('');
-    }catch(e){el.innerHTML=`<div style="font-size:11px;color:var(--yellow,#f5a623);">⚠ ${escHtml(e.message)}</div>`;}
+    } catch(e) {
+        el.innerHTML = `<div style="font-size:11px;color:var(--text3);">${e.message.includes('404') ? '/udf-jars/ not configured in nginx — click Test above.' : escHtml(e.message)}</div>`;
+    }
 }
 
-function _jUseInReg(name){
+function _jUseInReg(url){
     switchUdfTab('register');
-    const p=document.getElementById('s1-path');
-    if(p&&!p.value) p.value=`/opt/flink/usrlib/${name}`;
-    toast('Set the correct container path in Step 1 and click ADD JAR','info');
+    const p = document.getElementById('s1-path'); if(p) p.value = url;
+    toast('Click ADD JAR in Step 1 to load it into the current session','info');
 }
-async function _jDel(id,name){
-    if(!confirm('Delete '+name+'?')) return;
-    const jmBase=_getJmBase();
-    try{const r=await fetch(jmBase+'/jars/'+encodeURIComponent(id),{method:'DELETE'});if(!r.ok&&r.status!==404)throw new Error('HTTP '+r.status);toast(name+' deleted','ok');_jLoadList();}
-    catch(e){toast('Delete failed: '+e.message,'err');}
+
+async function _jDelete(name){
+    if(!confirm('Delete ' + name + ' from Studio?')) return;
+    const url = _getJarBase() + '/' + encodeURIComponent(name);
+    try{
+        const r = await fetch(url, {method:'DELETE'});
+        if(!r.ok && r.status !== 404) throw new Error('HTTP ' + r.status);
+        toast(name + ' deleted','ok'); _jLoadList();
+    }catch(e){ toast('Delete failed: ' + e.message,'err'); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

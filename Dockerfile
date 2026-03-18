@@ -23,16 +23,13 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 RUN apk add --no-cache gettext wget
 
 # ── Static assets ─────────────────────────────────────────────────────────────
-# Copy the FULL studio/ directory — index.html + css/ + js/ subdirectories.
-# The IDE is modular: index.html references css/*.css and js/*.js as separate
-# files so the codebase stays readable and contributors can work on modules.
 COPY studio/ /usr/share/nginx/html/
 
 # ── nginx config ──────────────────────────────────────────────────────────────
 COPY nginx/studio.conf /etc/nginx/templates/default.conf.template
 RUN  rm -f /etc/nginx/conf.d/default.conf
 
-# ── Runtime environment variables (overridden at docker run / compose) ────────
+# ── Runtime environment variables ─────────────────────────────────────────────
 ENV FLINK_GATEWAY_HOST=localhost \
     FLINK_GATEWAY_PORT=8083 \
     JOBMANAGER_HOST=localhost \
