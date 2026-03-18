@@ -14,21 +14,21 @@
 
 services:
 
-  flink-studio:
+  strlab-studio:
     image: codedstreams/strlabstudio:latest
-    container_name: flink-studio
+    container_name: strlab-studio
     restart: unless-stopped
     ports:
       - "3030:80"
     environment:
       FLINK_GATEWAY_HOST: flink-sql-gateway      # your SQL Gateway container name
       FLINK_GATEWAY_PORT: "8083"                 # SQL Gateway port
-      JOBMANAGER_HOST:    flink-jobmanager        # your JobManager container name
+      JOBMANAGER_HOST:    codedstream-jobmanager      # your JobManager container name
       JOBMANAGER_PORT:    "8081"                  # JobManager REST port
     volumes:
       - udf-jars:/var/www/udf-jars               # shared with gateway for ADD JAR
     networks:
-      - flink-network                            # your existing Flink Docker network
+      - kafka-network-02                            # your existing Flink Docker network
 
 # ── Shared volume for UDF JAR upload ─────────────────────────────────────────
 # Studio saves uploaded JARs here. For ADD JAR to work, also mount this volume
@@ -37,8 +37,8 @@ volumes:
   udf-jars:
 
 # ── Join your existing Flink network ─────────────────────────────────────────
-# Replace flink-network with your actual network name.
+# Replace kafka-network-02 with your actual network name.
 # Run: docker network ls   to find it.
 networks:
-  flink-network:
+  kafka-network-02:
     external: true

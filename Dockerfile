@@ -25,17 +25,17 @@ RUN apk add --no-cache gettext wget
 # ── Static assets ─────────────────────────────────────────────────────────────
 COPY studio/ /usr/share/nginx/html/
 
-# ── nginx config ──────────────────────────────────────────────────────────────
+# ── nginx config
 COPY nginx/studio.conf /etc/nginx/templates/default.conf.template
 RUN  rm -f /etc/nginx/conf.d/default.conf
 
-# ── Runtime environment variables ─────────────────────────────────────────────
+# ── Runtime environment variables
 ENV FLINK_GATEWAY_HOST=localhost \
     FLINK_GATEWAY_PORT=8083 \
     JOBMANAGER_HOST=localhost \
     JOBMANAGER_PORT=8081
 
-# ── Entrypoint: envsubst → start nginx ───────────────────────────────────────
+# ── Entrypoint: envsubst → start nginx
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN  chmod +x /docker-entrypoint.sh
 
