@@ -369,13 +369,33 @@ Option C — HTTP URL (if Flink can reach your network):
       <!-- How it works -->
       <div style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:var(--radius);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--text1);line-height:1.9;">
         <strong style="color:var(--accent);">How JAR upload works</strong><br>
-        Your JAR is saved directly onto the Studio container (the same nginx serving this page) and then
-        served at an HTTP URL. The SQL Gateway fetches it using <code>ADD JAR 'http://...'</code>.
-        No shared volumes needed. No changes to any Flink container.
+        Your JAR is saved to <code>/var/www/udf-jars/</code> on the Studio container via WebDAV PUT.
+        <code>ADD JAR</code> then uses the <strong>local filesystem path</strong> on the Gateway container.
+        For this to work, both containers must share the same volume (see setup below).
         <span id="upl-svr-status-inline" style="margin-left:8px;font-size:10px;font-family:var(--mono);"></span>
       </div>
 
-      <!-- Studio JAR server status -->
+      <!-- Required: shared volume setup -->
+      <div style="background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.3);border-radius:var(--radius);padding:11px 14px;margin-bottom:14px;font-size:12px;color:var(--text1);line-height:1.8;">
+        <strong style="color:var(--yellow,#f5a623);">⚠ One-time setup required — shared volume</strong><br>
+        Flink 1.19 without Hadoop cannot use <code>ADD JAR 'http://...'</code>.
+        Only local filesystem paths work. Add this to your <code>docker-compose.yml</code> for both services, then run <code>docker compose up -d</code>:
+        <div style="background:var(--bg0);border:1px solid var(--border);border-radius:4px;padding:8px 10px;margin:8px 0;font-family:var(--mono);font-size:11px;color:var(--text1);white-space:pre-wrap;">services:
+  flink-studio:              # Studio/nginx container
+    volumes:
+      - udf-jars:/var/www/udf-jars
+
+  flink-gateway-cors-proxy:  # SQL Gateway container (use your actual service name)
+    volumes:
+      - udf-jars:/var/www/udf-jars
+
+volumes:
+  udf-jars:                  # named volume shared between both</div>
+        After this, uploaded JARs are visible to both containers at <code>/var/www/udf-jars/filename.jar</code>.
+        <code>ADD JAR</code> will use this local path automatically — no Hadoop, no HTTP URLs needed.
+      </div>
+
+      <!-- Studio JAR storage status -->
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;">Studio JAR Storage</div>
@@ -384,15 +404,14 @@ Option C — HTTP URL (if Flink can reach your network):
             <button class="btn btn-secondary" style="font-size:10px;padding:3px 9px;" onclick="_jSvrTest()">Test ⟳</button>
           </div>
         </div>
-        <div id="upl-svr-url-line" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;"></div>
+        <div id="upl-svr-url-line" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px;"></div>
         <div id="upl-svr-test-result" style="display:none;font-size:11px;font-family:var(--mono);padding:6px 10px;border-radius:4px;line-height:1.7;white-space:pre-wrap;"></div>
-
-        <!-- Custom base URL override (optional) -->
-        <div style="margin-top:8px;">
+        <div style="margin-top:6px;">
           <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">
-            JAR storage URL <span style="opacity:0.6;">(auto-detected — override only if Studio is behind a non-standard path)</span>
+            Browser upload URL <span style="opacity:0.6;">(auto-detected — leave blank unless Studio is behind a non-standard path)</span>
           </label>
-          <input id="inp-jar-base" class="field-input" type="text" placeholder=""
+          <input id="inp-jar-base" class="field-input" type="text"
+            placeholder="auto-detected from page origin"
             style="font-size:11px;font-family:var(--mono);width:100%;box-sizing:border-box;" oninput="_jSvrPreview()" />
         </div>
       </div>
@@ -1107,6 +1126,11 @@ function _vInsert(name) {
 //   Both are included in the updated files. Dockerfile unchanged.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ── URL helpers ─────────────────────────────────────────────────────────────
+// _getJarBase() → browser PUT/GET URL (page origin + /udf-jars)
+// ADD JAR always uses the local filesystem path /var/www/udf-jars/filename.jar
+// This requires Studio and Gateway to share a Docker named volume at /var/www/udf-jars/
+
 function _getJarBase() {
     const ov = (document.getElementById('inp-jar-base')?.value || '').trim();
     if (ov) return ov.replace(/\/+$/, '');
@@ -1115,7 +1139,8 @@ function _getJarBase() {
 
 function _jSvrPreview() {
     const el = document.getElementById('upl-svr-url-line'); if (!el) return;
-    el.textContent = '→ ' + _getJarBase() + '/  (WebDAV PUT)';
+    const gwUrl = (document.getElementById('inp-jar-gateway-url')?.value || '').trim();
+    el.textContent = '→ Browser PUT: ' + _getJarBase() + '/  |  Gateway ADD JAR: ' + (gwUrl || '(same as browser — set above for Docker)');
 }
 
 async function _jSvrTest() {
@@ -1250,12 +1275,12 @@ async function _jUpload(){
     if(pw) pw.style.display = 'block';
     if(wrapEl) wrapEl.style.display = 'none';
 
-    const jarBase = _getJarBase();
+    const jarBase = _getJarBase();  // browser PUT target (page origin)
     const jarName = _selJar.name;
-    const jarUrl  = jarBase + '/' + encodeURIComponent(jarName);
+    const jarUrl  = jarBase + '/' + encodeURIComponent(jarName);  // browser PUT URL
     const bytes   = await _selJar.arrayBuffer();
 
-    // ── Step 1: PUT JAR to nginx WebDAV ──────────────────────────────────────
+    // ── Step 1: PUT JAR to nginx WebDAV (using browser URL) ──────────────────
     if(pl) pl.textContent = 'Uploading ' + jarName + ' to Studio…';
 
     try {
@@ -1272,7 +1297,7 @@ async function _jUpload(){
                 } else if(xhr.status === 405) {
                     rej(new Error('405 Method Not Allowed — WebDAV PUT not enabled in nginx. Add dav_methods PUT; to the /udf-jars/ location in studio.conf.'));
                 } else if(xhr.status === 403) {
-                    rej(new Error('403 Forbidden — /var/www/udf-jars/ not writable. Add mkdir -p /var/www/udf-jars && chmod 755 /var/www/udf-jars to docker-entrypoint.sh.'));
+                    rej(new Error('403 Forbidden — /var/www/udf-jars/ not writable. Add chown nginx:nginx /var/www/udf-jars to docker-entrypoint.sh.'));
                 } else if(xhr.status === 413) {
                     rej(new Error('413 Request Entity Too Large — add client_max_body_size 512m; to nginx studio.conf.'));
                 } else {
@@ -1296,44 +1321,53 @@ async function _jUpload(){
         return;
     }
 
-    // ── Step 2: ADD JAR via HTTP URL in the Gateway session ───────────────────
+    // ── Step 2: ADD JAR using LOCAL filesystem path ─────────────────────────
+    // Flink 1.19 without Hadoop does NOT support ADD JAR 'http://...'
+    // (UnsupportedFileSystemSchemeException: scheme 'http' requires Hadoop).
+    // Only local paths work: ADD JAR '/path/on/gateway.jar'
+    // This works when Studio + Gateway share a Docker volume at /var/www/udf-jars/
+    const localJarPath = '/var/www/udf-jars/' + jarName;
     if(pl) pl.textContent = 'Running ADD JAR in Gateway session…';
 
     try {
-        await _runQ(`ADD JAR '${jarUrl.replace(/'/g,"\'")}' `);
-        window._lastUploadedJarPath = jarUrl;
-        addLog('OK', 'ADD JAR (http): ' + jarUrl);
+        await _runQ(`ADD JAR '${localJarPath.replace(/'/g,"\'")}' `);
+        window._lastUploadedJarPath = localJarPath;
+        addLog('OK', 'ADD JAR (local path): ' + localJarPath);
 
         if(wrapEl) wrapEl.style.display='block';
         if(copyBtn) copyBtn.style.display='inline-block';
         if(msgEl) msgEl.innerHTML=
-            `<span style="color:var(--green);">✓ JAR saved to Studio + ADD JAR succeeded</span>\n\n`+
-            `HTTP URL: <strong style="color:var(--accent);">${escHtml(jarUrl)}</strong>\n\n`+
-            `The Flink Gateway fetched the JAR over HTTP and loaded it into\n`+
-            `the session classloader. No container access was needed.\n\n`+
-            `→ Click "Go to Register UDF" to register your function.`;
+            `<span style="color:var(--green);">✓ JAR uploaded + ADD JAR succeeded</span>\n\n`+
+            `Local path: <strong style="color:var(--accent);">${escHtml(localJarPath)}</strong>\n`+
+            `Browser URL: <span style="color:var(--text2);">${escHtml(jarUrl)}</span>\n\n`+
+            `JAR is on the session classpath. → Click "Go to Register UDF".`;
         _jStatus(`✓ ${jarName} on session classpath — ready to register.`,'var(--green)');
         toast(jarName + ' ready — go to Register UDF','ok');
 
-        // Pre-fill Register tab Step 1 with the HTTP URL
-        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=jarUrl;
+        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=localJarPath;
         const b1=document.getElementById('s1-badge'); if(b1){b1.dataset.s='ok';b1.textContent='jar loaded ✓';}
-        const jd=document.getElementById('s1-jars'); if(jd){jd.style.display='block';jd.style.color='var(--green)';jd.textContent='✓ JAR on classpath: '+jarUrl;}
+        const jd=document.getElementById('s1-jars'); if(jd){jd.style.display='block';jd.style.color='var(--green)';jd.textContent='✓ JAR on classpath: '+localJarPath;}
 
     } catch(addErr) {
-        // JAR was saved but ADD JAR failed — show the URL so user can run manually
         if(wrapEl) wrapEl.style.display='block';
         if(copyBtn) copyBtn.style.display='inline-block';
         if(msgEl) msgEl.innerHTML=
-            `<span style="color:var(--green);">✓ JAR saved to Studio container</span>\n`+
-            `URL: <strong style="color:var(--accent);">${escHtml(jarUrl)}</strong>\n\n`+
-            `<span style="color:var(--red);">✗ ADD JAR failed: ${escHtml(addErr.message)}</span>\n\n`+
-            `The JAR is accessible at the URL above.\n`+
-            `Try running this in the SQL editor manually:\n  ADD JAR '${escHtml(jarUrl)}';`;
-        window._lastUploadedJarPath = jarUrl;
-        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=jarUrl;
-        _jStatus('⚠ Saved to Studio but ADD JAR failed — see result above.','var(--yellow,#f5a623)');
-        addLog('ERR', 'ADD JAR failed after successful PUT: ' + addErr.message);
+            `<span style="color:var(--green);">✓ JAR saved to Studio: ${escHtml(jarUrl)}</span>\n\n`+
+            `<span style="color:var(--red);">✗ ADD JAR '${escHtml(localJarPath)}' failed:\n${escHtml(addErr.message)}</span>\n\n`+
+            `<strong>The Gateway container cannot see ${escHtml(localJarPath)}.</strong>\n`+
+            `The shared volume is not yet mounted on the Gateway container.\n\n`+
+            `Add this to docker-compose.yml and run docker compose up -d:\n\n`+
+            `  flink-studio:\n`+
+            `    volumes: [udf-jars:/var/www/udf-jars]\n\n`+
+            `  flink-gateway-cors-proxy:  # your gateway service name\n`+
+            `    volumes: [udf-jars:/var/www/udf-jars]\n\n`+
+            `  volumes:\n`+
+            `    udf-jars:\n\n`+
+            `Then upload again — ADD JAR will use the shared local path.`;
+        window._lastUploadedJarPath = localJarPath;
+        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=localJarPath;
+        _jStatus('⚠ Saved to Studio — ADD JAR failed. Mount shared volume on Gateway (see result above).','var(--yellow,#f5a623)');
+        addLog('ERR', 'ADD JAR local path failed (volume not shared?): ' + addErr.message);
     }
 
     // ── Step 3: Also upload to JobManager if checked ─────────────────────────
