@@ -37,16 +37,29 @@
 // already fires on connect and will use our rewired version.
 
 function _safeShowTipsModal() {
-    // Remove existing modal-tips so showTipsModal() always takes the build path
+    // ROOT CAUSE FOUND (from git diff between v1.0.22 and v1.2.7):
+    // showTipsModal checks: localStorage.getItem('flinksql_tips_hide') === '1'
+    // The key was renamed to 'strlabstudio_tips_hide' in a later commit,
+    // but the OLD check still exists in the code.
+    // If the user ever clicked "Don't show again" in an older version,
+    // 'flinksql_tips_hide' is still '1' in their browser and the function
+    // returns immediately every single time — modal never opens.
+    // FIX: clear BOTH keys before every call.
+    try {
+        localStorage.removeItem('flinksql_tips_hide');      // old key — clears the bug
+        localStorage.removeItem('strlabstudio_tips_hide');  // new key — fresh start
+    } catch(_) {}
+
+    // Remove existing modal so showTipsModal always rebuilds fresh
     const existing = document.getElementById('modal-tips');
     if (existing) existing.remove();
 
-    // Call the original (defined in connection.js)
+    // Call the original
     if (typeof showTipsModal === 'function') {
         showTipsModal();
     }
 
-    // Fallback: if original built modal but didn't call openModal, force it
+    // Fallback: if original built modal but didn't call openModal, force it open
     setTimeout(() => {
         const m = document.getElementById('modal-tips');
         if (m && !m.classList.contains('open')) m.classList.add('open');
@@ -322,6 +335,32 @@ function initMiscPatches() {
                 resultsActions.appendChild(chartBtn);
             }
         }
+    }
+
+    // Intercept "Apply & Activate" button in Colour Describe modal
+    // This ensures _cdApply fires reliably after rules are confirmed
+    if (!document.getElementById('cd-activate-intercepted')) {
+        const marker = document.createElement('span');
+        marker.id = 'cd-activate-intercepted';
+        marker.style.display = 'none';
+        document.body.appendChild(marker);
+
+        // MutationObserver watches for the Colour Describe modal opening
+        const _cdModalObs = new MutationObserver(() => {
+            const applyBtn = document.querySelector('[onclick*="_cdApply"], [onclick*="cdApply"]');
+            if (applyBtn && !applyBtn._cdIntercepted) {
+                applyBtn._cdIntercepted = true;
+                const origOnclick = applyBtn.getAttribute('onclick') || '';
+                applyBtn.addEventListener('click', () => {
+                    // After original fires, re-call _cdApply with a delay to ensure DOM is ready
+                    setTimeout(() => {
+                        if (typeof _cdApply === 'function') _cdApply();
+                        if (typeof _cdReapplyExistingFromDOM === 'function') _cdReapplyExistingFromDOM();
+                    }, 150);
+                });
+            }
+        });
+        _cdModalObs.observe(document.body, { childList: true, subtree: true });
     }
 
     // Inject global styles
