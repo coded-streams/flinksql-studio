@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Str:::lab Studio — Documentation v1.2.6</title>
+  <title>Str:::lab Studio — Documentation v1.2.7</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23090c12'/%3E%3Cpolyline points='20 24 28 16 20 8' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='12 8 4 16 12 24' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
@@ -71,7 +72,12 @@
     <span class="logo-text">Str:::lab<span class="logo-ver">Studio</span></span>
   </a>
   <ul class="nav-links">
-    <li><a href="#about">About</a></li><li><a href="#quickstart">Quickstart</a></li><li><a href="#architecture">Architecture</a></li><li><a href="#features">Features</a></li><li><a href="#admin">Admin Session</a></li><li><a href="#snippets">Snippets</a></li><li><a href="#connectors">Connectors</a></li><li><a href="#pipeline">Pipeline Demo</a></li><li><a href="#operator">Kube Operator</a></li><li><a href="#project-manager">Project Manager</a></li><li><a href="#udf-manager">UDF Manager</a></li><li><a href="#colour-describe">Colour Describe</a></li><li><a href="#changelog">Changelog</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#quickstart">Quickstart</a></li>
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#udf-manager">UDF Manager</a></li>
+    <li><a href="#colour-describe">Colour Describe</a></li>
+    <li><a href="#changelog">Changelog</a></li>
   </ul>
   <div class="nav-right">
     <a href="https://github.com/coded-streams/strlabstudio" target="_blank" class="nav-btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.69c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85.004 1.71.115 2.51.337 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg> GitHub</a>
@@ -645,7 +651,7 @@ spec:
 kind: StrlabStudio
 metadata: {name: prod-studio, namespace: flink}
 spec:
-  image: codedstreams/strlabstudio:v1.2.6
+  image: codedstreams/strlabstudio:v1.2.7
   replicas: 2
   gateway: {host: flink-sql-gateway, port: 8083}
   service: {type: LoadBalancer, port: 80}
@@ -741,7 +747,7 @@ networks:
 
     <!-- ═══════════════════════ UDF MANAGER v1.2.0 ═══════════════════════════ -->
     <section class="doc-section" id="udf-manager">
-      <h2><span class="si">&#8517;</span>UDF Manager <span class="updated-badge">v1.2.6 &#8212; March 2026</span></h2>
+      <h2><span class="si">&#8517;</span>UDF Manager <span class="updated-badge">v1.2.7 &#8212; March 2026</span></h2>
       <p>Complete User-Defined Function lifecycle &#8212; browsing, building, uploading, and registering &#8212; without leaving Str:::lab Studio. Access via the <code>&#8517; UDFs</code> button. Version 1.2.0 is a complete overhaul of the Register UDF tab with a 3-step guided wizard, confirmed fix for <code>ClassNotFoundException</code>, and full separate-container Docker instructions.</p>
 
       <div class="callout danger">
@@ -1143,7 +1149,7 @@ FROM signals_enriched LIMIT 10;
       <div class="version-list">
 
         <div class="version-card" style="border-color:rgba(63,185,80,0.3);">
-          <div class="version-header"><span class="version-tag">v1.2.6</span><span class="version-date">March 2026</span><span class="version-label current">current</span></div>
+          <div class="version-header"><span class="version-tag">v1.2.7</span><span class="version-date">March 2026</span><span class="version-label current">current</span></div>
           <ul>
             <li><strong>nginx proxy_pass variable bug fixed</strong> &#8212; <code>set $flink_gateway</code> inside a location block caused nginx 1.25 to log <em>"uninitialized variable"</em> on the first request and return HTTP 500. Fixed: <code>proxy_pass</code> now uses the substituted literal value directly. No nginx runtime variables involved.</li>
             <li><strong>Gateway shared volume required for ADD JAR</strong> &#8212; <code>flink-sql-gateway</code> must mount <code>udf-jars:/var/www/udf-jars</code>. Without it the gateway throws <code>FileNotFoundException</code> on every ADD JAR call. New <em>Gateway Volume Setup</em> section added to UDF Manager docs with exact snippet and restart command.</li>

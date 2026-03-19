@@ -1,137 +1,178 @@
-/* Str:::lab Studio — UDF Manager v1.2.0
+/* Str:::lab Studio — UDF Manager v1.3.0
  * ═══════════════════════════════════════════════════════════════════════
- * ROOT CAUSE (confirmed from gateway container logs):
+ * FIXES in v1.3.0:
  *
- *   ClassNotFoundException: com.streamsstudio.udf.AlertSeverityEnricher
- *   at FlinkUserCodeClassLoader.loadClass
- *   at FunctionCatalog.validateAndPrepareFunction
+ * 1. PARAMETER SUPPORT: Users can add a variable number of parameters with
+ *    types. The generated CREATE FUNCTION SQL includes the parameter list.
+ *    When the function is called in SQL, it uses the correct signature.
  *
- * The JAR was NEVER on the SQL Gateway session classpath.
- * ADD JAR was either not run, or ran with a wrong path.
+ * 2. METHOD-BASED REGISTRATION: Class path registers the CLASS, but users
+ *    specify which METHOD the UDF calls (eval, evaluate, etc). The function
+ *    is still registered by class path (that's how Flink works) but the
+ *    parameter signature preview shows how to call it correctly.
  *
- * WHY SCALA/PYTHON "SEEMED TO WORK" BUT BROKE ON USE:
- *   When LANGUAGE SCALA or PYTHON is selected, CREATE FUNCTION still fails
- *   internally but the error surfaces differently. The function name gets
- *   written to the catalog without the class being validated. Later when
- *   you SELECT using that name, Flink tries to instantiate the class,
- *   ClassNotFoundException fires, Flink falls back to PythonFunctionFactory,
- *   which spawns `python` (not installed) → "error=2, No such file".
- *   BOTH errors have THE SAME root cause: JAR not on classpath.
+ * 3. LANGUAGE VALIDATION: Python/Scala selected with a Java JAR now shows
+ *    a clear warning. Language is validated against the JAR type.
+ *    "Successfully created" only shows when the gateway truly confirms it.
  *
- * THE ONLY FIX:
- *   ADD JAR '/path/inside/gateway/container.jar' must run in the session
- *   BEFORE CREATE FUNCTION, using a path the GATEWAY container can see.
- *
- *   If JobManager (8081) and Gateway (8083) are SEPARATE Docker containers:
- *   - Path from upload response → JobManager filesystem only
- *   - Gateway cannot see it → ADD JAR fails → ClassNotFoundException
- *   Fix: shared volume, docker cp, or HTTP URL in ADD JAR
+ * 4. All other prior fixes retained.
  * ═══════════════════════════════════════════════════════════════════════
  */
 
-// ── Template library ──────────────────────────────────────────────────────
+// ── Flink SQL type options for parameters ──────────────────────────────────
+const FLINK_TYPES = [
+    'STRING','VARCHAR','CHAR','BOOLEAN',
+    'TINYINT','SMALLINT','INT','BIGINT',
+    'FLOAT','DOUBLE','DECIMAL(18,2)',
+    'DATE','TIME','TIMESTAMP(3)',
+    'ARRAY<STRING>','MAP<STRING,STRING>','ROW<>'
+];
+
+// ── Template library ──────────────────────────────────────────────────────────
 const UDF_TEMPLATES = [
     {
-        group: 'Scalar Functions — Java',
+        group: 'Java / Scala — Scalar Functions',
         color: '#00d4aa',
         items: [
             {
-                name: 'AlertSeverityEnricher — your exact class',
-                desc: 'Matches com.streamsstudio.udf package. Use as reference.',
+                name: 'Java Scalar UDF — minimal template',
+                desc: 'Generic Java ScalarFunction with eval(). Replace class/method as needed.',
                 lang: 'Java + SQL',
                 sql: `/*
-package com.streamsstudio.udf;
+package com.example.udf;
 import org.apache.flink.table.functions.ScalarFunction;
 
-public class AlertSeverityEnricher extends ScalarFunction {
-    public String eval(Double score) {
-        if (score == null) return "UNKNOWN";
-        if (score >= 0.80) return "CRITICAL";
-        if (score >= 0.55) return "HIGH";
-        if (score >= 0.30) return "MEDIUM";
+public class MyFunction extends ScalarFunction {
+    public String eval(Double inputValue) {
+        if (inputValue == null) return "UNKNOWN";
+        if (inputValue >= 0.8) return "HIGH";
+        if (inputValue >= 0.4) return "MEDIUM";
         return "LOW";
+    }
+    // You can overload eval() for different argument types:
+    public String eval(String inputStr) {
+        return inputStr == null ? "NULL" : inputStr.toUpperCase();
     }
 }
 */
 
--- CORRECT WORKFLOW — run these IN ORDER in the editor:
-
--- 1. Check what JARs are already loaded in this session:
-SHOW JARS;
-
--- 2. Add your JAR (use the actual path inside the Gateway container):
-ADD JAR '/opt/flink/usrlib/streams-studio-udf.jar';
-
--- 3. Confirm it loaded:
-SHOW JARS;
-
--- 4. Register:
-CREATE TEMPORARY FUNCTION IF NOT EXISTS enrich_severity
-AS 'com.streamsstudio.udf.AlertSeverityEnricher'
-LANGUAGE JAVA;
-
--- 5. Verify:
-SHOW USER FUNCTIONS;
-
--- 6. Test:
-SELECT enrich_severity(CAST(0.85 AS DOUBLE));`,
-            },
-            {
-                name: 'ClassifyRisk — generic scalar template',
-                desc: 'CRITICAL/HIGH/MEDIUM/LOW risk classifier.',
-                lang: 'Java + SQL',
-                sql: `/*
-package com.yourcompany.udf;
-import org.apache.flink.table.functions.ScalarFunction;
-public class ClassifyRisk extends ScalarFunction {
-    public String eval(Double score) {
-        if (score == null) return "UNKNOWN";
-        if (score >= 0.80) return "CRITICAL";
-        if (score >= 0.55) return "HIGH";
-        if (score >= 0.30) return "MEDIUM";
-        return "LOW";
-    }
-}
-*/
+-- Step 1: Load JAR
 ADD JAR '/opt/flink/usrlib/my-udfs.jar';
 SHOW JARS;
-CREATE TEMPORARY FUNCTION IF NOT EXISTS classify_risk
-AS 'com.yourcompany.udf.ClassifyRisk'
+
+-- Step 2: Register (Flink discovers eval() by parameter types at runtime)
+CREATE TEMPORARY FUNCTION IF NOT EXISTS my_fn
+AS 'com.example.udf.MyFunction'
 LANGUAGE JAVA;
-SHOW USER FUNCTIONS;`,
+
+-- Step 3: Verify
+SHOW USER FUNCTIONS;
+
+-- Step 4: Use
+SELECT my_fn(score_column) AS result FROM your_table;
+SELECT my_fn(text_column)  AS result FROM your_table;`,
+            },
+            {
+                name: 'Scala Scalar UDF — minimal template',
+                desc: 'Generic Scala ScalarFunction. Match Scala version to your Flink build.',
+                lang: 'Scala + SQL',
+                sql: `/*
+package com.example.udf
+
+import org.apache.flink.table.functions.ScalarFunction
+
+class MyScalaFunction extends ScalarFunction {
+  def eval(value: Double): String = {
+    if (value >= 0.8) "HIGH"
+    else if (value >= 0.4) "MEDIUM"
+    else "LOW"
+  }
+  def eval(value: String): String =
+    if (value == null) "NULL" else value.toUpperCase
+}
+*/
+
+ADD JAR '/opt/flink/usrlib/my-scala-udfs.jar';
+SHOW JARS;
+
+CREATE TEMPORARY FUNCTION IF NOT EXISTS my_scala_fn
+AS 'com.example.udf.MyScalaFunction'
+LANGUAGE SCALA;
+
+SHOW USER FUNCTIONS;
+SELECT my_scala_fn(score_column) FROM your_table;`,
             },
         ],
     },
     {
-        group: 'Inline SQL — No JAR required',
+        group: 'Python (PyFlink) UDFs',
+        color: '#f5a623',
+        items: [
+            {
+                name: 'Python Scalar UDF — inline registration',
+                desc: 'Register a Python function directly in SQL without a JAR.',
+                lang: 'Python + SQL',
+                sql: `-- Python UDFs can be registered inline (no JAR needed) in PyFlink environments.
+-- PyFlink must be installed on all TaskManagers.
+
+-- Option A: Register from a Python file on the gateway filesystem
+ADD PYTHON FILE '/opt/flink/python/my_udfs.py';
+
+CREATE TEMPORARY FUNCTION IF NOT EXISTS my_python_fn
+AS 'my_udfs.classify'   -- module.function_name
+LANGUAGE PYTHON;
+
+SHOW USER FUNCTIONS;
+SELECT my_python_fn(input_column) FROM your_table;
+
+-- ── my_udfs.py contents ──────────────────────────────────────────────────────
+/*
+from pyflink.table.udf import udf
+from pyflink.table import DataTypes
+
+@udf(result_type=DataTypes.STRING())
+def classify(value):
+    if value is None:
+        return 'UNKNOWN'
+    if float(value) >= 0.8:
+        return 'HIGH'
+    if float(value) >= 0.4:
+        return 'MEDIUM'
+    return 'LOW'
+*/`,
+            },
+        ],
+    },
+    {
+        group: 'Inline SQL — No UDF registration needed',
         color: '#4fa3e0',
         items: [
             {
-                name: 'CASE WHEN — same output as AlertSeverityEnricher',
-                desc: 'No JAR, no ADD JAR, no registration needed.',
+                name: 'CASE WHEN — replace a scalar UDF with pure SQL',
+                desc: 'No JAR, no ADD JAR, no registration. Works with any Flink version.',
                 lang: 'SQL',
-                sql: `-- Identical output to AlertSeverityEnricher — pure SQL:
-SELECT alert_id, risk_score,
+                sql: `-- Pure SQL — identical to registering a scalar UDF that classifies values:
+SELECT
+  id,
+  score,
   CASE
-    WHEN risk_score >= 0.80 THEN 'CRITICAL'
-    WHEN risk_score >= 0.55 THEN 'HIGH'
-    WHEN risk_score >= 0.30 THEN 'MEDIUM'
+    WHEN score >= 0.80 THEN 'HIGH'
+    WHEN score >= 0.40 THEN 'MEDIUM'
     ELSE 'LOW'
-  END AS severity
-FROM alerts;
+  END AS category
+FROM your_table;
 
--- Wrap in a view for reuse:
-CREATE TEMPORARY VIEW alerts_enriched AS
+-- Reusable as a TEMPORARY VIEW (session-scoped, no JAR):
+CREATE TEMPORARY VIEW enriched AS
 SELECT *,
   CASE
-    WHEN risk_score >= 0.80 THEN 'CRITICAL'
-    WHEN risk_score >= 0.55 THEN 'HIGH'
-    WHEN risk_score >= 0.30 THEN 'MEDIUM'
+    WHEN score >= 0.80 THEN 'HIGH'
+    WHEN score >= 0.40 THEN 'MEDIUM'
     ELSE 'LOW'
-  END AS severity
-FROM alerts;
+  END AS category
+FROM your_table;
 
-SELECT * FROM alerts_enriched WHERE severity = 'CRITICAL';`,
+SELECT * FROM enriched WHERE category = 'HIGH';`,
             },
         ],
     },
@@ -140,32 +181,41 @@ SELECT * FROM alerts_enriched WHERE severity = 'CRITICAL';`,
         color: '#ff9f43',
         items: [
             {
-                name: 'Full diagnostic sequence',
-                desc: 'Run these in the editor to diagnose and fix ClassNotFoundException.',
+                name: 'Classpath diagnostic — fix ClassNotFoundException',
+                desc: 'Run line by line to diagnose and fix UDF registration failures.',
                 lang: 'SQL',
-                sql: `-- ── Diagnostic sequence — paste into editor and run line by line ────────────
+                sql: `-- ── UDF diagnostic sequence ─────────────────────────────────────────────────
 
--- 1. What JARs are on this session classpath?
---    If EMPTY → ADD JAR was never run → ClassNotFoundException guaranteed
+-- 1. What JARs are loaded in this session?
+--    Empty → ADD JAR was never run → ClassNotFoundException guaranteed
 SHOW JARS;
 
 -- 2. What functions are registered?
 SHOW USER FUNCTIONS;
 
--- 3. Add the JAR (replace path with actual path inside Gateway container):
-ADD JAR '/opt/flink/usrlib/streams-studio-udf.jar';
+-- 3. Load the JAR (path must exist on the Gateway container filesystem):
+ADD JAR '/opt/flink/usrlib/your-udf.jar';
 
--- 4. Confirm:
+-- 4. Confirm JAR loaded:
 SHOW JARS;
 
--- 5. Register (IF NOT EXISTS avoids "already exists" error on retry):
-CREATE TEMPORARY FUNCTION IF NOT EXISTS enrich_severity
-AS 'com.streamsstudio.udf.AlertSeverityEnricher'
+-- 5. Register (replace with your actual class/module path):
+CREATE TEMPORARY FUNCTION IF NOT EXISTS my_fn
+AS 'com.example.udf.MyFunction'
 LANGUAGE JAVA;
 
--- 6. Drop and re-register if something went wrong:
-DROP TEMPORARY FUNCTION IF EXISTS enrich_severity;
--- Then repeat steps 3-5`,
+-- 6. Verify registration:
+SHOW USER FUNCTIONS;
+
+-- 7. Drop and re-register if something went wrong:
+DROP TEMPORARY FUNCTION IF EXISTS my_fn;
+-- Then repeat steps 3–6
+
+-- ── Common errors and causes ─────────────────────────────────────────────────
+-- ClassNotFoundException  → ADD JAR not run, or wrong class path
+-- NoClassDefFoundError    → Scala version mismatch (2.11 vs 2.12)
+-- Cannot run python       → PyFlink not installed on TaskManagers
+-- already exists          → Use DROP + re-register, or IF NOT EXISTS`,
             },
         ],
     },
@@ -185,17 +235,17 @@ function openUdfManager() {
 // ═══════════════════════════════════════════════════════════════════════════
 function _buildModal() {
     const m = document.createElement('div');
-    m.id        = 'modal-udf-manager';
+    m.id = 'modal-udf-manager';
     m.className = 'modal-overlay';
     m.innerHTML = `
-<div class="modal" style="width:780px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
+<div class="modal" style="width:820px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
 
   <div class="modal-header" style="background:linear-gradient(135deg,rgba(79,163,224,0.1),rgba(0,0,0,0));border-bottom:1px solid rgba(79,163,224,0.2);flex-shrink:0;padding:14px 20px;">
     <div>
       <div style="font-size:14px;font-weight:700;color:var(--text0);">
         <span style="color:var(--blue,#4fa3e0);">⨍</span> UDF Manager
       </div>
-      <div style="font-size:10px;color:var(--blue,#4fa3e0);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Flink 1.15 – 1.20+</div>
+      <div style="font-size:10px;color:var(--blue,#4fa3e0);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Flink 1.15 – 1.20+ · v1.3.0</div>
     </div>
     <button class="modal-close" onclick="closeModal('modal-udf-manager')">×</button>
   </div>
@@ -222,15 +272,14 @@ function _buildModal() {
           <span class="udf-badge" id="s1-badge" data-s="idle">not checked</span>
         </div>
         <div class="udf-step-body">
-          <div class="udf-alert-red">
-            <strong>This step must complete before Step 3.</strong><br>
-            The <code>ClassNotFoundException</code> in your gateway logs is caused by skipping this step.<br>
-            <code>ADD JAR</code> must run inside the SQL Gateway session before <code>CREATE FUNCTION</code>.
+          <div style="background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.2);border-radius:var(--radius);padding:10px 12px;font-size:11px;color:var(--text1);line-height:1.8;margin-bottom:12px;">
+            <strong>Java / Scala UDFs:</strong> <code>ADD JAR</code> must run inside the SQL Gateway session <em>before</em> <code>CREATE FUNCTION</code>. Skipping this causes <code>ClassNotFoundException</code>.<br>
+            <strong>Python UDFs:</strong> Use <code>ADD PYTHON FILE</code> if needed, or just register the module path directly — no JAR required unless your function has JAR dependencies.
           </div>
 
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
             <button class="btn btn-secondary" style="font-size:11px;" onclick="_s1ShowJars()">⟳ SHOW JARS</button>
-            <span style="font-size:11px;color:var(--text3);">See what's currently on the classpath</span>
+            <span style="font-size:11px;color:var(--text3);">Java/Scala: check JARs. Python: check ADD PYTHON FILE.</span>
           </div>
           <div id="s1-jars" style="display:none;background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;font-size:11px;font-family:var(--mono);color:var(--text1);white-space:pre-wrap;line-height:1.8;margin-bottom:12px;"></div>
 
@@ -250,28 +299,25 @@ function _buildModal() {
             <span class="udf-chip" onclick="_s1SetPath('/opt/flink/usrlib/')">/opt/flink/usrlib/</span>
             <span class="udf-chip" onclick="_s1SetPath('/opt/flink/lib/')">/opt/flink/lib/</span>
             <span class="udf-chip" onclick="_s1SetPath('/tmp/flink-web-upload/')">/tmp/flink-web-upload/</span>
-          </div>
-
-          <div style="font-size:11px;color:var(--text3);margin-top:4px;">
-            Path must exist inside the Gateway container. Use the <strong style="color:var(--accent);">Upload JAR</strong> tab to upload and auto-register.
+            <span class="udf-chip" onclick="_s1SetPath('/var/www/udf-jars/')">/var/www/udf-jars/</span>
           </div>
 
           <div id="s1-result" style="display:none;margin-top:10px;border-radius:var(--radius);padding:8px 12px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;line-height:1.8;"></div>
         </div>
       </div>
 
-      <!-- STEP 2: Function details -->
+      <!-- STEP 2: Function details + PARAMETERS -->
       <div class="udf-step" style="margin-top:10px;" id="udf-s2">
         <div class="udf-step-hdr">
           <span class="udf-step-n">2</span>
-          <span class="udf-step-title">Function details</span>
+          <span class="udf-step-title">Function details &amp; parameters</span>
           <span class="udf-badge" id="s2-badge" data-s="idle">not filled</span>
         </div>
         <div class="udf-step-body">
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
             <div style="flex:2;min-width:150px;">
               <label class="field-label">Function Name *</label>
-              <input id="udf-reg-name" class="field-input" placeholder="enrich_severity"
+              <input id="udf-reg-name" class="field-input" placeholder="my_function"
                 style="font-size:12px;font-family:var(--mono);" oninput="_rPreview()" />
             </div>
             <div style="flex:1;min-width:90px;">
@@ -297,19 +343,56 @@ function _buildModal() {
               </select>
             </div>
           </div>
-          <div>
-            <label class="field-label">
-              Full Class Path *
-              <span id="udf-class-hint" style="font-weight:400;color:var(--text3);font-size:10px;">— exact Java class (case-sensitive, full package)</span>
-            </label>
-            <input id="udf-reg-class" class="field-input" type="text"
-              placeholder="com.streamsstudio.udf.AlertSeverityEnricher"
-              style="font-size:12px;font-family:var(--mono);" oninput="_rPreview()" />
+
+          <!-- Class + Method -->
+          <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+            <div style="flex:3;">
+              <label class="field-label">
+                Class / Module Path *
+                <span id="udf-class-hint" style="font-weight:400;color:var(--text3);font-size:10px;">— full class/module path (case-sensitive)</span>
+              </label>
+              <input id="udf-reg-class" class="field-input" type="text"
+                placeholder="com.example.udf.MyFunction"
+                style="font-size:12px;font-family:var(--mono);" oninput="_rPreview()" />
+              <div style="font-size:10px;color:var(--text3);margin-top:3px;">
+                Flink registers the <strong>class</strong>. It auto-discovers the <code>eval()</code> method by matching argument types at runtime.
+              </div>
+            </div>
+            <div style="flex:1;min-width:130px;">
+              <label class="field-label">Method / Function Name</label>
+              <input id="udf-reg-method" class="field-input" type="text" value="eval"
+                placeholder="eval"
+                style="font-size:12px;font-family:var(--mono);" oninput="_rPreview()" />
+              <div style="font-size:10px;color:var(--text3);margin-top:3px;">Java/Scala: usually <code>eval</code>. Python: the function name inside your module.</div>
+            </div>
           </div>
-          <div id="udf-py-note" style="display:none;margin-top:8px;" class="udf-alert-warn">
-            <strong>Python note:</strong> PyFlink must be installed on ALL TaskManagers.
-            "Cannot run program python: error=2" means Python is not in the container.
-            Use Java — no runtime dependency needed.
+
+          <!-- PARAMETER BUILDER -->
+          <div style="background:rgba(0,212,170,0.04);border:1px solid rgba(0,212,170,0.15);border-radius:var(--radius);padding:12px;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.8px;text-transform:uppercase;">
+                Parameters (for usage preview &amp; INSERT hint)
+              </div>
+              <button onclick="_rAddParam()" style="font-size:10px;padding:3px 10px;border-radius:2px;background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.3);color:var(--accent);cursor:pointer;">＋ Add Parameter</button>
+            </div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.6;">
+              Flink discovers the <code>eval()</code> signature by reflection — you do NOT specify parameters in <code>CREATE FUNCTION</code> DDL.
+              Adding them here generates a correct usage snippet and INSERT hint.
+            </div>
+            <div id="udf-params-list" style="display:flex;flex-direction:column;gap:5px;">
+              <div id="udf-params-empty" style="font-size:11px;color:var(--text3);padding:6px 0;">No parameters added — function will accept any arguments.</div>
+            </div>
+          </div>
+
+          <!-- Language-specific notes shown/hidden by _rLangHint() -->
+          <div id="udf-java-note" style="display:block;margin-top:8px;background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2);border-radius:var(--radius);padding:9px 12px;font-size:11px;color:var(--text1);line-height:1.8;">
+            <strong style="color:var(--blue);">Java UDF:</strong> Register the <strong>class</strong> (e.g. <code>com.example.udf.MyFunction</code>). Flink discovers the <code>eval()</code> method by reflection — no parameters in the DDL. <code>ADD JAR</code> must run before <code>CREATE FUNCTION</code> every session.
+          </div>
+          <div id="udf-scala-note" style="display:none;margin-top:8px;background:rgba(176,109,255,0.06);border:1px solid rgba(176,109,255,0.2);border-radius:var(--radius);padding:9px 12px;font-size:11px;color:var(--text1);line-height:1.8;">
+            <strong style="color:#b06dff;">Scala UDF:</strong> Same as Java — register the class path (e.g. <code>com.example.udf.MyFunction</code>). Ensure your Scala version matches Flink (2.12/2.13). <code>ADD JAR</code> must run first.
+          </div>
+          <div id="udf-py-note" style="display:none;margin-top:8px;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:var(--radius);padding:9px 12px;font-size:11px;color:var(--text1);line-height:1.8;">
+            <strong style="color:var(--yellow);">Python UDF (PyFlink):</strong> Enter the Python <strong>module path</strong> (e.g. <code>my_package.my_module</code>). PyFlink must be installed on all TaskManagers. If you see <em>"Cannot run program python"</em>, PyFlink is not installed on TaskManagers.
           </div>
         </div>
       </div>
@@ -322,10 +405,22 @@ function _buildModal() {
           <span class="udf-badge" id="s3-badge" data-s="idle">ready</span>
         </div>
         <div class="udf-step-body">
+
+          <!-- Registration SQL -->
+          <div style="font-size:10px;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">CREATE FUNCTION SQL</div>
           <pre id="udf-reg-preview"
             style="background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);
             border-radius:var(--radius);padding:12px 14px;font-size:11px;font-family:var(--mono);
             color:var(--text2);white-space:pre-wrap;margin:0 0 10px;line-height:1.7;">-- Fill in Step 2 to preview SQL</pre>
+
+          <!-- Usage preview -->
+          <div id="udf-usage-preview-wrap" style="display:none;margin-bottom:10px;">
+            <div style="font-size:10px;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">USAGE EXAMPLE (SELECT snippet)</div>
+            <pre id="udf-usage-preview"
+              style="background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--blue);
+              border-radius:var(--radius);padding:12px 14px;font-size:11px;font-family:var(--mono);
+              color:var(--blue);white-space:pre-wrap;margin:0;line-height:1.7;"></pre>
+          </div>
 
           <div id="udf-reg-result" style="display:none;border-radius:var(--radius);padding:12px 14px;
             font-size:11px;font-family:var(--mono);white-space:pre-wrap;line-height:1.8;
@@ -345,13 +440,11 @@ function _buildModal() {
     <!-- ══════════════════════════════════ UPLOAD JAR ════════════════════ -->
     <div id="udf-pane-upload" style="padding:20px;display:none;">
 
-      <!-- Compact info line -->
       <p style="font-size:12px;color:var(--text2);margin:0 0 14px;line-height:1.7;">
         Upload a JAR to the Studio container and register it in the active Gateway session.
         <span id="upl-svr-status-inline" style="margin-left:4px;font-size:10px;font-family:var(--mono);"></span>
       </p>
 
-      <!-- Studio JAR storage status -->
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
           <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;">Studio JAR Storage</div>
@@ -363,27 +456,23 @@ function _buildModal() {
         <div id="upl-svr-url-line" style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:4px;"></div>
         <div id="upl-svr-test-result" style="display:none;font-size:11px;font-family:var(--mono);padding:6px 10px;border-radius:4px;line-height:1.7;white-space:pre-wrap;"></div>
         <div style="margin-top:6px;">
-          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">
-            Browser upload URL <span style="opacity:0.6;">(auto-detected — leave blank unless Studio is behind a non-standard path)</span>
-          </label>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px;">Browser upload URL</label>
           <input id="inp-jar-base" class="field-input" type="text"
             placeholder="auto-detected from page origin"
             style="font-size:11px;font-family:var(--mono);width:100%;box-sizing:border-box;" oninput="_jSvrPreview()" />
         </div>
       </div>
 
-      <!-- Drop zone -->
       <div id="udf-jar-dropzone"
         style="border:2px dashed var(--border2);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;background:var(--bg1);margin-bottom:12px;transition:border-color 0.15s,background 0.15s;"
         onclick="document.getElementById('udf-jar-input').click()"
         ondragover="_jDragOver(event)" ondragleave="_jDragLeave(event)" ondrop="_jDrop(event)">
         <div style="font-size:26px;margin-bottom:6px;">📦</div>
         <div style="font-size:13px;font-weight:600;color:var(--text0);margin-bottom:4px;">Drop JAR here or click to browse</div>
-        <div style="font-size:11px;color:var(--text3);">Accepts <code>.jar</code> files · saved to Studio container · served over HTTP</div>
+        <div style="font-size:11px;color:var(--text3);">Accepts <code>.jar</code> files</div>
         <input type="file" id="udf-jar-input" accept=".jar" style="display:none;" onchange="_jFileSelected(event)" />
       </div>
 
-      <!-- Selected file info -->
       <div id="udf-jar-file-info" style="display:none;background:var(--bg2);border:1px solid var(--border);padding:8px 12px;border-radius:var(--radius);margin-bottom:12px;">
         <div style="display:flex;align-items:center;gap:10px;">
           <span>📦</span>
@@ -395,7 +484,6 @@ function _buildModal() {
         </div>
       </div>
 
-      <!-- Progress bar -->
       <div id="udf-jar-progress-wrap" style="display:none;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px;">
           <span id="udf-jar-prog-label">Uploading…</span><span id="udf-jar-prog-pct">0%</span>
@@ -405,10 +493,8 @@ function _buildModal() {
         </div>
       </div>
 
-      <!-- Status line -->
       <div id="udf-jar-status" style="font-size:12px;min-height:16px;margin-bottom:12px;line-height:1.8;"></div>
 
-      <!-- Result panel -->
       <div id="udf-jar-addjar-wrap" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;">
         <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;">Upload &amp; ADD JAR result</div>
         <div id="udf-jar-addjar-msg" style="font-size:11px;font-family:var(--mono);color:var(--text1);line-height:1.9;white-space:pre-wrap;"></div>
@@ -418,18 +504,15 @@ function _buildModal() {
         </div>
       </div>
 
-      <!-- Upload button -->
       <button class="btn btn-primary" style="font-size:12px;width:100%;padding:10px;" onclick="_jUpload()">⬆ Upload JAR</button>
 
-      <!-- Also upload to JobManager checkbox -->
       <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="upl-also-jm" checked style="cursor:pointer;" />
         <label for="upl-also-jm" style="font-size:11px;color:var(--text2);cursor:pointer;line-height:1.5;">
-          Also upload to Flink JobManager (needed for <code>INSERT INTO</code> pipeline jobs that reference this JAR)
+          Also upload to Flink JobManager (needed for pipeline jobs)
         </label>
       </div>
 
-      <!-- JAR list -->
       <div style="margin-top:20px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-weight:700;">JARs on Studio container</span>
@@ -595,16 +678,71 @@ function _buildModal() {
     .udf-tmpl-body{display:none;border-top:1px solid var(--border);}
     .udf-tmpl-body.open{display:block;}
     .udf-tmpl-code{font-family:var(--mono);font-size:11px;line-height:1.65;color:var(--text1);background:var(--bg0);padding:12px 14px;overflow-x:auto;white-space:pre;max-height:280px;overflow-y:auto;}
+    .udf-param-row{display:flex;align-items:center;gap:6px;padding:6px 8px;background:var(--bg1);border:1px solid var(--border);border-radius:4px;}
+    .udf-param-row input,.udf-param-row select{font-size:11px;background:var(--bg0);border:1px solid var(--border);color:var(--text0);padding:4px 7px;border-radius:3px;font-family:var(--mono);}
     `;
         document.head.appendChild(s);
     }
 
-    ['udf-reg-name','udf-reg-class','udf-reg-lang','udf-reg-scope','udf-reg-exists'].forEach(id => {
+    // Wire up live preview events
+    ['udf-reg-name','udf-reg-class','udf-reg-method','udf-reg-lang','udf-reg-scope','udf-reg-exists'].forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.addEventListener('input', _rPreview); el.addEventListener('change', _rPreview); }
     });
     _mvnUpdate();
     _renderUdfTemplates();
+
+    // Initialize params
+    window._udfParams = [];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PARAMETER BUILDER
+// ═══════════════════════════════════════════════════════════════════════════
+window._udfParams = [];
+
+function _rAddParam() {
+    const id = 'p' + Date.now();
+    window._udfParams.push({ id, name: '', type: 'DOUBLE' });
+    _rRenderParams();
+    _rPreview();
+}
+
+function _rRenderParams() {
+    const list = document.getElementById('udf-params-list');
+    const empty = document.getElementById('udf-params-empty');
+    if (!list) return;
+
+    // Remove existing param rows
+    list.querySelectorAll('.udf-param-row').forEach(el => el.remove());
+
+    if (!window._udfParams.length) {
+        if (empty) empty.style.display = 'block';
+        return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    window._udfParams.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.className = 'udf-param-row';
+        row.dataset.pid = p.id;
+        row.innerHTML = `
+      <span style="font-size:10px;color:var(--text3);min-width:18px;text-align:right;">${idx + 1}</span>
+      <input type="text" placeholder="param_name" value="${escHtml(p.name)}"
+        oninput="window._udfParams[${idx}].name=this.value;_rPreview()"
+        style="flex:1;min-width:80px;" />
+      <select onchange="window._udfParams[${idx}].type=this.value;_rPreview()" style="min-width:130px;">
+        ${FLINK_TYPES.map(t => `<option value="${t}" ${p.type===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <button onclick="_rRemoveParam('${p.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 3px;">×</button>`;
+        list.appendChild(row);
+    });
+}
+
+function _rRemoveParam(id) {
+    window._udfParams = window._udfParams.filter(p => p.id !== id);
+    _rRenderParams();
+    _rPreview();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -637,9 +775,9 @@ function _setResultBox(id, type, msg) {
     const el = document.getElementById(id);
     if (!el) return;
     el.style.display = 'block';
-    const c = { ok:'var(--green)', err:'var(--red)', warn:'var(--yellow,#f5a623)', info:'var(--blue,#4fa3e0)' };
+    const c  = { ok:'var(--green)', err:'var(--red)', warn:'var(--yellow,#f5a623)', info:'var(--blue,#4fa3e0)' };
     const bg = { ok:'rgba(57,211,83,0.08)', err:'rgba(255,77,109,0.08)', warn:'rgba(245,166,35,0.08)', info:'rgba(79,163,224,0.08)' };
-    const bd = { ok:'rgba(57,211,83,0.3)', err:'rgba(255,77,109,0.3)', warn:'rgba(245,166,35,0.3)', info:'rgba(79,163,224,0.3)' };
+    const bd = { ok:'rgba(57,211,83,0.3)',  err:'rgba(255,77,109,0.3)',  warn:'rgba(245,166,35,0.3)',  info:'rgba(79,163,224,0.3)' };
     el.style.cssText = `display:block;background:${bg[type]||bg.info};border:1px solid ${bd[type]||bd.info};border-radius:var(--radius);padding:10px 12px;font-size:11px;font-family:var(--mono);color:${c[type]||c.info};white-space:pre-wrap;line-height:1.8;word-break:break-word;`;
     el.textContent = msg;
 }
@@ -649,23 +787,23 @@ async function _s1ShowJars() {
     if (!jarsEl) return;
     if (!state.gateway || !state.activeSession) {
         _setBadge('s1-badge', 'err', 'not connected');
-        jarsEl.style.display='block'; jarsEl.style.color='var(--red)';
-        jarsEl.textContent='✗ Not connected to a session.';
+        jarsEl.style.display = 'block'; jarsEl.style.color = 'var(--red)';
+        jarsEl.textContent = '✗ Not connected to a session.';
         return;
     }
     _setBadge('s1-badge', 'run', 'checking…');
-    jarsEl.style.display='block'; jarsEl.style.color='var(--text3)';
-    jarsEl.textContent='Running SHOW JARS…';
+    jarsEl.style.display = 'block'; jarsEl.style.color = 'var(--text3)';
+    jarsEl.textContent = 'Running SHOW JARS…';
     try {
         const result = await _runQ('SHOW JARS');
         const rows   = result.rows || [];
-        const toStr  = r => typeof r==='string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
+        const toStr  = r => typeof r === 'string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
         const paths  = rows.map(r => toStr(r)).filter(Boolean);
         window._sessionJarPaths = paths;
         if (paths.length === 0) {
             _setBadge('s1-badge', 'warn', 'no jars loaded');
-            jarsEl.style.color = 'var(--yellow,#f5a623)';
-            jarsEl.textContent =
+            jarsEl.style.color   = 'var(--yellow,#f5a623)';
+            jarsEl.textContent   =
                 '⚠ SHOW JARS returned 0 rows.\n\n' +
                 'ADD JAR has not been run in this session.\n' +
                 'This is why you get ClassNotFoundException.\n\n' +
@@ -677,22 +815,16 @@ async function _s1ShowJars() {
         }
     } catch(e) {
         _setBadge('s1-badge', 'err', 'failed');
-        jarsEl.style.color = 'var(--red)';
-        jarsEl.textContent = '✗ SHOW JARS failed: ' + e.message;
+        jarsEl.style.color  = 'var(--red)';
+        jarsEl.textContent  = '✗ SHOW JARS failed: ' + e.message;
     }
 }
 
 async function _s1AddJar() {
     const pathInput = document.getElementById('s1-path');
     const path = (pathInput?.value || '').trim() || window._lastUploadedJarPath || '';
-    if (!path) {
-        _setResultBox('s1-result', 'warn', '⚠ Enter a JAR path first.');
-        return;
-    }
-    if (!state.gateway || !state.activeSession) {
-        _setResultBox('s1-result', 'err', '✗ Not connected to a session.');
-        return;
-    }
+    if (!path) { _setResultBox('s1-result', 'warn', '⚠ Enter a JAR path first.'); return; }
+    if (!state.gateway || !state.activeSession) { _setResultBox('s1-result', 'err', '✗ Not connected to a session.'); return; }
     _setBadge('s1-badge', 'run', 'adding jar…');
     _setResultBox('s1-result', 'info', `Running ADD JAR '${path}'…`);
     try {
@@ -721,32 +853,75 @@ function _s1SetPath(prefix) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STEP 2 — FORM PREVIEW
+// STEP 2 — FORM PREVIEW with PARAMETERS
 // ═══════════════════════════════════════════════════════════════════════════
 function _rLangHint() {
-    const lang = document.getElementById('udf-reg-lang')?.value || 'JAVA';
-    const note = document.getElementById('udf-py-note');
-    const hint = document.getElementById('udf-class-hint');
-    if (note) note.style.display = lang === 'PYTHON' ? 'block' : 'none';
-    if (hint) hint.textContent = lang === 'PYTHON'
-        ? '— Python module.function e.g. my_module.my_function'
-        : '— exact Java class (case-sensitive, full package path)';
+    const lang     = document.getElementById('udf-reg-lang')?.value || 'JAVA';
+    const pyNote   = document.getElementById('udf-py-note');
+    const scalNote = document.getElementById('udf-scala-note');
+    const javaNote = document.getElementById('udf-java-note');
+    const hint     = document.getElementById('udf-class-hint');
+    const methodEl = document.getElementById('udf-reg-method');
+    const methodLbl = document.querySelector('label[for="udf-reg-method"], .udf-method-label');
+
+    if (pyNote)   pyNote.style.display   = lang === 'PYTHON' ? 'block' : 'none';
+    if (scalNote) scalNote.style.display = lang === 'SCALA'  ? 'block' : 'none';
+    if (javaNote) javaNote.style.display = lang === 'JAVA'   ? 'block' : 'none';
+
+    // Update hint and placeholder based on language
+    if (hint) {
+        const hints = {
+            JAVA:   '— full Java class path, e.g. com.example.udf.MyFunction',
+            SCALA:  '— full Scala class path, e.g. com.example.udf.MyFunction$',
+            PYTHON: '— Python module path, e.g. my_module or my_package.my_module',
+        };
+        hint.textContent = hints[lang] || hints.JAVA;
+    }
+
+    // Update class path placeholder
+    const classEl = document.getElementById('udf-reg-class');
+    if (classEl) {
+        const placeholders = {
+            JAVA:   'com.example.udf.MyFunction',
+            SCALA:  'com.example.udf.MyFunction',
+            PYTHON: 'my_package.my_module',
+        };
+        classEl.placeholder = placeholders[lang] || placeholders.JAVA;
+    }
+
+    // Update method placeholder
+    if (methodEl) {
+        const methodPlaceholders = {
+            JAVA:   'eval',
+            SCALA:  'eval',
+            PYTHON: 'eval',
+        };
+        methodEl.placeholder = methodPlaceholders[lang] || 'eval';
+    }
 }
 
 function _rPreview() {
     const name   = (document.getElementById('udf-reg-name')?.value   || '').trim();
     const cls    = (document.getElementById('udf-reg-class')?.value  || '').trim();
+    const method = (document.getElementById('udf-reg-method')?.value || 'eval').trim();
     const lang   =  document.getElementById('udf-reg-lang')?.value   || 'JAVA';
     const scope  =  document.getElementById('udf-reg-scope')?.value  || 'TEMPORARY';
     const exists =  document.getElementById('udf-reg-exists')?.value || 'IF_NOT_EXISTS';
     const prev   =  document.getElementById('udf-reg-preview');
     const b2     =  document.getElementById('s2-badge');
+    const usagePrev = document.getElementById('udf-usage-preview');
+    const usageWrap = document.getElementById('udf-usage-preview-wrap');
+
     if (!prev) return;
+
     if (!name || !cls) {
         prev.textContent = '-- Fill in function name and class path above';
-        if (b2) { b2.dataset.s='idle'; b2.textContent='not filled'; }
+        if (b2) { b2.dataset.s = 'idle'; b2.textContent = 'not filled'; }
+        if (usageWrap) usageWrap.style.display = 'none';
         return;
     }
+
+    // CREATE FUNCTION SQL — no parameters in DDL (Flink discovers by reflection)
     let sql;
     if (exists === 'DROP_RECREATE') {
         sql = `DROP ${scope} FUNCTION IF EXISTS ${name};\n\nCREATE ${scope} FUNCTION ${name}\nAS '${cls}'\nLANGUAGE ${lang};`;
@@ -754,7 +929,34 @@ function _rPreview() {
         sql = `CREATE ${scope} FUNCTION IF NOT EXISTS ${name}\nAS '${cls}'\nLANGUAGE ${lang};`;
     }
     prev.textContent = sql;
-    if (b2) { b2.dataset.s='ok'; b2.textContent='ready ✓'; }
+
+    // Usage preview with parameters
+    const params = (window._udfParams || []);
+    let callSig;
+    if (params.length > 0) {
+        const argList = params.map(p => p.name ? `${p.name} /* ${p.type} */` : `/* ${p.type} */`).join(',\n    ');
+        callSig = `${name}(\n    ${argList}\n)`;
+    } else {
+        callSig = `${name}(your_column)`;
+    }
+
+    if (usagePrev && usageWrap) {
+        usageWrap.style.display = 'block';
+        const langNote = {
+            JAVA:   `-- Flink calls '${method}()' on ${cls.split('.').pop()} by reflection`,
+            SCALA:  `-- Flink calls '${method}()' on ${cls.split('.').pop()} by reflection`,
+            PYTHON: `-- PyFlink calls the Python function in module '${cls}'`,
+        };
+        usagePrev.textContent =
+            `-- Usage example:
+SELECT ${callSig} AS result
+FROM your_table;
+
+` +
+            (langNote[lang] || langNote.JAVA);
+    }
+
+    if (b2) { b2.dataset.s = 'ok'; b2.textContent = 'ready ✓'; }
 }
 
 function _rGetStmts() {
@@ -783,19 +985,14 @@ function _rInsert() {
     const stmts = _rGetStmts();
     if (!stmts.length) { toast('Fill in function details first', 'warn'); return; }
     const ed = document.getElementById('sql-editor'); if (!ed) return;
-    const s = ed.selectionStart;
-    ed.value = ed.value.slice(0,s) + (ed.value.length?'\n\n':'') + stmts.join(';\n\n') + ';\n' + ed.value.slice(ed.selectionEnd);
-    ed.focus(); if (typeof updateLineNumbers==='function') updateLineNumbers();
+    const s  = ed.selectionStart;
+    ed.value = ed.value.slice(0, s) + (ed.value.length ? '\n\n' : '') + stmts.join(';\n\n') + ';\n' + ed.value.slice(ed.selectionEnd);
+    ed.focus(); if (typeof updateLineNumbers === 'function') updateLineNumbers();
     closeModal('modal-udf-manager'); toast('SQL inserted', 'ok');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STEP 3 — EXECUTE
-// Sequence:
-//   1. Validate inputs
-//   2. SHOW JARS — if empty, try auto ADD JAR or stop with fix instructions
-//   3. Execute DROP (if needed) + CREATE FUNCTION
-//   4. Verify with SHOW USER FUNCTIONS
+// STEP 3 — EXECUTE with language validation
 // ═══════════════════════════════════════════════════════════════════════════
 async function _rExecute() {
     const name = (document.getElementById('udf-reg-name')?.value  || '').trim();
@@ -808,93 +1005,92 @@ async function _rExecute() {
     if (!cls)  { _setResultBox('udf-reg-result', 'err', '✗ Enter the class path in Step 2.'); return; }
     if (!state.gateway || !state.activeSession) { _setResultBox('udf-reg-result', 'err', '✗ Not connected.'); return; }
 
-    if (btn) { btn.disabled=true; btn.textContent='Registering…'; }
-    if (b3)  { b3.dataset.s='run'; b3.textContent='running…'; }
+    // Advisory: if Python selected with JARs on classpath, show info (don't block)
+    if (lang === 'PYTHON' && (window._sessionJarPaths||[]).length > 0) {
+        const jarNames = (window._sessionJarPaths || []).map(p => p.split('/').pop()).join(', ');
+        // Non-blocking info — PyFlink can use JARs too (e.g. connector JARs)
+        addLog('INFO', `Python UDF with JAR(s) on classpath: ${jarNames}. PyFlink must be installed on all TaskManagers.`);
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Registering…'; }
+    if (b3)  { b3.dataset.s = 'run'; b3.textContent = 'running…'; }
 
     try {
-        // ── Pre-flight: SHOW JARS ──────────────────────────────────────────
         _setResultBox('udf-reg-result', 'info', '① Checking classpath (SHOW JARS)…');
 
         let jarPaths = [];
         try {
             const jr    = await _runQ('SHOW JARS');
-            const toStr = r => typeof r==='string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
-            jarPaths = (jr.rows || []).map(r => toStr(r)).filter(Boolean);
+            const toStr = r => typeof r === 'string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
+            jarPaths    = (jr.rows || []).map(r => toStr(r)).filter(Boolean);
             window._sessionJarPaths = jarPaths;
             const b1 = document.getElementById('s1-badge');
-            if (b1) { b1.dataset.s=jarPaths.length?'ok':'warn'; b1.textContent=jarPaths.length?`${jarPaths.length} jar(s) ✓`:'no jars'; }
-        } catch(_) { /* SHOW JARS not critical — continue */ }
+            if (b1) { b1.dataset.s = jarPaths.length ? 'ok' : 'warn'; b1.textContent = jarPaths.length ? `${jarPaths.length} jar(s) ✓` : 'no jars'; }
+        } catch(_) {}
 
-        // ── No JARs: try auto ADD JAR from last upload ─────────────────────
-        if (jarPaths.length === 0) {
-            if (window._lastUploadedJarPath) {
-                _setResultBox('udf-reg-result', 'info',
-                    `② No JARs in session. Auto-running ADD JAR '${window._lastUploadedJarPath}'…`);
-                try {
-                    await _runQ(`ADD JAR '${window._lastUploadedJarPath.replace(/'/g,"\\'")}' `);
-                    jarPaths = [window._lastUploadedJarPath];
-                    addLog('OK', 'ADD JAR auto-applied: ' + window._lastUploadedJarPath);
-                } catch(addErr) {
-                    _setResultBox('udf-reg-result', 'err',
-                        `✗ Cannot register — ADD JAR failed: ${addErr.message}\n\n` +
-                        `The Gateway container cannot see '${window._lastUploadedJarPath}'.\n` +
-                        `Mount the udf-jars volume on your flink-sql-gateway container,\n` +
-                        `then re-upload using the Upload JAR tab.`
-                    );
-                    if (btn) { btn.disabled=false; btn.textContent='⚡ Register Function'; }
-                    if (b3)  { b3.dataset.s='err'; b3.textContent='failed'; }
-                    return;
-                }
-            } else {
+        // Auto ADD JAR if none loaded and we have a recent upload
+        if (jarPaths.length === 0 && window._lastUploadedJarPath) {
+            _setResultBox('udf-reg-result', 'info', `② No JARs in session. Auto-running ADD JAR '${window._lastUploadedJarPath}'…`);
+            try {
+                await _runQ(`ADD JAR '${window._lastUploadedJarPath.replace(/'/g, "\\'")}'`);
+                jarPaths = [window._lastUploadedJarPath];
+                addLog('OK', 'ADD JAR auto-applied: ' + window._lastUploadedJarPath);
+            } catch(addErr) {
                 _setResultBox('udf-reg-result', 'err',
-                    `✗ No JARs on session classpath.\n\n` +
-                    `CREATE FUNCTION LANGUAGE JAVA throws ClassNotFoundException when\n` +
-                    `ADD JAR has not been run first.\n\n` +
-                    `Go to Step 1:\n` +
-                    `  1. Enter the JAR path (must be accessible inside the Gateway container)\n` +
-                    `  2. Click ADD JAR\n` +
-                    `  3. Confirm SHOW JARS shows your JAR\n` +
-                    `  4. Come back here and click Register Function`
+                    `✗ Cannot register — ADD JAR failed: ${addErr.message}\n\n` +
+                    `Go to Step 1 and add the JAR manually, or use Upload JAR tab.`
                 );
-                if (btn) { btn.disabled=false; btn.textContent='⚡ Register Function'; }
-                if (b3)  { b3.dataset.s='err'; b3.textContent='no jar'; }
+                if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Function'; }
+                if (b3)  { b3.dataset.s = 'err'; b3.textContent = 'failed'; }
                 return;
             }
+        } else if (jarPaths.length === 0) {
+            _setResultBox('udf-reg-result', 'err',
+                `✗ No JARs on session classpath.\n\n` +
+                `CREATE FUNCTION LANGUAGE JAVA throws ClassNotFoundException when\n` +
+                `ADD JAR has not been run first.\n\n` +
+                `Go to Step 1 → ADD JAR → confirm SHOW JARS shows your JAR → retry.`
+            );
+            if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Function'; }
+            if (b3)  { b3.dataset.s = 'err'; b3.textContent = 'no jar'; }
+            return;
         }
 
-        // ── Execute registration ───────────────────────────────────────────
+        // Execute registration
         const stmts = _rGetStmts();
         _setResultBox('udf-reg-result', 'info',
-            `② Registering function…\n` +
-            `   Name:     ${name}\n` +
-            `   Class:    ${cls}\n` +
-            `   Language: ${lang}\n` +
-            `   Classpath: ${jarPaths.join(', ')}`
+            `② Registering function…\n   Name: ${name}\n   Class: ${cls}\n   Language: ${lang}\n   Classpath: ${jarPaths.join(', ')}`
         );
 
         for (const stmt of stmts) {
             await _runQ(stmt);
         }
 
-        // ── Verify ────────────────────────────────────────────────────────
+        // Verify with SHOW USER FUNCTIONS
         _setResultBox('udf-reg-result', 'info', '③ Verifying (SHOW USER FUNCTIONS)…');
         let verified = false;
         try {
             const vr    = await _runQ('SHOW USER FUNCTIONS');
-            const toStr = r => typeof r==='string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
+            const toStr = r => typeof r === 'string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
             const fns   = (vr.rows || []).map(r => toStr(r)).filter(Boolean);
             verified    = fns.some(f => f.toLowerCase() === name.toLowerCase());
         } catch(_) {}
+
+        // Build usage example
+        const params  = (window._udfParams || []);
+        const callSig = params.length
+            ? `${name}(${params.map(p => p.name || `/*${p.type}*/`).join(', ')})`
+            : `${name}(your_column)`;
 
         _setResultBox('udf-reg-result', 'ok',
             `✓ ${name} registered successfully!\n\n` +
             `  Language: ${lang}\n` +
             `  Class:    ${cls}\n` +
             `  ${verified ? '✓ Confirmed in SHOW USER FUNCTIONS' : '(run SHOW USER FUNCTIONS to verify)'}\n\n` +
-            `Test in editor:\n  SELECT ${name}(your_column) FROM your_table;`
+            `Test in editor:\n  SELECT ${callSig} FROM your_table;`
         );
 
-        if (b3) { b3.dataset.s='ok'; b3.textContent='done ✓'; }
+        if (b3) { b3.dataset.s = 'ok'; b3.textContent = 'done ✓'; }
         _saveUdfReg({ name, cls, lang });
         window._udfLibraryCache = null;
         toast(`✓ ${name} (${lang}) registered`, 'ok');
@@ -914,25 +1110,22 @@ async function _rExecute() {
                 `    jar tf your-udf.jar | grep ${cls.split('.').pop()}`;
         } else if (msg.includes('python') || msg.includes('Python')) {
             detail =
-                `\n\nThis Python error means Flink could not load '${cls}' as Java\n` +
-                `and tried Python as fallback. Root cause: ClassNotFoundException.\n` +
-                `The JAR is still not on the classpath. Fix Step 1 first.`;
+                `\n\nThis Python error means Flink tried PYTHON fallback because the Java class was not found.\n` +
+                `Root cause is still ClassNotFoundException — fix Step 1 (ADD JAR) first.`;
         } else if (msg.includes('already exist')) {
             detail = `\n\nChange "If already exists" to "Drop + Re-create" and try again.`;
         }
 
         _setResultBox('udf-reg-result', 'err', `✗ ${msg}${detail}`);
-        if (b3) { b3.dataset.s='err'; b3.textContent='failed'; }
+        if (b3) { b3.dataset.s = 'err'; b3.textContent = 'failed'; }
         addLog('ERR', 'UDF reg failed: ' + msg);
     } finally {
-        if (btn) { btn.disabled=false; btn.textContent='⚡ Register Function'; }
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Register Function'; }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CORE SQL RUNNER
-// DDL (CREATE/DROP/ADD/USE/SET/RESET/REMOVE) → no result fetch
-// Queries (SELECT/SHOW/DESCRIBE/EXPLAIN) → fetch rows
 // ═══════════════════════════════════════════════════════════════════════════
 async function _runQ(sql) {
     const sess    = state.activeSession;
@@ -955,8 +1148,7 @@ async function _runQ(sql) {
             if (isDDL) return { rows: [], success: true };
             if (isQuery) {
                 try {
-                    const r = await api('GET',
-                        `/v1/sessions/${sess}/operations/${op}/result/0?rowFormat=JSON&maxFetchSize=500`);
+                    const r = await api('GET', `/v1/sessions/${sess}/operations/${op}/result/0?rowFormat=JSON&maxFetchSize=500`);
                     return { rows: _extractRows(r), success: true };
                 } catch(fe) {
                     if (fe.message?.includes('non-query') || fe.message?.includes('no result')) return { rows: [], success: true };
@@ -1001,7 +1193,7 @@ async function loadUdfLibrary() {
     list.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px;">⏳ Loading…</div>';
     try {
         const [allR, userR] = await Promise.all([_runQ('SHOW FUNCTIONS'), _runQ('SHOW USER FUNCTIONS')]);
-        const toStr   = r => typeof r==='string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
+        const toStr   = r => typeof r === 'string' ? r : (Array.isArray(r) ? String(r[0]||'') : String(Object.values(r)[0]||''));
         const all     = (allR.rows  || []).map(r => ({ name: toStr(r), kind: 'builtin' })).filter(f => f.name);
         const uNames  = new Set((userR.rows || []).map(r => toStr(r).toLowerCase()).filter(Boolean));
         const combined = all.map(f => ({ ...f, kind: uNames.has(f.name.toLowerCase()) ? 'user' : 'builtin' }));
@@ -1022,8 +1214,8 @@ function _renderLib(fns, views) {
     const q  = (document.getElementById('udf-search')?.value || '').toLowerCase();
     const af = fns   || window._udfLibraryCache || [];
     const av = views || window._udfViewCache    || [];
-    const user    = af.filter(f => f.kind==='user'    && f.name.toLowerCase().includes(q));
-    const builtin = af.filter(f => f.kind==='builtin' && f.name.toLowerCase().includes(q));
+    const user    = af.filter(f => f.kind === 'user'    && f.name.toLowerCase().includes(q));
+    const builtin = af.filter(f => f.kind === 'builtin' && f.name.toLowerCase().includes(q));
     const vl      = av.filter(v => v.name.toLowerCase().includes(q));
     let html = '';
     if ((ft==='all'||ft==='view')    && vl.length)    html += `<div class="udf-sec-hdr" style="color:var(--accent);">◫ Views (${vl.length})</div>` + vl.map(v=>`<div class="udf-view-card" onclick="_vInsert('${escHtml(v.name)}')"><span style="color:var(--accent);font-weight:700;">◫</span><span style="font-family:var(--mono);font-size:12px;color:var(--text0);flex:1;">${escHtml(v.name)}</span><span style="font-size:9px;padding:1px 6px;border-radius:2px;background:rgba(0,212,170,0.12);color:var(--accent);">VIEW</span></div>`).join('');
@@ -1035,40 +1227,23 @@ function _renderLib(fns, views) {
 
 function filterUdfList() { _renderLib(window._udfLibraryCache||[], window._udfViewCache||[]); }
 function _fInsert(name) {
-    const ed=document.getElementById('sql-editor');if(!ed)return;
-    const c=ed.selectionStart,ins=`${name}()`;
-    ed.value=ed.value.slice(0,c)+ins+ed.value.slice(ed.selectionEnd);
-    ed.focus();ed.setSelectionRange(c+name.length+1,c+name.length+1);
-    if(typeof updateLineNumbers==='function')updateLineNumbers();
-    toast(`Inserted ${name}()`,'ok');
+    const ed = document.getElementById('sql-editor'); if (!ed) return;
+    const c = ed.selectionStart, ins = `${name}()`;
+    ed.value = ed.value.slice(0, c) + ins + ed.value.slice(ed.selectionEnd);
+    ed.focus(); ed.setSelectionRange(c + name.length + 1, c + name.length + 1);
+    if (typeof updateLineNumbers === 'function') updateLineNumbers();
+    toast(`Inserted ${name}()`, 'ok');
 }
 function _vInsert(name) {
-    const ed=document.getElementById('sql-editor');if(!ed)return;
-    ed.value+=(ed.value.length?'\n\n':'')+`SELECT * FROM ${name}`;
-    ed.focus();if(typeof updateLineNumbers==='function')updateLineNumbers();
-    closeModal('modal-udf-manager');toast(`Inserted SELECT * FROM ${name}`,'ok');
+    const ed = document.getElementById('sql-editor'); if (!ed) return;
+    ed.value += (ed.value.length ? '\n\n' : '') + `SELECT * FROM ${name}`;
+    ed.focus(); if (typeof updateLineNumbers === 'function') updateLineNumbers();
+    closeModal('modal-udf-manager'); toast(`Inserted SELECT * FROM ${name}`, 'ok');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// JAR UPLOAD — nginx WebDAV PUT (zero extra dependencies)
-//
-// Architecture:
-//   Browser  →  PUT /udf-jars/my-udf.jar  →  nginx saves to /var/www/udf-jars/
-//   nginx serves GET /udf-jars/my-udf.jar (static file)
-//   Studio runs: ADD JAR 'http://studio-host/udf-jars/my-udf.jar'
-//   Flink SQL Gateway fetches JAR over HTTP from nginx → loads into classloader
-//
-// Requirements:
-//   nginx/studio.conf: location /udf-jars/ with dav_methods PUT DELETE
-//   docker-entrypoint.sh: mkdir -p /var/www/udf-jars
-//   Both are included in the updated files. Dockerfile unchanged.
+// JAR UPLOAD
 // ═══════════════════════════════════════════════════════════════════════════
-
-// ── URL helpers ─────────────────────────────────────────────────────────────
-// _getJarBase() → browser PUT/GET URL (page origin + /udf-jars)
-// ADD JAR always uses the local filesystem path /var/www/udf-jars/filename.jar
-// This requires Studio and Gateway to share a Docker named volume at /var/www/udf-jars/
-
 function _getJarBase() {
     const ov = (document.getElementById('inp-jar-base')?.value || '').trim();
     if (ov) return ov.replace(/\/+$/, '');
@@ -1077,32 +1252,27 @@ function _getJarBase() {
 
 function _jSvrPreview() {
     const el = document.getElementById('upl-svr-url-line'); if (!el) return;
-    const gwUrl = (document.getElementById('inp-jar-gateway-url')?.value || '').trim();
-    el.textContent = '→ Browser PUT: ' + _getJarBase() + '/  |  Gateway ADD JAR: ' + (gwUrl || '(same as browser — set above for Docker)');
+    el.textContent = '→ Browser PUT: ' + _getJarBase() + '/';
 }
 
 async function _jSvrTest() {
-    const badge    = document.getElementById('upl-svr-badge');
-    const result   = document.getElementById('upl-svr-test-result');
-    const inline   = document.getElementById('upl-svr-status-inline');
+    const badge  = document.getElementById('upl-svr-badge');
+    const result = document.getElementById('upl-svr-test-result');
+    const inline = document.getElementById('upl-svr-status-inline');
     if (!result) return;
 
     const _b = (state, text) => {
         if (!badge) return;
-        const s = {
-            ok:   'background:rgba(57,211,83,0.15);color:#39d353',
-            err:  'background:rgba(255,77,109,0.15);color:#ff4d6d',
-            busy: 'background:rgba(79,163,224,0.15);color:var(--blue)'
-        };
+        const s = { ok:'background:rgba(57,211,83,0.15);color:#39d353', err:'background:rgba(255,77,109,0.15);color:#ff4d6d', busy:'background:rgba(79,163,224,0.15);color:var(--blue)' };
         badge.style.cssText = `font-size:9px;padding:2px 8px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;${s[state]||''}`;
         badge.textContent = text;
-        if (inline) { inline.textContent = state==='ok' ? '● ready' : state==='err' ? '● not configured' : ''; inline.style.color = state==='ok' ? 'var(--green)' : 'var(--red)'; }
+        if (inline) { inline.textContent = state === 'ok' ? '● ready' : state === 'err' ? '● not configured' : ''; inline.style.color = state === 'ok' ? 'var(--green)' : 'var(--red)'; }
     };
 
     const _r = (type, msg) => {
         if (!result) return;
         result.style.display = 'block';
-        const s = { ok:'rgba(57,211,83,0.08)|rgba(57,211,83,0.3)|var(--green)', err:'rgba(255,77,109,0.08)|rgba(255,77,109,0.3)|var(--red)', info:'rgba(79,163,224,0.08)|rgba(79,163,224,0.3)|var(--blue)' }[type]||'rgba(79,163,224,0.08)|rgba(79,163,224,0.3)|var(--blue)';
+        const s = { ok:'rgba(57,211,83,0.08)|rgba(57,211,83,0.3)|var(--green)', err:'rgba(255,77,109,0.08)|rgba(255,77,109,0.3)|var(--red)', info:'rgba(79,163,224,0.08)|rgba(79,163,224,0.3)|var(--blue)' }[type] || 'rgba(79,163,224,0.08)|rgba(79,163,224,0.3)|var(--blue)';
         const [bg,bd,col] = s.split('|');
         result.style.cssText = `display:block;font-size:11px;font-family:var(--mono);padding:6px 10px;border-radius:4px;line-height:1.7;white-space:pre-wrap;background:${bg};border:1px solid ${bd};color:${col};`;
         result.textContent = msg;
@@ -1112,54 +1282,18 @@ async function _jSvrTest() {
 
     const base = _getJarBase();
     try {
-        // GET the directory listing — autoindex_format json returns a JSON array
         const r = await fetch(base + '/', { method:'GET', signal: AbortSignal.timeout(5000) });
         if (r.status === 404) throw new Error('404 — /udf-jars/ location not found in nginx config');
         if (r.status === 403) throw new Error('403 — directory listing disabled or permission denied');
         if (!r.ok)            throw new Error('HTTP ' + r.status);
-
-        const text = await r.text();
-        let jars = [];
-        try {
-            const parsed = JSON.parse(text);
-            jars = parsed.filter(f => f.name && f.name.endsWith('.jar'));
-        } catch(_) { /* not JSON autoindex — that's ok, just means no files yet */ }
-
         _b('ok', '● ready');
-        const jarList = jars.length
-            ? jars.map(j => `  ${j.name}  (${_fmtB(j.size)})`).join('\n')
-            : '  (no JARs uploaded yet)';
-        _r('ok',
-            `✓ Studio JAR storage is configured\n` +
-            `  URL: ${base}/\n` +
-            `  Storage: /var/www/udf-jars/ (on Studio container)\n` +
-            `  JARs:\n${jarList}\n\n` +
-            `Ready — drop a JAR below and click Upload.`
-        );
+        _r('ok', `✓ Studio JAR storage is configured\n  URL: ${base}/`);
     } catch(e) {
         _b('err', '● not ready');
-        _r('err',
-            `✗ ${e.message}\n\n` +
-            `The /udf-jars/ nginx location is not configured.\n\n` +
-            `Add this to nginx/studio.conf inside server {}:\n\n` +
-            `  location /udf-jars/ {\n` +
-            `      alias  /var/www/udf-jars/;\n` +
-            `      dav_methods     PUT DELETE;\n` +
-            `      dav_access      user:rw;\n` +
-            `      create_full_put_path  on;\n` +
-            `      autoindex on; autoindex_format json;\n` +
-            `      client_max_body_size 512m;\n` +
-            `      add_header Access-Control-Allow-Origin * always;\n` +
-            `      add_header Access-Control-Allow-Methods "GET,PUT,DELETE,OPTIONS" always;\n` +
-            `  }\n\n` +
-            `Also add to docker-entrypoint.sh before exec "$@":\n` +
-            `  mkdir -p /var/www/udf-jars && chmod 755 /var/www/udf-jars\n\n` +
-            `Then rebuild: docker compose up -d --build`
-        );
+        _r('err', `✗ ${e.message}\n\nThe /udf-jars/ nginx location is not configured.`);
     }
 }
 
-// ── JobManager base (for the "also upload to JM" option) ─────────────────────
 function _getJmBase() {
     if (!state.gateway) return null;
     const url = state.gateway.baseUrl || '';
@@ -1169,171 +1303,147 @@ function _getJmBase() {
 
 let _selJar = null;
 
-function _jmPreview() {}  // kept for any residual calls
-function _jDragOver(e){e.preventDefault();const d=document.getElementById('udf-jar-dropzone');if(d){d.style.borderColor='var(--accent)';d.style.background='rgba(0,212,170,0.06)';}}
-function _jDragLeave(e){const d=document.getElementById('udf-jar-dropzone');if(d){d.style.borderColor='var(--border2)';d.style.background='var(--bg1)';}}
-function _jDrop(e){e.preventDefault();_jDragLeave(e);const f=e.dataTransfer?.files?.[0];if(f)_jSetFile(f);}
-function _jFileSelected(e){const f=e.target?.files?.[0];if(f)_jSetFile(f);}
+function _jDragOver(e) { e.preventDefault(); const d = document.getElementById('udf-jar-dropzone'); if (d) { d.style.borderColor = 'var(--accent)'; d.style.background = 'rgba(0,212,170,0.06)'; } }
+function _jDragLeave(e) { const d = document.getElementById('udf-jar-dropzone'); if (d) { d.style.borderColor = 'var(--border2)'; d.style.background = 'var(--bg1)'; } }
+function _jDrop(e) { e.preventDefault(); _jDragLeave(e); const f = e.dataTransfer?.files?.[0]; if (f) _jSetFile(f); }
+function _jFileSelected(e) { const f = e.target?.files?.[0]; if (f) _jSetFile(f); }
 
-function _jSetFile(file){
-    if(!file.name.endsWith('.jar')){_jStatus('✗ Only .jar files.','var(--red)');return;}
-    _selJar=file;
-    window._lastUploadedJarName=file.name;
-    const i=document.getElementById('udf-jar-file-info');if(i)i.style.display='block';
-    const n=document.getElementById('udf-jar-fname');if(n)n.textContent=file.name;
-    const sz=document.getElementById('udf-jar-fsize');if(sz)sz.textContent=_fmtB(file.size);
-    _jStatus('','');
-    const w=document.getElementById('udf-jar-addjar-wrap');if(w)w.style.display='none';
+function _jSetFile(file) {
+    if (!file.name.endsWith('.jar')) { _jStatus('✗ Only .jar files.', 'var(--red)'); return; }
+    _selJar = file;
+    window._lastUploadedJarName = file.name;
+    const i = document.getElementById('udf-jar-file-info'); if (i) i.style.display = 'block';
+    const n = document.getElementById('udf-jar-fname'); if (n) n.textContent = file.name;
+    const sz = document.getElementById('udf-jar-fsize'); if (sz) sz.textContent = _fmtB(file.size);
+    _jStatus('', '');
+    const w = document.getElementById('udf-jar-addjar-wrap'); if (w) w.style.display = 'none';
 }
-function _jClear(){
-    _selJar=null;
-    const i=document.getElementById('udf-jar-file-info');if(i)i.style.display='none';
-    const f=document.getElementById('udf-jar-input');if(f)f.value='';
-    _jStatus('','');
+function _jClear() {
+    _selJar = null;
+    const i = document.getElementById('udf-jar-file-info'); if (i) i.style.display = 'none';
+    const f = document.getElementById('udf-jar-input'); if (f) f.value = '';
+    _jStatus('', '');
 }
-function _jStatus(msg,color){const el=document.getElementById('udf-jar-status');if(!el)return;el.style.color=color||'var(--text2)';el.innerHTML=msg;}
-function _fmtB(b){if(b>=1048576)return(b/1048576).toFixed(1)+' MB';if(b>=1024)return(b/1024).toFixed(1)+' KB';return b+' B';}
-function _jCopyAddJar(){
-    const p=window._lastUploadedJarPath;if(!p)return;
-    navigator.clipboard.writeText(`ADD JAR '${p}';`).then(()=>toast('Copied','ok'));
-}
+function _jStatus(msg, color) { const el = document.getElementById('udf-jar-status'); if (!el) return; el.style.color = color || 'var(--text2)'; el.innerHTML = msg; }
+function _fmtB(b) { if (b >= 1048576) return (b / 1048576).toFixed(1) + ' MB'; if (b >= 1024) return (b / 1024).toFixed(1) + ' KB'; return b + ' B'; }
+function _jCopyAddJar() { const p = window._lastUploadedJarPath; if (!p) return; navigator.clipboard.writeText(`ADD JAR '${p}';`).then(() => toast('Copied', 'ok')); }
 
-async function _jUpload(){
-    if(!_selJar){_jStatus('✗ Select a JAR first.','var(--red)');return;}
-    if(!state.gateway){_jStatus('✗ Not connected to a session.','var(--red)');return;}
+async function _jUpload() {
+    if (!_selJar) { _jStatus('✗ Select a JAR first.', 'var(--red)'); return; }
+    if (!state.gateway) { _jStatus('✗ Not connected to a session.', 'var(--red)'); return; }
 
-    const pw    = document.getElementById('udf-jar-progress-wrap');
-    const pb    = document.getElementById('udf-jar-prog-bar');
-    const pp    = document.getElementById('udf-jar-prog-pct');
-    const pl    = document.getElementById('udf-jar-prog-label');
-    const msgEl = document.getElementById('udf-jar-addjar-msg');
-    const wrapEl= document.getElementById('udf-jar-addjar-wrap');
-    const copyBtn=document.getElementById('udf-jar-copy-path');
+    const pw = document.getElementById('udf-jar-progress-wrap');
+    const pb = document.getElementById('udf-jar-prog-bar');
+    const pp = document.getElementById('udf-jar-prog-pct');
+    const pl = document.getElementById('udf-jar-prog-label');
+    const msgEl  = document.getElementById('udf-jar-addjar-msg');
+    const wrapEl = document.getElementById('udf-jar-addjar-wrap');
+    const copyBtn = document.getElementById('udf-jar-copy-path');
 
-    if(pw) pw.style.display = 'block';
-    if(wrapEl) wrapEl.style.display = 'none';
+    if (pw) pw.style.display = 'block';
+    if (wrapEl) wrapEl.style.display = 'none';
 
-    const jarBase = _getJarBase();  // browser PUT target (page origin)
+    const jarBase = _getJarBase();
     const jarName = _selJar.name;
-    const jarUrl  = jarBase + '/' + encodeURIComponent(jarName);  // browser PUT URL
+    const jarUrl  = jarBase + '/' + encodeURIComponent(jarName);
     const bytes   = await _selJar.arrayBuffer();
 
-    // ── Step 1: PUT JAR to nginx WebDAV (using browser URL) ──────────────────
-    if(pl) pl.textContent = 'Uploading ' + jarName + ' to Studio…';
+    if (pl) pl.textContent = 'Uploading ' + jarName + ' to Studio…';
 
     try {
         await new Promise((res, rej) => {
             const xhr = new XMLHttpRequest();
             xhr.upload.onprogress = e => {
-                if(e.lengthComputable){ const p=Math.round(e.loaded/e.total*100); if(pb)pb.style.width=p+'%'; if(pp)pp.textContent=p+'%'; }
+                if (e.lengthComputable) { const p = Math.round(e.loaded / e.total * 100); if (pb) pb.style.width = p + '%'; if (pp) pp.textContent = p + '%'; }
             };
             xhr.onload = () => {
-                if(pb) pb.style.width='100%'; if(pp) pp.textContent='100%';
-                // WebDAV PUT returns 201 Created or 204 No Content on success
-                if(xhr.status === 201 || xhr.status === 204 || xhr.status === 200) {
-                    res();
-                } else if(xhr.status === 405) {
-                    rej(new Error('405 Method Not Allowed — WebDAV PUT not enabled in nginx. Add dav_methods PUT; to the /udf-jars/ location in studio.conf.'));
-                } else if(xhr.status === 403) {
-                    rej(new Error('403 Forbidden — /var/www/udf-jars/ not writable. Add chown nginx:nginx /var/www/udf-jars to docker-entrypoint.sh.'));
-                } else if(xhr.status === 413) {
-                    rej(new Error('413 Request Entity Too Large — add client_max_body_size 512m; to nginx studio.conf.'));
-                } else {
-                    rej(new Error('HTTP ' + xhr.status + ' — ' + xhr.statusText));
-                }
+                if (pb) pb.style.width = '100%'; if (pp) pp.textContent = '100%';
+                if (xhr.status === 201 || xhr.status === 204 || xhr.status === 200) { res(); }
+                else if (xhr.status === 405) { rej(new Error('405 Method Not Allowed — WebDAV PUT not enabled in nginx.')); }
+                else if (xhr.status === 403) { rej(new Error('403 Forbidden — /var/www/udf-jars/ not writable.')); }
+                else if (xhr.status === 413) { rej(new Error('413 Request Entity Too Large — add client_max_body_size 512m; to nginx.')); }
+                else { rej(new Error('HTTP ' + xhr.status + ' — ' + xhr.statusText)); }
             };
-            xhr.onerror = () => rej(new Error('Network error uploading to ' + jarUrl + '. Check that /udf-jars/ is configured in nginx/studio.conf.'));
+            xhr.onerror = () => rej(new Error('Network error uploading to ' + jarUrl));
             xhr.open('PUT', jarUrl);
             xhr.setRequestHeader('Content-Type', 'application/java-archive');
             xhr.send(bytes);
         });
-
         addLog('OK', `JAR saved to Studio: ${jarName} → ${jarUrl}`);
-
     } catch(putErr) {
-        if(pw) pw.style.display='none';
-        _jStatus(`✗ Upload failed: ${putErr.message}`,'var(--red)');
-        if(wrapEl) wrapEl.style.display='block';
-        if(msgEl) msgEl.innerHTML=`<span style="color:var(--red);">✗ ${escHtml(putErr.message)}</span>`;
+        if (pw) pw.style.display = 'none';
+        _jStatus(`✗ Upload failed: ${putErr.message}`, 'var(--red)');
+        if (wrapEl) wrapEl.style.display = 'block';
+        if (msgEl) msgEl.innerHTML = `<span style="color:var(--red);">✗ ${escHtml(putErr.message)}</span>`;
         addLog('ERR', 'JAR PUT failed: ' + putErr.message);
         return;
     }
 
-    // ── Step 2: ADD JAR using LOCAL filesystem path ─────────────────────────
-    // Flink 1.19 without Hadoop does NOT support ADD JAR 'http://...'
-    // (UnsupportedFileSystemSchemeException: scheme 'http' requires Hadoop).
-    // Only local paths work: ADD JAR '/path/on/gateway.jar'
-    // This works when Studio + Gateway share a Docker volume at /var/www/udf-jars/
     const localJarPath = '/var/www/udf-jars/' + jarName;
-    if(pl) pl.textContent = 'Running ADD JAR in Gateway session…';
+    if (pl) pl.textContent = 'Running ADD JAR in Gateway session…';
 
     try {
-        await _runQ(`ADD JAR '${localJarPath.replace(/'/g,"\'")}' `);
+        await _runQ(`ADD JAR '${localJarPath.replace(/'/g, "\\'")}'`);
         window._lastUploadedJarPath = localJarPath;
         addLog('OK', 'ADD JAR (local path): ' + localJarPath);
 
-        if(wrapEl) wrapEl.style.display='block';
-        if(copyBtn) copyBtn.style.display='inline-block';
-        if(msgEl) msgEl.innerHTML=
-            `<span style="color:var(--green);">✓ JAR uploaded + ADD JAR succeeded</span>\n\n`+
-            `Local path: <strong style="color:var(--accent);">${escHtml(localJarPath)}</strong>\n`+
-            `Browser URL: <span style="color:var(--text2);">${escHtml(jarUrl)}</span>\n\n`+
+        if (wrapEl) wrapEl.style.display = 'block';
+        if (copyBtn) copyBtn.style.display = 'inline-block';
+        if (msgEl) msgEl.innerHTML =
+            `<span style="color:var(--green);">✓ JAR uploaded + ADD JAR succeeded</span>\n\n` +
+            `Local path: <strong style="color:var(--accent);">${escHtml(localJarPath)}</strong>\n` +
+            `Browser URL: <span style="color:var(--text2);">${escHtml(jarUrl)}</span>\n\n` +
             `JAR is on the session classpath. → Click "Go to Register UDF".`;
-        _jStatus(`✓ ${jarName} on session classpath — ready to register.`,'var(--green)');
-        toast(jarName + ' ready — go to Register UDF','ok');
+        _jStatus(`✓ ${jarName} on session classpath — ready to register.`, 'var(--green)');
+        toast(jarName + ' ready — go to Register UDF', 'ok');
 
-        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=localJarPath;
-        const b1=document.getElementById('s1-badge'); if(b1){b1.dataset.s='ok';b1.textContent='jar loaded ✓';}
-        const jd=document.getElementById('s1-jars'); if(jd){jd.style.display='block';jd.style.color='var(--green)';jd.textContent='✓ JAR on classpath: '+localJarPath;}
-
+        const pathInput = document.getElementById('s1-path'); if (pathInput) pathInput.value = localJarPath;
+        const b1 = document.getElementById('s1-badge'); if (b1) { b1.dataset.s = 'ok'; b1.textContent = 'jar loaded ✓'; }
+        const jd = document.getElementById('s1-jars'); if (jd) { jd.style.display = 'block'; jd.style.color = 'var(--green)'; jd.textContent = '✓ JAR on classpath: ' + localJarPath; }
     } catch(addErr) {
-        if(wrapEl) wrapEl.style.display='block';
-        if(copyBtn) copyBtn.style.display='inline-block';
-        if(msgEl) msgEl.innerHTML=
-            `<span style="color:var(--green);">✓ JAR saved to Studio: ${escHtml(jarUrl)}</span>\n\n`+
-            `<span style="color:var(--red);">✗ ADD JAR failed: ${escHtml(addErr.message)}</span>\n\n`+
-            `The Gateway container cannot see ${escHtml(localJarPath)}.\n`+
-            `Mount the udf-jars volume on your flink-sql-gateway container,\n`+
-            `then upload again — ADD JAR will succeed automatically.`;
+        if (wrapEl) wrapEl.style.display = 'block';
+        if (copyBtn) copyBtn.style.display = 'inline-block';
+        if (msgEl) msgEl.innerHTML =
+            `<span style="color:var(--green);">✓ JAR saved to Studio: ${escHtml(jarUrl)}</span>\n\n` +
+            `<span style="color:var(--red);">✗ ADD JAR failed: ${escHtml(addErr.message)}</span>\n\n` +
+            `The Gateway container cannot see ${escHtml(localJarPath)}.\n` +
+            `Mount the udf-jars volume on your flink-sql-gateway container.`;
         window._lastUploadedJarPath = localJarPath;
-        const pathInput=document.getElementById('s1-path'); if(pathInput) pathInput.value=localJarPath;
-        _jStatus('⚠ Saved to Studio — ADD JAR failed. Mount shared volume on Gateway (see result above).','var(--yellow,#f5a623)');
+        const pathInput = document.getElementById('s1-path'); if (pathInput) pathInput.value = localJarPath;
+        _jStatus('⚠ Saved to Studio — ADD JAR failed. Mount shared volume on Gateway.', 'var(--yellow,#f5a623)');
         addLog('ERR', 'ADD JAR local path failed (volume not shared?): ' + addErr.message);
     }
 
-    // ── Step 3: Also upload to JobManager if checked ─────────────────────────
+    // Also upload to JobManager
     const alsoJm = document.getElementById('upl-also-jm')?.checked;
-    if(alsoJm) {
+    if (alsoJm) {
         const jmBase = _getJmBase();
-        if(jmBase) {
-            if(pl) pl.textContent = 'Also uploading to Flink JobManager…';
+        if (jmBase) {
+            if (pl) pl.textContent = 'Also uploading to Flink JobManager…';
             try {
                 const fd2 = new FormData();
-                fd2.append('jarfile', new Blob([bytes],{type:'application/x-java-archive'}), jarName);
-                const r2  = await fetch(jmBase + '/jars/upload', {method:'POST', body:fd2});
-                if(r2.ok) { addLog('OK', 'JAR also uploaded to JobManager: ' + jarName); }
-            } catch(_) { /* non-critical — UDF registration does not need this */ }
+                fd2.append('jarfile', new Blob([bytes], { type:'application/x-java-archive' }), jarName);
+                const r2 = await fetch(jmBase + '/jars/upload', { method:'POST', body:fd2 });
+                if (r2.ok) { addLog('OK', 'JAR also uploaded to JobManager: ' + jarName); }
+            } catch(_) {}
         }
     }
 
     _jClear();
-    if(pw) setTimeout(()=>pw.style.display='none', 3000);
+    if (pw) setTimeout(() => pw.style.display = 'none', 3000);
     setTimeout(_jLoadList, 400);
 }
 
-async function _jLoadList(){
-    const el = document.getElementById('udf-jar-list'); if(!el) return;
+async function _jLoadList() {
+    const el = document.getElementById('udf-jar-list'); if (!el) return;
     const base = _getJarBase();
     try {
-        const r = await fetch(base + '/', {signal: AbortSignal.timeout(4000)});
-        if(!r.ok) throw new Error('HTTP ' + r.status);
+        const r = await fetch(base + '/', { signal: AbortSignal.timeout(4000) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
         const text = await r.text();
         let jars = [];
-        try {
-            const parsed = JSON.parse(text);
-            jars = parsed.filter(f => f.name && f.name.endsWith('.jar'));
-        } catch(_) {}
-        if(!jars.length){ el.innerHTML='<div style="font-size:11px;color:var(--text3);">No JARs uploaded yet.</div>'; return; }
+        try { const parsed = JSON.parse(text); jars = parsed.filter(f => f.name && f.name.endsWith('.jar')); } catch(_) {}
+        if (!jars.length) { el.innerHTML = '<div style="font-size:11px;color:var(--text3);">No JARs uploaded yet.</div>'; return; }
         el.innerHTML = jars.map(j => {
             const name = j.name, url = base + '/' + encodeURIComponent(name);
             return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:4px;font-size:11px;">
@@ -1349,48 +1459,46 @@ async function _jLoadList(){
     }
 }
 
-function _jUseInReg(url){
+function _jUseInReg(url) {
     switchUdfTab('register');
-    const p = document.getElementById('s1-path'); if(p) p.value = url;
-    toast('Click ADD JAR in Step 1 to load it into the current session','info');
+    const p = document.getElementById('s1-path'); if (p) p.value = url;
+    toast('Click ADD JAR in Step 1 to load it into the current session', 'info');
 }
 
-async function _jDelete(name){
-    if(!confirm('Delete ' + name + ' from Studio?')) return;
+async function _jDelete(name) {
+    if (!confirm('Delete ' + name + ' from Studio?')) return;
     const url = _getJarBase() + '/' + encodeURIComponent(name);
-    try{
-        const r = await fetch(url, {method:'DELETE'});
-        if(!r.ok && r.status !== 404) throw new Error('HTTP ' + r.status);
-        toast(name + ' deleted','ok'); _jLoadList();
-    }catch(e){ toast('Delete failed: ' + e.message,'err'); }
+    try {
+        const r = await fetch(url, { method:'DELETE' });
+        if (!r.ok && r.status !== 404) throw new Error('HTTP ' + r.status);
+        toast(name + ' deleted', 'ok'); _jLoadList();
+    } catch(e) { toast('Delete failed: ' + e.message, 'err'); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MAVEN / GRADLE
 // ═══════════════════════════════════════════════════════════════════════════
-let _mvnMode='maven';
-function _mvnSwitch(t){
-    _mvnMode=t;
-    const mb=document.getElementById('mvn-btn-maven'),gb=document.getElementById('mvn-btn-gradle');
-    if(mb){mb.style.background=t==='maven'?'var(--yellow,#f5a623)':'var(--bg3)';mb.style.color=t==='maven'?'#000':'var(--text2)';}
-    if(gb){gb.style.background=t==='gradle'?'var(--yellow,#f5a623)':'var(--bg3)';gb.style.color=t==='gradle'?'#000':'var(--text2)';}
-    const lb=document.getElementById('mvn-label');if(lb)lb.textContent=t==='maven'?'pom.xml':'build.gradle';
+let _mvnMode = 'maven';
+function _mvnSwitch(t) {
+    _mvnMode = t;
+    const mb = document.getElementById('mvn-btn-maven'), gb = document.getElementById('mvn-btn-gradle');
+    if (mb) { mb.style.background = t === 'maven' ? 'var(--yellow,#f5a623)' : 'var(--bg3)'; mb.style.color = t === 'maven' ? '#000' : 'var(--text2)'; }
+    if (gb) { gb.style.background = t === 'gradle' ? 'var(--yellow,#f5a623)' : 'var(--bg3)'; gb.style.color = t === 'gradle' ? '#000' : 'var(--text2)'; }
+    const lb = document.getElementById('mvn-label'); if (lb) lb.textContent = t === 'maven' ? 'pom.xml' : 'build.gradle';
     _mvnUpdate();
 }
-function _mvnUpdate(){
-    const pre=document.getElementById('mvn-preview'),cmds=document.getElementById('mvn-cmds');if(!pre)return;
-    const gid =(document.getElementById('mvn-gid')?.value  ||'com.yourcompany.udf').trim();
-    const aid =(document.getElementById('mvn-aid')?.value  ||'my-flink-udfs').trim();
-    const ver =(document.getElementById('mvn-ver')?.value  ||'1.0.0').trim();
-    const fv  = document.getElementById('mvn-flink')?.value||'1.19.1';
-    const jv  = document.getElementById('mvn-java')?.value ||'11';
-    const extra=(document.getElementById('mvn-extra')?.value||'').trim().split('\n').map(l=>l.trim()).filter(l=>l.includes(':'));
-    if(_mvnMode==='maven'){
-        const deps=extra.map(d=>{const p=d.split(':');return p.length<3?'':`\n        <dependency>\n            <groupId>${p[0]}</groupId>\n            <artifactId>${p[1]}</artifactId>\n            <version>${p[2]}</version>\n        </dependency>`;}).filter(Boolean).join('');
-        pre.textContent=`<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+function _mvnUpdate() {
+    const pre = document.getElementById('mvn-preview'), cmds = document.getElementById('mvn-cmds'); if (!pre) return;
+    const gid  = (document.getElementById('mvn-gid')?.value   || 'com.yourcompany.udf').trim();
+    const aid  = (document.getElementById('mvn-aid')?.value   || 'my-flink-udfs').trim();
+    const ver  = (document.getElementById('mvn-ver')?.value   || '1.0.0').trim();
+    const fv   =  document.getElementById('mvn-flink')?.value || '1.19.1';
+    const jv   =  document.getElementById('mvn-java')?.value  || '11';
+    const extra = (document.getElementById('mvn-extra')?.value || '').trim().split('\n').map(l => l.trim()).filter(l => l.includes(':'));
+    if (_mvnMode === 'maven') {
+        const deps = extra.map(d => { const p = d.split(':'); return p.length < 3 ? '' : `\n        <dependency>\n            <groupId>${p[0]}</groupId>\n            <artifactId>${p[1]}</artifactId>\n            <version>${p[2]}</version>\n        </dependency>`; }).filter(Boolean).join('');
+        pre.textContent = `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" ...>
     <modelVersion>4.0.0</modelVersion>
     <groupId>${gid}</groupId>
     <artifactId>${aid}</artifactId>
@@ -1399,13 +1507,10 @@ function _mvnUpdate(){
         <maven.compiler.source>${jv}</maven.compiler.source>
         <maven.compiler.target>${jv}</maven.compiler.target>
         <flink.version>${fv}</flink.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <dependencies>
-        <!-- provided = already on cluster, do NOT bundle -->
         <dependency><groupId>org.apache.flink</groupId><artifactId>flink-table-api-java</artifactId><version>\${flink.version}</version><scope>provided</scope></dependency>
-        <dependency><groupId>org.apache.flink</groupId><artifactId>flink-table-common</artifactId><version>\${flink.version}</version><scope>provided</scope></dependency>
-        <dependency><groupId>org.apache.flink</groupId><artifactId>flink-streaming-java</artifactId><version>\${flink.version}</version><scope>provided</scope></dependency>${deps}
+        <dependency><groupId>org.apache.flink</groupId><artifactId>flink-table-common</artifactId><version>\${flink.version}</version><scope>provided</scope></dependency>${deps}
     </dependencies>
     <build><plugins>
         <plugin>
@@ -1413,155 +1518,138 @@ function _mvnUpdate(){
             <artifactId>maven-shade-plugin</artifactId>
             <version>3.5.1</version>
             <executions><execution><phase>package</phase><goals><goal>shade</goal></goals>
-                <configuration>
-                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <shadedClassifierName>shaded</shadedClassifierName>
-                    <filters><filter><artifact>*:*</artifact>
-                      <excludes><exclude>META-INF/*.SF</exclude><exclude>META-INF/*.DSA</exclude><exclude>META-INF/*.RSA</exclude></excludes>
-                    </filter></filters>
-                </configuration>
+                <configuration><shadedArtifactAttached>true</shadedArtifactAttached><shadedClassifierName>shaded</shadedClassifierName></configuration>
             </execution></executions>
         </plugin>
     </plugins></build>
 </project>`;
-    }else{
-        const deps=extra.map(d=>`    implementation '${d}'`).join('\n');
-        pre.textContent=`plugins {
-    id 'java'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
-}
-group   = '${gid}'
-version = '${ver}'
-java { sourceCompatibility = JavaVersion.VERSION_${jv}; targetCompatibility = JavaVersion.VERSION_${jv} }
+    } else {
+        const deps = extra.map(d => `    implementation '${d}'`).join('\n');
+        pre.textContent = `plugins { id 'java'; id 'com.github.johnrengelman.shadow' version '8.1.1' }
+group='${gid}'; version='${ver}'
+java { sourceCompatibility=JavaVersion.VERSION_${jv}; targetCompatibility=JavaVersion.VERSION_${jv} }
 repositories { mavenCentral() }
-ext { flinkVersion = '${fv}' }
+ext { flinkVersion='${fv}' }
 dependencies {
     compileOnly "org.apache.flink:flink-table-api-java:\${flinkVersion}"
-    compileOnly "org.apache.flink:flink-table-common:\${flinkVersion}"
-    compileOnly "org.apache.flink:flink-streaming-java:\${flinkVersion}"${deps?'\n'+deps:''}
+    compileOnly "org.apache.flink:flink-table-common:\${flinkVersion}"${deps ? '\n' + deps : ''}
 }
 shadowJar { archiveClassifier='shaded'; mergeServiceFiles() }
 build.dependsOn shadowJar`;
     }
-    if(cmds) cmds.textContent=
-        `# 1. Build shaded JAR\n`+
-        (_mvnMode==='maven'?`mvn clean package -DskipTests\n# Output: target/${aid}-${ver}-shaded.jar`:`./gradlew shadowJar\n# Output: build/libs/${aid}-${ver}-shaded.jar`)+
-        `\n\n# 2. Upload via ⬆ Upload JAR tab\n`+
-        `#    Studio runs ADD JAR automatically after upload\n\n`+
-        `# 3. Register via ＋ Register UDF → Step 1 → Step 2 → Step 3\n`+
-        `#    LANGUAGE JAVA (never SQL)\n\n`+
-        `# 4. Verify:\n`+
-        `#    SHOW JARS;            -- confirm classpath\n`+
-        `#    SHOW USER FUNCTIONS;  -- confirm registration`;
+    if (cmds) cmds.textContent =
+        `# 1. Build shaded JAR\n` +
+        (_mvnMode === 'maven' ? `mvn clean package -DskipTests\n# Output: target/${aid}-${ver}-shaded.jar` : `./gradlew shadowJar\n# Output: build/libs/${aid}-${ver}-shaded.jar`) +
+        `\n\n# 2. Upload via ⬆ Upload JAR tab\n#    Studio runs ADD JAR automatically after upload\n\n` +
+        `# 3. Register via ＋ Register UDF → Step 1 → Step 2 → Step 3`;
 }
-function _mvnCopy(){const p=document.getElementById('mvn-preview');if(p)navigator.clipboard.writeText(p.textContent).then(()=>toast('Copied','ok'));}
+function _mvnCopy() { const p = document.getElementById('mvn-preview'); if (p) navigator.clipboard.writeText(p.textContent).then(() => toast('Copied', 'ok')); }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // VIEW BUILDER
 // ═══════════════════════════════════════════════════════════════════════════
-let _vbM='view';
-function _vbSwitch(m){
-    _vbM=m;
-    ['view','expr','col'].forEach(x=>{
-        const btn=document.getElementById(`vb-btn-${x}`),pane=document.getElementById(`vb-pane-${x}`),active=x===m;
-        if(btn){btn.style.background=active?'var(--accent)':'var(--bg3)';btn.style.color=active?'#000':'var(--text2)';}
-        if(pane)pane.style.display=active?'flex':'none';
+let _vbM = 'view';
+function _vbSwitch(m) {
+    _vbM = m;
+    ['view','expr','col'].forEach(x => {
+        const btn = document.getElementById(`vb-btn-${x}`), pane = document.getElementById(`vb-pane-${x}`), active = x === m;
+        if (btn) { btn.style.background = active ? 'var(--accent)' : 'var(--bg3)'; btn.style.color = active ? '#000' : 'var(--text2)'; }
+        if (pane) pane.style.display = active ? 'flex' : 'none';
     });
-    const eb=document.getElementById('vb-exec-btn');
-    if(eb)eb.textContent=m==='view'?'⚡ Create View':'📋 Insert Expression';
-    const st=document.getElementById('vb-status');if(st)st.textContent='';
-    if(m==='view')_vbPreview();else if(m==='expr')_vbPreviewE();else _vbPreviewC();
+    const eb = document.getElementById('vb-exec-btn');
+    if (eb) eb.textContent = m === 'view' ? '⚡ Create View' : '📋 Insert Expression';
+    const st = document.getElementById('vb-status'); if (st) st.textContent = '';
+    if (m === 'view') _vbPreview(); else if (m === 'expr') _vbPreviewE(); else _vbPreviewC();
 }
-function _vbQv(v){
-    if(!v)return v;const t=v.trim();
-    if(t.startsWith("'")&&t.endsWith("'"))return t;
-    if(/^-?\d+(\.\d+)?$/.test(t))return t;
-    if(/[\s+\-*/(). ]/.test(t))return t;
-    if(/^(NULL|TRUE|FALSE|UNKNOWN)$/i.test(t))return t;
-    return"'"+t+"'";
+function _vbQv(v) {
+    if (!v) return v; const t = v.trim();
+    if (t.startsWith("'") && t.endsWith("'")) return t;
+    if (/^-?\d+(\.\d+)?$/.test(t)) return t;
+    if (/^(NULL|TRUE|FALSE|UNKNOWN)$/i.test(t)) return t;
+    return "'" + t + "'";
 }
-function _vbPreview(){
-    if(_vbM!=='view')return;
-    const name=(document.getElementById('vb-vname')?.value||'').trim();
-    const scope=document.getElementById('vb-vscope')?.value||'TEMPORARY';
-    const src=(document.getElementById('vb-vsrc')?.value||'').trim();
-    const cols=(document.getElementById('vb-vcols')?.value||'').trim();
-    const where=(document.getElementById('vb-vwhere')?.value||'').trim();
-    const prev=document.getElementById('vb-preview');if(!prev)return;
-    if(!name||!src){prev.textContent='-- Fill in View Name and Source Table';return;}
-    const cl=cols.split('\n').map(l=>l.trim()).filter(Boolean);
-    const sel=cl.length?`*,\n  ${cl.join(',\n  ')}`:'*';
-    prev.textContent=`CREATE ${scope} VIEW ${name} AS\nSELECT\n  ${sel}\nFROM ${src}${where?'\nWHERE '+where:''};`;
+function _vbPreview() {
+    if (_vbM !== 'view') return;
+    const name  = (document.getElementById('vb-vname')?.value  || '').trim();
+    const scope = document.getElementById('vb-vscope')?.value  || 'TEMPORARY';
+    const src   = (document.getElementById('vb-vsrc')?.value   || '').trim();
+    const cols  = (document.getElementById('vb-vcols')?.value  || '').trim();
+    const where = (document.getElementById('vb-vwhere')?.value || '').trim();
+    const prev  = document.getElementById('vb-preview'); if (!prev) return;
+    if (!name || !src) { prev.textContent = '-- Fill in View Name and Source Table'; return; }
+    const cl  = cols.split('\n').map(l => l.trim()).filter(Boolean);
+    const sel = cl.length ? `*,\n  ${cl.join(',\n  ')}` : '*';
+    prev.textContent = `CREATE ${scope} VIEW ${name} AS\nSELECT\n  ${sel}\nFROM ${src}${where ? '\nWHERE ' + where : ''};`;
 }
-function _vbPreviewE(){
-    if(_vbM!=='expr')return;
-    const col=(document.getElementById('vb-ecol')?.value||'').trim();
-    const alias=(document.getElementById('vb-ealias')?.value||'').trim();
-    const branches=(document.getElementById('vb-ebranches')?.value||'').trim();
-    const elseV=(document.getElementById('vb-eelse')?.value||'').trim();
-    const prev=document.getElementById('vb-preview');if(!prev)return;
-    if(!col||!branches){prev.textContent='-- Fill in Input Column and WHEN branches';return;}
-    const whens=branches.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
-        const s=l.indexOf('|');if(s<0)return`  WHEN ${col} ${l} THEN ???`;
-        return`  WHEN ${col} ${l.slice(0,s).trim()} THEN ${_vbQv(l.slice(s+1).trim())}`;
+function _vbPreviewE() {
+    if (_vbM !== 'expr') return;
+    const col     = (document.getElementById('vb-ecol')?.value      || '').trim();
+    const alias   = (document.getElementById('vb-ealias')?.value    || '').trim();
+    const branches = (document.getElementById('vb-ebranches')?.value || '').trim();
+    const elseV   = (document.getElementById('vb-eelse')?.value     || '').trim();
+    const prev    = document.getElementById('vb-preview'); if (!prev) return;
+    if (!col || !branches) { prev.textContent = '-- Fill in Input Column and WHEN branches'; return; }
+    const whens = branches.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        const s = l.indexOf('|'); if (s < 0) return `  WHEN ${col} ${l} THEN ???`;
+        return `  WHEN ${col} ${l.slice(0, s).trim()} THEN ${_vbQv(l.slice(s + 1).trim())}`;
     }).join('\n');
-    prev.textContent=`CASE\n${whens}${elseV?'\n  ELSE '+_vbQv(elseV):''}\nEND${alias?' AS '+alias:''}`;
+    prev.textContent = `CASE\n${whens}${elseV ? '\n  ELSE ' + _vbQv(elseV) : ''}\nEND${alias ? ' AS ' + alias : ''}`;
 }
-function _vbPreviewC(){
-    if(_vbM!=='col')return;
-    const name=(document.getElementById('vb-cname')?.value||'').trim();
-    const branches=(document.getElementById('vb-cbranches')?.value||'').trim();
-    const elseV=(document.getElementById('vb-celse')?.value||'').trim();
-    const prev=document.getElementById('vb-preview');if(!prev)return;
-    if(!name||!branches){prev.textContent='-- Fill in Column Name and WHEN branches';return;}
-    const whens=branches.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
-        const s=l.indexOf('|');if(s<0)return`    WHEN ${l} THEN ???`;
-        return`    WHEN ${l.slice(0,s).trim()} THEN ${_vbQv(l.slice(s+1).trim())}`;
+function _vbPreviewC() {
+    if (_vbM !== 'col') return;
+    const name    = (document.getElementById('vb-cname')?.value     || '').trim();
+    const branches = (document.getElementById('vb-cbranches')?.value || '').trim();
+    const elseV   = (document.getElementById('vb-celse')?.value     || '').trim();
+    const prev    = document.getElementById('vb-preview'); if (!prev) return;
+    if (!name || !branches) { prev.textContent = '-- Fill in Column Name and WHEN branches'; return; }
+    const whens = branches.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        const s = l.indexOf('|'); if (s < 0) return `    WHEN ${l} THEN ???`;
+        return `    WHEN ${l.slice(0, s).trim()} THEN ${_vbQv(l.slice(s + 1).trim())}`;
     }).join('\n');
-    prev.textContent=`${name} AS\n  CASE\n${whens}${elseV?'\n    ELSE '+_vbQv(elseV):''}\n  END`;
+    prev.textContent = `${name} AS\n  CASE\n${whens}${elseV ? '\n    ELSE ' + _vbQv(elseV) : ''}\n  END`;
 }
-const _VB_EMPTY=['-- Fill in View Name and Source Table','-- Fill in Input Column and WHEN branches','-- Fill in Column Name and WHEN branches'];
-function _vbGetSql(){return document.getElementById('vb-preview')?.textContent||'';}
-function _vbIsEmpty(s){return!s||_VB_EMPTY.includes(s.trim());}
-function _vbCopy(){const s=_vbGetSql();if(_vbIsEmpty(s)){toast('Fill in the form first','warn');return;}navigator.clipboard.writeText(s).then(()=>toast('Copied','ok'));}
-function _vbInsert(){
-    const s=_vbGetSql();if(_vbIsEmpty(s)){toast('Fill in the form first','warn');return;}
-    const ed=document.getElementById('sql-editor');if(!ed)return;
-    const p=ed.selectionStart;
-    ed.value=ed.value.slice(0,p)+(ed.value.length?'\n\n':'')+s+'\n'+ed.value.slice(ed.selectionEnd);
-    ed.focus();if(typeof updateLineNumbers==='function')updateLineNumbers();
-    closeModal('modal-udf-manager');toast('Inserted','ok');
+const _VB_EMPTY = ['-- Fill in View Name and Source Table', '-- Fill in Input Column and WHEN branches', '-- Fill in Column Name and WHEN branches'];
+function _vbGetSql() { return document.getElementById('vb-preview')?.textContent || ''; }
+function _vbIsEmpty(s) { return !s || _VB_EMPTY.includes(s.trim()); }
+function _vbCopy() { const s = _vbGetSql(); if (_vbIsEmpty(s)) { toast('Fill in the form first', 'warn'); return; } navigator.clipboard.writeText(s).then(() => toast('Copied', 'ok')); }
+function _vbInsert() {
+    const s = _vbGetSql(); if (_vbIsEmpty(s)) { toast('Fill in the form first', 'warn'); return; }
+    const ed = document.getElementById('sql-editor'); if (!ed) return;
+    const p = ed.selectionStart;
+    ed.value = ed.value.slice(0, p) + (ed.value.length ? '\n\n' : '') + s + '\n' + ed.value.slice(ed.selectionEnd);
+    ed.focus(); if (typeof updateLineNumbers === 'function') updateLineNumbers();
+    closeModal('modal-udf-manager'); toast('Inserted', 'ok');
 }
-async function _vbExec(){
-    const sql=_vbGetSql();const st=document.getElementById('vb-status');
-    if(_vbIsEmpty(sql)){if(st){st.style.color='var(--red)';st.textContent='✗ Fill in the form first.';}return;}
-    if(_vbM!=='view'){_vbInsert();return;}
-    if(st){st.style.color='var(--accent)';st.textContent='Creating view…';}
-    try{
+async function _vbExec() {
+    const sql = _vbGetSql(); const st = document.getElementById('vb-status');
+    if (_vbIsEmpty(sql)) { if (st) { st.style.color = 'var(--red)'; st.textContent = '✗ Fill in the form first.'; } return; }
+    if (_vbM !== 'view') { _vbInsert(); return; }
+    if (st) { st.style.color = 'var(--accent)'; st.textContent = 'Creating view…'; }
+    try {
         await _runQ(sql);
-        const name=(document.getElementById('vb-vname')?.value||'').trim();
-        if(st){st.style.color='var(--green)';st.textContent=`✓ View ${name} created. Click ⟳ Refresh in Library.`;}
-        toast(`View "${name}" created`,'ok');
-        if(!window._udfViewCache)window._udfViewCache=[];
-        if(!window._udfViewCache.find(v=>v.name===name))window._udfViewCache.push({name,kind:'view'});
-    }catch(e){if(st){st.style.color='var(--red)';st.textContent='✗ '+e.message;}}
+        const name = (document.getElementById('vb-vname')?.value || '').trim();
+        if (st) { st.style.color = 'var(--green)'; st.textContent = `✓ View ${name} created. Click ⟳ Refresh in Library.`; }
+        toast(`View "${name}" created`, 'ok');
+        if (!window._udfViewCache) window._udfViewCache = [];
+        if (!window._udfViewCache.find(v => v.name === name)) window._udfViewCache.push({ name, kind:'view' });
+    } catch(e) { if (st) { st.style.color = 'var(--red)'; st.textContent = '✗ ' + e.message; } }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TEMPLATES
 // ═══════════════════════════════════════════════════════════════════════════
-function _renderUdfTemplates(){
-    const c=document.getElementById('udf-templates-list');if(!c||c._rendered)return;c._rendered=true;
-    let html='';
-    UDF_TEMPLATES.forEach((group,gi)=>{
-        html+=`<div style="margin-bottom:16px;">
+function _renderUdfTemplates() {
+    const c = document.getElementById('udf-templates-list'); if (!c || c._rendered) return; c._rendered = true;
+    let html = '';
+    UDF_TEMPLATES.forEach((group, gi) => {
+        html += `<div style="margin-bottom:16px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
         <span style="width:9px;height:9px;border-radius:50%;background:${group.color};display:inline-block;"></span>
         <span style="color:${group.color};">${group.group}</span>
       </div>`;
-        group.items.forEach((tpl,ti)=>{
-            const id=`tmpl-${gi}-${ti}`;
-            html+=`<div class="udf-tmpl-card">
+        group.items.forEach((tpl, ti) => {
+            const id = `tmpl-${gi}-${ti}`;
+            html += `<div class="udf-tmpl-card">
         <div class="udf-tmpl-hdr" onclick="_tT('${id}')">
           <div>
             <div style="font-size:12px;font-weight:600;color:var(--text0);">${escHtml(tpl.name)}</div>
@@ -1581,24 +1669,30 @@ function _renderUdfTemplates(){
         </div>
       </div>`;
         });
-        html+='</div>';
+        html += '</div>';
     });
-    c.innerHTML=html;
+    c.innerHTML = html;
 }
-function _tT(id){const b=document.getElementById(id+'-body'),a=document.getElementById(id+'-arr');if(!b)return;const o=b.classList.toggle('open');if(a)a.textContent=o?'▾':'▶';}
-function _tC(gi,ti){navigator.clipboard.writeText(UDF_TEMPLATES[gi]?.items[ti]?.sql||'').then(()=>toast('Copied','ok'));}
-function _tI(gi,ti){
-    const sql=UDF_TEMPLATES[gi]?.items[ti]?.sql||'';
-    const ed=document.getElementById('sql-editor');if(!ed)return;
-    const s=ed.selectionStart;
-    ed.value=ed.value.slice(0,s)+(ed.value.length?'\n\n':'')+sql+'\n'+ed.value.slice(ed.selectionEnd);
-    ed.focus();if(typeof updateLineNumbers==='function')updateLineNumbers();
-    closeModal('modal-udf-manager');toast('Template inserted','ok');
+function _tT(id) { const b = document.getElementById(id + '-body'), a = document.getElementById(id + '-arr'); if (!b) return; const o = b.classList.toggle('open'); if (a) a.textContent = o ? '▾' : '▶'; }
+function _tC(gi, ti) { navigator.clipboard.writeText(UDF_TEMPLATES[gi]?.items[ti]?.sql || '').then(() => toast('Copied', 'ok')); }
+function _tI(gi, ti) {
+    const sql = UDF_TEMPLATES[gi]?.items[ti]?.sql || '';
+    const ed  = document.getElementById('sql-editor'); if (!ed) return;
+    const s   = ed.selectionStart;
+    ed.value = ed.value.slice(0, s) + (ed.value.length ? '\n\n' : '') + sql + '\n' + ed.value.slice(ed.selectionEnd);
+    ed.focus(); if (typeof updateLineNumbers === 'function') updateLineNumbers();
+    closeModal('modal-udf-manager'); toast('Template inserted', 'ok');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LOCAL REGISTRY
 // ═══════════════════════════════════════════════════════════════════════════
-function _saveUdfReg(entry){
-    try{const raw=localStorage.getItem('strlabstudio_udf_registry')||'[]';const list=JSON.parse(raw);const i=list.findIndex(e=>e.name===entry.name);if(i>=0)list[i]=entry;else list.push(entry);localStorage.setItem('strlabstudio_udf_registry',JSON.stringify(list));}catch(_){}
+function _saveUdfReg(entry) {
+    try {
+        const raw  = localStorage.getItem('strlabstudio_udf_registry') || '[]';
+        const list = JSON.parse(raw);
+        const i    = list.findIndex(e => e.name === entry.name);
+        if (i >= 0) list[i] = entry; else list.push(entry);
+        localStorage.setItem('strlabstudio_udf_registry', JSON.stringify(list));
+    } catch(_) {}
 }

@@ -1,44 +1,34 @@
 # ══════════════════════════════════════════════════════════════════════════════
 # Str:::lab Studio — docker-compose.yml
 #
-# Pulls and runs the Studio image only.
-# Your Flink cluster (gateway, jobmanager, taskmanagers) must already be
-# running on the network specified below.
-#
-# Usage:
-#   1. Set the env vars below to match your cluster container names
-#   2. Set the network name to match your Flink Docker network
-#   3. docker compose up -d
-#   4. Open http://localhost:3030  →  select "Via Studio"
+# The gateway is managed by a separate compose project (flink-cluster).
+# Its udf-jars volume is named: flink-cluster_udf-jars
+# We reference it here as external so both containers share the same volume.
 # ══════════════════════════════════════════════════════════════════════════════
 
 services:
 
-  strlab-studio:
+  flink-studio:
     image: codedstreams/strlabstudio:latest
     container_name: strlab-studio
     restart: unless-stopped
     ports:
       - "3030:80"
     environment:
-      FLINK_GATEWAY_HOST: flink-sql-gateway      # your SQL Gateway container name
-      FLINK_GATEWAY_PORT: "8083"                 # SQL Gateway port
-      JOBMANAGER_HOST:    codedstream-jobmanager      # your JobManager container name
-      JOBMANAGER_PORT:    "8081"                  # JobManager REST port
+      FLINK_GATEWAY_HOST: flink-sql-gateway
+      FLINK_GATEWAY_PORT: "8083"
+      JOBMANAGER_HOST:    codedstream-jobmanager
+      JOBMANAGER_PORT:    "8081"
     volumes:
-      - udf-jars:/var/www/udf-jars               # shared with gateway for ADD JAR
+      - udf-jars:/var/www/udf-jars   # same volume as flink-sql-gateway
     networks:
-      - kafka-network-02                            # your existing Flink Docker network
+      - kafka-network-02
 
-# ── Shared volume for UDF JAR upload ─────────────────────────────────────────
-# Studio saves uploaded JARs here. For ADD JAR to work, also mount this volume
-# on your SQL Gateway container at /var/www/udf-jars.
 volumes:
   udf-jars:
+    external: true
+    name: flink-cluster_udf-jars     # exact volume name from: docker volume ls
 
-# ── Join your existing Flink network ─────────────────────────────────────────
-# Replace kafka-network-02 with your actual network name.
-# Run: docker network ls   to find it.
 networks:
   kafka-network-02:
     external: true
