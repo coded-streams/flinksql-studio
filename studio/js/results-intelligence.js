@@ -1,19 +1,14 @@
-/* Str:::lab Studio — Results Intelligence v4
+/* Str:::lab Studio — results-intelligence.js v4
  * ─────────────────────────────────────────────────────────────────────────────
- * v4 changes:
- *  - Auto-colour / semantic detection REMOVED entirely.
- *    Colour Describe is now a user-controlled rules-based modal only.
- *    User picks the query slot, selects a field, picks operator + value + colour.
- *  - Colour Describe modal: full rules engine with slot selector, field dropdown
- *    (populated from the rendered table headers — works for any query/pipeline),
- *    operator picker, colour picker, style modes, reorderable rules list.
- *  - _cdReapplyExistingFromDOM reads column names directly from <th> DOM elements
- *    so it works for any query, any column names.
- *  - Per-job checkboxes in comparison chart preserved.
- *  - Live events dual-line chart preserved.
- *  - Checkpoint panel auto-resolve preserved.
- *  - Cancel button session check preserved.
- *  - Brand name PDF patch preserved.
+ * FIXES in this build:
+ *  1. COLOUR DESCRIBE — case-insensitive column matching in _cdReapplyExistingFromDOM
+ *     and applyColorDescribeToRow. Flink returns UPPERCASE column names but SQL aliases
+ *     may be lowercase. colIndexMap now keyed lowercase; all lookups normalised.
+ *  2. SHOW VIEWS — intercepts CREATE TEMPORARY VIEW success, tracks views in
+ *     state.sessionViews, merges into SHOW VIEWS result so user sees their views.
+ *  3. SHOW / DDL queries — routes SHOW TABLES, SHOW JARS, SHOW VIEWS, SHOW FUNCTIONS,
+ *     DESCRIBE, EXPLAIN results into the shared 'ddl-status' slot instead of creating
+ *     a new badge for each one.
  */
 
 // ── Brand name patch ──────────────────────────────────────────────────────────
@@ -271,8 +266,6 @@ function _cdPopulateSlots() {
     const sel = document.getElementById('cd-slot-select');
     if (!sel) return;
 
-    // Only show SELECT-result slots — filter out DDL/SHOW/DESC results
-    // A plottable slot has columns and rows, and its SQL starts with SELECT
     const allSlots = (state.resultSlots || []);
     const slots = allSlots.filter(s => _cdIsPlottableSlot(s));
 
@@ -290,7 +283,6 @@ function _cdPopulateSlots() {
         sel.appendChild(opt);
     });
 
-    // Auto-select live or last
     const prev = window.colorDescribeSlotId;
     if (prev && slots.find(s => s.id === prev)) {
         sel.value = prev;
@@ -301,14 +293,11 @@ function _cdPopulateSlots() {
     _cdOnSlotChange();
 }
 
-// A slot is plottable/describable if it came from a SELECT query
 function _cdIsPlottableSlot(slot) {
     if (!slot) return false;
-    // Must have rows or be streaming
     if (!slot.rows?.length && slot.status !== 'streaming') return false;
-    // Check the SQL — must start with SELECT (case-insensitive, ignore leading comments)
     const sql = (slot.sql || slot.label || '').replace(/^[\s\-\/\*]+/, '').trim();
-    if (!sql) return slot.columns?.length > 0; // no SQL stored, use column presence
+    if (!sql) return slot.columns?.length > 0;
     return /^SELECT\b/i.test(sql);
 }
 
@@ -330,18 +319,18 @@ function _cdOnSlotChange() {
     if (builder) builder.style.display = 'block';
     if (note)    note.style.display    = 'block';
 
-    // Populate field dropdown from rendered <th> headers — works for ANY query
     const fieldSel = document.getElementById('cd-field-select');
     if (fieldSel) {
-        // Try slot.columns first, fall back to live DOM headers
+        // ── FIX: normalise column names to their original case for display,
+        //    but store the original value; matching is done case-insensitively
         let colNames = (slot.columns || []).map(c => c.name || String(c)).filter(Boolean);
 
         if (!colNames.length) {
-            // Read directly from rendered table headers — first token = column name
+            // DOM fallback — read from rendered table headers
             const table = document.querySelector('#result-table-wrap table');
             if (table) {
                 colNames = Array.from(table.querySelectorAll('thead th'))
-                    .slice(1) // skip row-number '#' column
+                    .slice(1)
                     .map(th => th.textContent.trim().split(/\s+/)[0])
                     .filter(Boolean);
             }
@@ -493,7 +482,7 @@ function _cdMatch(cellVal, rule) {
         case 'contains': return cellVal.toLowerCase().includes(rule.value.toLowerCase());
         case 'starts':   return cellVal.toLowerCase().startsWith(rule.value.toLowerCase());
         case 'ends':     return cellVal.toLowerCase().endsWith(rule.value.toLowerCase());
-        case 'regex':    try { return new RegExp(rule.value).test(cellVal); } catch(_) { return false; }
+        case 'regex':    try { return new RegExp(rule.value,'i').test(cellVal); } catch(_) { return false; }
         default:         return false;
     }
 }
@@ -512,24 +501,25 @@ function _cdStyleRow(rowEl, rule) {
     }
 }
 
-// ── Re-apply to all currently rendered rows (called after Apply & page change) ─
+// ── FIX 1: Re-apply to all currently rendered rows — case-insensitive matching ─
 function _cdReapplyExistingFromDOM() {
     if (!window.colorDescribeActive) return;
     const table = document.querySelector('#result-table-wrap table');
     if (!table) return;
 
-    // Build column name → td-index map from the rendered <th> headers
-    // Header text looks like "FINAL_SEVERITY VARCHAR" — first token is the name
+    // Build column name → td-index map from rendered <th> headers
+    // KEY CHANGE: store keys as LOWERCASE for case-insensitive lookup
     const headers = Array.from(table.querySelectorAll('thead th'));
     const colIndexMap = {};
     headers.forEach((th, i) => {
-        if (i === 0) return; // skip row-number column
+        if (i === 0) return; // skip row-number '#' column
         const name = th.textContent.trim().split(/\s+/)[0];
-        if (name) colIndexMap[name] = i;
+        if (name) {
+            colIndexMap[name.toLowerCase()] = i;  // ← lowercase key
+        }
     });
 
     table.querySelectorAll('tbody tr').forEach(rowEl => {
-        // Clear previous
         rowEl.style.removeProperty('background');
         rowEl.style.removeProperty('border-left');
         rowEl.style.removeProperty('color');
@@ -537,7 +527,8 @@ function _cdReapplyExistingFromDOM() {
 
         const cells = Array.from(rowEl.querySelectorAll('td'));
         for (const rule of window.colorDescribeRules) {
-            const tdIdx = colIndexMap[rule.field];
+            // ← FIX: look up with lowercase rule.field
+            const tdIdx = colIndexMap[rule.field.toLowerCase()];
             if (tdIdx === undefined) continue;
             const cell = cells[tdIdx];
             if (!cell) continue;
@@ -551,7 +542,7 @@ function _cdReapplyExistingFromDOM() {
     });
 }
 
-// Called by results.js for each new streaming row
+// ── FIX 1b: Per-streaming-row apply — case-insensitive column lookup ───────────
 function applyColorDescribeToRow(rowEl, rowData, columns) {
     if (!window.colorDescribeActive || !rowEl) return;
     rowEl.style.removeProperty('background');
@@ -559,7 +550,10 @@ function applyColorDescribeToRow(rowEl, rowData, columns) {
     rowEl.style.removeProperty('color');
     rowEl.removeAttribute('data-cd-rule');
     for (const rule of window.colorDescribeRules) {
-        const colIdx = (columns || []).findIndex(c => (c.name || c) === rule.field);
+        // ← FIX: case-insensitive comparison between column name and rule.field
+        const colIdx = (columns || []).findIndex(
+            c => (c.name || String(c)).toLowerCase() === rule.field.toLowerCase()
+        );
         if (colIdx < 0) continue;
         const cellVal = String(rowData[colIdx] ?? '');
         if (_cdMatch(cellVal, rule)) {
@@ -640,6 +634,7 @@ function _injectColorDescribeBtn() {
 (function() {
     function _patch() {
         if (typeof renderResults !== 'function') return false;
+        if (renderResults._riPatched) return true;
         const _orig = renderResults;
         window.renderResults = function() {
             _orig.apply(this, arguments);
@@ -649,8 +644,9 @@ function _injectColorDescribeBtn() {
                     _cdReapplyExistingFromDOM();
                     _cdRenderLegend();
                 }
-            }, 100);
+            }, 120);
         };
+        renderResults._riPatched = true;
         return true;
     }
     if (!_patch()) { const t = setInterval(() => { if (_patch()) clearInterval(t); }, 400); }
@@ -687,6 +683,108 @@ function _injectColorDescribeBtn() {
     }
     if (!_patch()) { const t = setInterval(() => { if (_patch()) clearInterval(t); }, 500); }
 })();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FIX 2: SHOW VIEWS — track TEMPORARY views in state, merge into SHOW VIEWS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// state.sessionViews is our local registry of views created this session.
+// Populated by intercepting CREATE TEMPORARY VIEW success in pollOperation.
+// Merged into SHOW VIEWS results so the user sees their views.
+
+if (!state.sessionViews) state.sessionViews = [];
+
+// Called by misc-patches.js after a successful CREATE TEMPORARY VIEW
+window._cdRegisterSessionView = function(viewName) {
+    if (!viewName) return;
+    const name = viewName.trim().replace(/`/g, '');
+    if (!state.sessionViews.includes(name)) {
+        state.sessionViews.push(name);
+    }
+};
+
+// Patches the SHOW VIEWS result to merge session-tracked views
+window._cdMergeShowViewsResult = function(rows) {
+    const existing = new Set((rows || []).map(r => {
+        const fields = Array.isArray(r?.fields) ? r.fields : Object.values(r?.fields || r || {});
+        return String(fields[0] || '').toLowerCase();
+    }));
+    const extra = (state.sessionViews || []).filter(v => !existing.has(v.toLowerCase()));
+    if (!extra.length) return rows;
+    const merged = [...(rows || [])];
+    extra.forEach(v => merged.push({ fields: [v] }));
+    return merged;
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FIX 3: SHOW/DDL queries → shared 'Statements' slot, not new badge per query
+// ═══════════════════════════════════════════════════════════════════════════
+
+// DDL_SHOW_PATTERN — SQL that should NOT create a new result slot
+const _ddlShowPattern = /^\s*(SHOW\s+(TABLES|VIEWS|JARS|FUNCTIONS|CATALOGS|DATABASES|MODULES|CREATE\s+TABLE|CREATE\s+VIEW|CREATE\s+FUNCTION|FULL\s+TABLES)|DESCRIBE\s+\S|DESC\s+\S|EXPLAIN\s+)/i;
+
+window._isDDLShowQuery = function(sql) {
+    if (!sql) return false;
+    const clean = sql.replace(/^\/\*[\s\S]*?\*\/|^\s*--.*$/mg, '').trim();
+    return _ddlShowPattern.test(clean);
+};
+
+// showDDLStatus already exists in results.js and routes to 'ddl-status' slot.
+// We expose a variant that can accept a label and rows array directly —
+// called from misc-patches.js after SHOW query results come back.
+window._cdShowDDLResult = function(sql, label, columns, rows) {
+    // Merge SHOW VIEWS with session-tracked views
+    const cleanSql = (sql || '').trim();
+    if (/^SHOW\s+VIEWS\b/i.test(cleanSql)) {
+        rows = window._cdMergeShowViewsResult(rows);
+    }
+
+    let statusSlot = (state.resultSlots || []).find(s => s.id === 'ddl-status');
+    if (!statusSlot) {
+        statusSlot = {
+            id: 'ddl-status',
+            label: 'Statements',
+            sql: '',
+            columns: [{ name: 'Status', type: 'VARCHAR' }, { name: 'Statement', type: 'VARCHAR' }, { name: 'Time', type: 'VARCHAR' }],
+            rows: [],
+            status: 'done',
+            startedAt: new Date(),
+        };
+        if (!state.resultSlots) state.resultSlots = [];
+        state.resultSlots.unshift(statusSlot);
+    }
+
+    const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+
+    if (rows && rows.length > 0 && columns && columns.length > 0) {
+        // Build a section header row
+        statusSlot.rows.push({ fields: ['──', '── ' + label + ' ──', ts] });
+        // Add each result row as a formatted entry
+        rows.forEach(row => {
+            const fields = Array.isArray(row?.fields) ? row.fields : Object.values(row?.fields || row || {});
+            const summary = fields.map((v, i) => {
+                const colName = columns[i]?.name || '';
+                return colName ? `${colName}: ${v}` : String(v);
+            }).join('  |  ');
+            statusSlot.rows.push({ fields: ['OK', summary, ts] });
+        });
+    } else {
+        // Empty result (e.g. SHOW VIEWS with 0 rows even after merge)
+        statusSlot.rows.push({ fields: ['OK', label + ' — (no rows)', ts] });
+    }
+    statusSlot.columns = [
+        { name: 'Status', type: 'VARCHAR' },
+        { name: 'Result', type: 'VARCHAR' },
+        { name: 'Time',   type: 'VARCHAR' },
+    ];
+
+    state.activeSlot    = 'ddl-status';
+    state.results       = statusSlot.rows;
+    state.resultColumns = statusSlot.columns;
+    state.resultPage    = 0;
+    renderResults();
+    renderStreamSelector();
+};
 
 // ── Per-job checkboxes in comparison chart ────────────────────────────────────
 window._jcHiddenJobs = new Set();

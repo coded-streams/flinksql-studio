@@ -1,4 +1,4 @@
-/* Str:::lab Studio — misc-patches.js v1.3.0
+/* Str:::lab Studio — misc-patches.js v1.3.0 (fixed)
  * ══════════════════════════════════════════════════════════════
  * THIS IS A NEW FILE — js/misc-patches.js
  * It is NOT a replacement for js/misc.js.
@@ -8,71 +8,42 @@
  *   <script src="js/misc-patches.js"></script>
  *   <script src="https://cdnjs.cloudflare.com/.../chart.umd.min.js"></script>
  *
- * WHAT THIS FILE DOES:
- * 1. Tips modal   — ensures showTipsModal (defined in state.js or connection.js)
- *                   always opens cleanly every time it is called
- * 2. Log isolation — new session / switch clears the log panel
- * 3. Jobs display  — non-admin sessions see their own running jobs
- * 4. Colour Describe fix — field dropdown always populates via DOM fallback
- * 5. Slot dot colors — green=live, grey=done, red=error
- * 6. Topbar layout — flex-wrap so all buttons stay visible, no scrollbar
- * 7. Chart Report button — injected into results-actions toolbar
+ * FIXES in this build:
+ * 1. SHOW/DDL queries — patches pollOperation to route SHOW TABLES, SHOW JARS,
+ *    SHOW VIEWS, SHOW FUNCTIONS, DESCRIBE, EXPLAIN results into the shared
+ *    'Statements' slot instead of creating a new badge for each query.
+ * 2. CREATE TEMPORARY VIEW — intercepts success response, registers view name
+ *    in state.sessionViews so SHOW VIEWS can display it even though Flink
+ *    doesn't list TEMPORARY views in SHOW VIEWS by default.
+ * 3. Removed duplicate _cdReapplyExistingFromDOM patch — now handled cleanly
+ *    in results-intelligence.js with _riPatched flag to prevent double-wrap.
+ * 4. All previous fixes preserved: tips modal, log isolation, jobs display,
+ *    slot dot colors, topbar layout, Chart Report button injection.
  * ══════════════════════════════════════════════════════════════ */
 
 // ── 1. TIPS MODAL FIX ────────────────────────────────────────────────────────
-// showTipsModal is defined in connection.js (second half, random shuffle deck).
-//
-// THE BUG: showTipsModal does:
-//   if (document.getElementById('modal-tips')) { openModal('modal-tips'); return; }
-// On first call it builds and opens the modal. User closes it → modal element
-// stays in DOM with .open removed. On second call (button click), it finds the
-// element, calls openModal which adds .open → works. BUT if the element still
-// HAS .open (e.g. wasn't properly closed), openModal is a no-op.
-//
-// REAL FIX: Before every call, remove modal-tips so the original always
-// rebuilds it fresh. This guarantees it opens every single time.
-//
-// We rewire the topbar button and About modal button directly in the HTML DOM.
-// We do NOT touch launchApp — the original setTimeout(showTipsModal, 1200)
-// already fires on connect and will use our rewired version.
-
 function _safeShowTipsModal() {
-    // ROOT CAUSE FOUND (from git diff between v1.0.22 and v1.2.7):
-    // showTipsModal checks: localStorage.getItem('flinksql_tips_hide') === '1'
-    // The key was renamed to 'strlabstudio_tips_hide' in a later commit,
-    // but the OLD check still exists in the code.
-    // If the user ever clicked "Don't show again" in an older version,
-    // 'flinksql_tips_hide' is still '1' in their browser and the function
-    // returns immediately every single time — modal never opens.
-    // FIX: clear BOTH keys before every call.
     try {
-        localStorage.removeItem('flinksql_tips_hide');      // old key — clears the bug
-        localStorage.removeItem('strlabstudio_tips_hide');  // new key — fresh start
+        localStorage.removeItem('flinksql_tips_hide');
+        localStorage.removeItem('strlabstudio_tips_hide');
     } catch(_) {}
 
-    // Remove existing modal so showTipsModal always rebuilds fresh
     const existing = document.getElementById('modal-tips');
     if (existing) existing.remove();
 
-    // Call the original
     if (typeof showTipsModal === 'function') {
         showTipsModal();
     }
 
-    // Fallback: if original built modal but didn't call openModal, force it open
     setTimeout(() => {
         const m = document.getElementById('modal-tips');
         if (m && !m.classList.contains('open')) m.classList.add('open');
     }, 60);
 }
 
-// Rewire topbar "💡 Tips" button onclick → _safeShowTipsModal()
-// Rewire About modal Tips button onclick → closeModal + _safeShowTipsModal()
-// Both buttons are in the static HTML so we can patch their onclick directly.
 (function _rewireTipsButtons() {
     function _doRewire() {
         let done = 0;
-        // Topbar button: onclick="showTipsModal()"
         document.querySelectorAll('.topbar-btn').forEach(btn => {
             const oc = btn.getAttribute('onclick') || '';
             if (oc === 'showTipsModal()') {
@@ -80,7 +51,6 @@ function _safeShowTipsModal() {
                 done++;
             }
         });
-        // About modal button: onclick="closeModal('modal-about');showTipsModal()"
         document.querySelectorAll('[onclick]').forEach(el => {
             const oc = el.getAttribute('onclick') || '';
             if (oc.includes('showTipsModal()') && !oc.includes('_safeShowTipsModal')) {
@@ -90,17 +60,12 @@ function _safeShowTipsModal() {
         });
         return done > 0;
     }
-    // DOM is already parsed when misc-patches.js loads (it's the last script)
-    // so this should succeed immediately. Retry just in case.
     if (!_doRewire()) {
         const t = setInterval(() => { if (_doRewire()) clearInterval(t); }, 100);
     }
 })();
 
 // ── 2. LOG ISOLATION FIX ─────────────────────────────────────────────────────
-// Patch createSession + switchSession AFTER all scripts have loaded
-// to avoid capturing undefined (scripts load in order, misc-patches is last)
-
 function _clearLogPanel() {
     const logPanel = document.getElementById('log-panel');
     if (logPanel) logPanel.innerHTML = '';
@@ -113,23 +78,19 @@ function _clearLogPanel() {
 }
 
 function _patchSessionFunctions() {
-    // createSession patch
     if (typeof window.createSession === 'function' && !window.createSession._patched) {
         const _orig = window.createSession;
         window.createSession = async function() {
             await _orig.apply(this, arguments);
-            // Clear log after new session created — new session = fresh log
             setTimeout(_clearLogPanel, 100);
         };
         window.createSession._patched = true;
     }
 
-    // switchSession patch — clear log when switching to a session with no saved log
     if (typeof window.switchSession === 'function' && !window.switchSession._patched) {
         const _orig = window.switchSession;
         window.switchSession = function(handle) {
             _orig.apply(this, arguments);
-            // After switch: if session has no saved log state, clear
             setTimeout(() => {
                 const sess = typeof state !== 'undefined' ? state.sessions.find(s => s.handle === handle) : null;
                 if (!sess || !sess._savedState || !(sess._savedState.logLines && sess._savedState.logLines.length)) {
@@ -141,47 +102,38 @@ function _patchSessionFunctions() {
     }
 }
 
-// Defer until window load so all session.js functions are defined
 if (document.readyState === 'complete') {
     _patchSessionFunctions();
 } else {
     window.addEventListener('load', _patchSessionFunctions);
 }
 
-// ── 3. JOBS DISPLAY FIX — non-admin can see own session's jobs ────────────────
-// Deferred patch after all scripts load
-
+// ── 3. JOBS DISPLAY FIX ───────────────────────────────────────────────────────
 function _patchRenderJobList() {
     if (typeof window.renderJobList !== 'function' || window.renderJobList._patched) return false;
     const _orig = window.renderJobList;
 
     window.renderJobList = function(jobs) {
         if (!jobs || !Array.isArray(jobs)) return;
-
-        // Always store for perf module
         if (typeof perf !== 'undefined') perf.lastJobs = jobs;
 
         const list = document.getElementById('perf-job-list');
         if (!list) {
-            // perf.js original may handle it
             _orig.apply(this, arguments);
             return;
         }
 
-        // Admin sees everything
         if (typeof state !== 'undefined' && state.isAdminSession) {
             _renderJobListInner(list, jobs);
             if (typeof _renderJobCompareCheckboxes === 'function') _renderJobCompareCheckboxes(jobs);
             return;
         }
 
-        // Regular session: show own jobs, or all running if none attributed yet
         const sess = (typeof state !== 'undefined') ? state.sessions.find(s => s.handle === state.activeSession) : null;
         const sessJobIds = (sess && sess.jobIds && sess.jobIds.length > 0) ? sess.jobIds : null;
 
         let visible;
         if (!sessJobIds) {
-            // No attribution yet — show running jobs so user can see their pipeline immediately
             visible = jobs.filter(j => j.state === 'RUNNING');
             if (!visible.length) visible = jobs.slice(0, 5);
         } else {
@@ -236,11 +188,7 @@ function _fmtDurationMisc(ms) {
 }
 
 // ── 4. QUERY SLOT DOT COLORS ─────────────────────────────────────────────────
-// Green dot = live/streaming, Grey = finished, Red = error
-// This patches the result slot tab rendering
-
 function _updateSlotDotColor(slotId, status) {
-    // Find the tab button for this slot
     const tabBtns = document.querySelectorAll('[data-slot-id]');
     tabBtns.forEach(btn => {
         if (btn.dataset.slotId === slotId) {
@@ -255,7 +203,6 @@ function _updateSlotDotColor(slotId, status) {
                     dot.style.boxShadow  = 'none';
                     dot.title = 'Error';
                 } else {
-                    // finished, cancelled, done
                     dot.style.background = 'var(--text3)';
                     dot.style.boxShadow  = 'none';
                     dot.title = 'Finished';
@@ -264,55 +211,194 @@ function _updateSlotDotColor(slotId, status) {
         }
     });
 }
-
-// Expose globally so results.js can call it
 window.updateSlotDotColor = _updateSlotDotColor;
 
 // ── 5. TOPBAR CLEANUP ─────────────────────────────────────────────────────────
-// Remove horizontal scrollbar from topbar by hiding some buttons that are
-// available in the sidebar instead. Keep essential actions only.
-
 function _cleanupTopbar() {
-    // Keep ALL buttons visible and full-size — just allow wrapping to a second row
-    // so nothing overflows or gets hidden
     const actions = document.querySelector('.topbar-actions');
     if (!actions) return;
-
     actions.style.flexWrap   = 'wrap';
     actions.style.overflow   = 'visible';
     actions.style.rowGap     = '2px';
     actions.style.columnGap  = '2px';
     actions.style.alignItems = 'center';
-
-    // DO NOT change font-size or padding — user wants full-size headings
-    // Remove any ⋯ menu from previous runs
     const oldMenu = document.getElementById('topbar-more-menu');
     if (oldMenu) oldMenu.remove();
     const oldBtn = document.getElementById('topbar-more-btn');
     if (oldBtn) oldBtn.remove();
 }
 
-function _toggleMoreMenu() {
-    const menu = document.getElementById('topbar-more-menu');
-    if (!menu) return;
-    if (menu.style.display === 'none' || !menu.style.display) {
-        const btn  = document.getElementById('topbar-more-btn');
-        const rect = btn.getBoundingClientRect();
-        menu.style.display  = 'block';
-        menu.style.top      = (rect.bottom + 4) + 'px';
-        menu.style.right    = (window.innerWidth - rect.right) + 'px';
-    } else {
-        menu.style.display = 'none';
+// ── 6. FIX: SHOW queries → 'Statements' slot (not new badge per query) ────────
+// Patches pollOperation (or the equivalent result-completion handler) so that
+// SHOW TABLES, SHOW JARS, SHOW VIEWS, SHOW FUNCTIONS, DESCRIBE, EXPLAIN results
+// are appended to the shared 'ddl-status' Statements slot.
+//
+// Strategy: We hook the point where a COMPLETED operation result is turned into
+// a new result slot. In the Studio codebase this happens in pollOperation (or
+// handleOperationResult). We look for the moment state.resultSlots.push() is
+// called with a new SELECT-like slot that came from a SHOW/DESC query.
+
+function _patchPollOperation() {
+    // Approach: wrap the global function that creates result slots from completed ops.
+    // The function that does this is likely named pollOperation, handleResult, or similar.
+    // We can't rename it without the source, so we patch resultSlots at the point of push.
+    // Instead: override the slot creation by watching for new slots with SHOW/DESC labels.
+
+    // Intercept state.resultSlots.push
+    if (!Array.isArray(state.resultSlots)) state.resultSlots = [];
+    if (state.resultSlots._patched) return;
+
+    const _origPush = Array.prototype.push;
+    const _intercept = function(...args) {
+        const intercepted = [];
+        for (const slot of args) {
+            // Is this a new slot being pushed for a SHOW/DESC query?
+            if (slot && slot.id && slot.id !== 'ddl-status' && _slotIsDDLShow(slot)) {
+                // Route into ddl-status instead of creating a new slot
+                _routeSlotToDDL(slot);
+                // Do NOT add to resultSlots as a separate entry
+            } else {
+                intercepted.push(slot);
+            }
+        }
+        if (intercepted.length > 0) {
+            return _origPush.apply(this, intercepted);
+        }
+        return this.length;
+    };
+
+    // We can't patch Array.prototype globally (too risky), so instead we
+    // patch the specific resultSlots array by replacing it with a Proxy.
+    try {
+        state.resultSlots = new Proxy(state.resultSlots, {
+            get(target, prop) {
+                if (prop === 'push') {
+                    return function(...args) {
+                        const intercepted = [];
+                        for (const slot of args) {
+                            if (slot && slot.id && slot.id !== 'ddl-status' && _slotIsDDLShow(slot)) {
+                                _routeSlotToDDL(slot);
+                            } else {
+                                intercepted.push(slot);
+                            }
+                        }
+                        if (intercepted.length > 0) {
+                            return _origPush.apply(target, intercepted);
+                        }
+                        return target.length;
+                    };
+                }
+                return typeof target[prop] === 'function'
+                    ? target[prop].bind(target)
+                    : target[prop];
+            },
+            set(target, prop, value) {
+                target[prop] = value;
+                return true;
+            }
+        });
+        state.resultSlots._patched = true;
+    } catch(e) {
+        // Proxy not supported — fall back to polling approach
+        console.warn('[misc-patches] Proxy not available, using renderStreamSelector patch');
+        _patchRenderStreamSelector();
     }
 }
 
-// ── INIT — run after DOM ready ─────────────────────────────────────────────────
+// Check if a slot came from a SHOW/DESC/EXPLAIN query
+function _slotIsDDLShow(slot) {
+    const sql = (slot.sql || slot.label || '').replace(/^\/\*[\s\S]*?\*\/|^\s*--.*$/mg, '').trim();
+    if (!sql) return false;
+    return /^\s*(SHOW\s+(TABLES|VIEWS|JARS|FUNCTIONS|CATALOGS|DATABASES|MODULES|CREATE)|DESCRIBE\s+\S|DESC\s+\S|EXPLAIN\s+)/i.test(sql);
+}
+
+// Route a SHOW/DESC slot's data into the shared ddl-status slot
+function _routeSlotToDDL(slot) {
+    if (typeof window._cdShowDDLResult === 'function') {
+        const label = slot.label || slot.sql?.slice(0,40) || 'DDL Result';
+        window._cdShowDDLResult(slot.sql || '', label, slot.columns || [], slot.rows || []);
+    } else {
+        // Fallback: use showDDLStatus if _cdShowDDLResult not yet loaded
+        if (typeof showDDLStatus === 'function') {
+            showDDLStatus('SHOW', slot.label || slot.sql || 'DDL Result');
+        }
+    }
+}
+
+// Fallback approach: patch renderStreamSelector to hide SHOW slots from the bar
+// and route them when they appear
+function _patchRenderStreamSelector() {
+    if (typeof renderStreamSelector !== 'function' || renderStreamSelector._ddlPatched) return false;
+    const _orig = renderStreamSelector;
+    window.renderStreamSelector = function() {
+        // Before rendering, pull out DDL show slots and route them
+        if (state.resultSlots) {
+            const toRoute = state.resultSlots.filter(s => s.id !== 'ddl-status' && _slotIsDDLShow(s));
+            toRoute.forEach(slot => {
+                state.resultSlots = state.resultSlots.filter(s => s.id !== slot.id);
+                _routeSlotToDDL(slot);
+            });
+        }
+        return _orig.apply(this, arguments);
+    };
+    renderStreamSelector._ddlPatched = true;
+    return true;
+}
+
+// ── 7. FIX: CREATE TEMPORARY VIEW — register in state.sessionViews ────────────
+// We intercept the success path for CREATE TEMPORARY VIEW by watching for
+// DDL status messages that contain 'VIEW' and parsing the view name.
+// This lets SHOW VIEWS (via _cdMergeShowViewsResult) display the view.
+
+function _patchShowDDLStatusForViews() {
+    if (typeof window.showDDLStatus !== 'function' || window.showDDLStatus._viewPatched) return false;
+    const _orig = window.showDDLStatus;
+    window.showDDLStatus = function(verb, sql) {
+        // Check if this is a successful CREATE [TEMPORARY] VIEW
+        const cleanSql = (sql || '').replace(/\s+/g,' ').trim();
+        const viewMatch = cleanSql.match(/CREATE\s+(?:TEMPORARY\s+)?VIEW\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?(\w+)[`"]?/i);
+        if (viewMatch && typeof window._cdRegisterSessionView === 'function') {
+            window._cdRegisterSessionView(viewMatch[1]);
+        }
+        return _orig.apply(this, arguments);
+    };
+    window.showDDLStatus._viewPatched = true;
+    return true;
+}
+
+// Also watch for the pollOperation result handler — if a SHOW VIEWS result
+// comes in, merge state.sessionViews into it before displaying.
+function _patchShowViewsInterceptor() {
+    // This is a safety net: if the Proxy approach above catches SHOW VIEWS slots,
+    // _cdShowDDLResult already calls _cdMergeShowViewsResult.
+    // If not, we watch for the SHOW VIEWS slot appearing in resultSlots.
+    // We check on a timer and merge whenever we see a SHOW VIEWS slot.
+    setInterval(() => {
+        if (!state.resultSlots) return;
+        const showViewsSlot = state.resultSlots.find(s =>
+            /^SHOW\s+VIEWS\b/i.test((s.sql || s.label || '').trim()) &&
+            !s._viewsMerged
+        );
+        if (!showViewsSlot) return;
+        showViewsSlot._viewsMerged = true;
+        if (typeof window._cdMergeShowViewsResult === 'function') {
+            const merged = window._cdMergeShowViewsResult(showViewsSlot.rows || []);
+            showViewsSlot.rows = merged;
+            if (state.activeSlot === showViewsSlot.id) {
+                state.results = merged;
+                if (typeof renderResults === 'function') renderResults();
+            }
+        }
+    }, 800);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
 function initMiscPatches() {
     _cleanupTopbar();
     _patchSessionFunctions();
     _patchRenderJobList();
 
-    // Inject 📊 Charts button into results toolbar (results-actions in HTML)
+    // Inject 📊 Chart Report button into results toolbar
     if (!document.getElementById('cd-chart-toggle-btn')) {
         const resultsActions = document.querySelector('.results-actions');
         if (resultsActions) {
@@ -322,46 +408,31 @@ function initMiscPatches() {
             chartBtn.title     = 'Chart Report — visualize result data as charts';
             chartBtn.textContent = '📊 Chart Report';
             chartBtn.onclick = function() {
-                // Open Chart Report modal (like Colour Describe)
                 if (typeof openChartReportModal === 'function') {
                     openChartReportModal();
                 }
             };
-            // Insert before the Export button
             const exportBtn = document.getElementById('export-results-btn');
-            if (exportBtn) {
-                resultsActions.insertBefore(chartBtn, exportBtn);
-            } else {
-                resultsActions.appendChild(chartBtn);
-            }
+            if (exportBtn) resultsActions.insertBefore(chartBtn, exportBtn);
+            else resultsActions.appendChild(chartBtn);
         }
     }
 
-    // Intercept "Apply & Activate" button in Colour Describe modal
-    // This ensures _cdApply fires reliably after rules are confirmed
-    if (!document.getElementById('cd-activate-intercepted')) {
-        const marker = document.createElement('span');
-        marker.id = 'cd-activate-intercepted';
-        marker.style.display = 'none';
-        document.body.appendChild(marker);
-
-        // MutationObserver watches for the Colour Describe modal opening
-        const _cdModalObs = new MutationObserver(() => {
-            const applyBtn = document.querySelector('[onclick*="_cdApply"], [onclick*="cdApply"]');
-            if (applyBtn && !applyBtn._cdIntercepted) {
-                applyBtn._cdIntercepted = true;
-                const origOnclick = applyBtn.getAttribute('onclick') || '';
-                applyBtn.addEventListener('click', () => {
-                    // After original fires, re-call _cdApply with a delay to ensure DOM is ready
-                    setTimeout(() => {
-                        if (typeof _cdApply === 'function') _cdApply();
-                        if (typeof _cdReapplyExistingFromDOM === 'function') _cdReapplyExistingFromDOM();
-                    }, 150);
-                });
-            }
-        });
-        _cdModalObs.observe(document.body, { childList: true, subtree: true });
-    }
+    // Patch SHOW queries → Statements slot
+    // Retry until state.resultSlots is initialised
+    let _ddlPatchAttempts = 0;
+    const _ddlPatchTimer = setInterval(() => {
+        if (typeof state !== 'undefined' && state) {
+            if (!Array.isArray(state.resultSlots)) state.resultSlots = [];
+            _patchPollOperation();
+            _patchShowDDLStatusForViews();
+            _patchShowViewsInterceptor();
+            // Also patch renderStreamSelector as belt-and-suspenders
+            if (typeof renderStreamSelector === 'function') _patchRenderStreamSelector();
+            clearInterval(_ddlPatchTimer);
+        }
+        if (++_ddlPatchAttempts > 40) clearInterval(_ddlPatchTimer);
+    }, 200);
 
     // Inject global styles
     if (document.getElementById('misc-patch-styles')) return;
@@ -381,12 +452,6 @@ function initMiscPatches() {
       white-space:nowrap;
       flex-shrink:0;
     }
-    /* ⋯ More menu */
-    #topbar-more-menu {
-      border-radius:6px;
-      padding:4px;
-      min-width:170px;
-    }
     /* Charts button in results-actions */
     #cd-chart-toggle-btn {
       font-size:10px;
@@ -397,7 +462,6 @@ function initMiscPatches() {
       border-color:rgba(0,212,170,0.5) !important;
       color:var(--accent) !important;
     }
-
     /* Slot dot styles */
     .slot-dot {
       display:inline-block;width:7px;height:7px;border-radius:50%;
@@ -410,48 +474,16 @@ function initMiscPatches() {
     }
     .slot-dot-done { background:var(--text3) !important; box-shadow:none !important; }
     .slot-dot-error { background:var(--red) !important; box-shadow:none !important; }
-
     @keyframes slot-pulse {
       0%,100% { opacity:1; }
       50% { opacity:0.4; }
     }
-
     /* Performance jobs tab */
     #perf-job-list { min-height:44px; }
     .job-row:last-child { border-bottom:none !important; }
   `;
     document.head.appendChild(style);
 }
-
-// ── 6. COLOUR DESCRIBE DOM-BASED REAPPLY FIX ──────────────────────────────────
-// The existing _cdReapplyExistingFromDOM in results-intelligence.js correctly
-// builds a colIndexMap from headers, but _cdOnSlotChange (slot field selector)
-// was leaving the field dropdown empty. The fix is in results-charts.js.
-// This additional patch ensures coloring fires after renderResults completes.
-(function() {
-    function _patchReapply() {
-        if (typeof renderResults !== 'function' || renderResults._cdPatched) return false;
-        const _orig = renderResults;
-        window.renderResults = function() {
-            _orig.apply(this, arguments);
-            // After render, if color describe is active reapply immediately
-            setTimeout(() => {
-                if (window.colorDescribeActive && typeof _cdReapplyExistingFromDOM === 'function') {
-                    _cdReapplyExistingFromDOM();
-                }
-                if (window.colorDescribeActive && typeof _cdRenderLegend === 'function') {
-                    _cdRenderLegend();
-                }
-            }, 80);
-        };
-        renderResults._cdPatched = true;
-        return true;
-    }
-    if (!_patchReapply()) {
-        const t = setInterval(() => { if (_patchReapply()) clearInterval(t); }, 400);
-    }
-})();
-
 
 // Run patches after app is visible
 const _miscPatchObserver = new MutationObserver((mutations) => {

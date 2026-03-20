@@ -1,21 +1,30 @@
-/* Str:::lab Studio — results-charts.js v1.3.0
- * Chart Report feature — works like Colour Describe:
- * Click "📊 Chart Report" → modal opens → select query/job slot
- * → add fields with colors → chart renders live inside the modal
- * ─────────────────────────────────────────────────────────────── */
+/* Str:::lab Studio — results-charts.js v4 (fixed)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * FIXES in this build:
+ *  1. X-axis selector added — user picks the X column (labels/categories) and
+ *     Y columns (values) separately. No more hardcoded xIdx = 0.
+ *  2. Chart.js loading — modal waits for Chart.js before rendering; shows a
+ *     clear loading indicator rather than silently falling back to canvas.
+ *  3. labels mutation bug fixed — labels array rebuilt fresh each render,
+ *     not shared/mutated between aggregation and raw paths.
+ *  4. def_agg_any moved above _crRenderChart so it's always in scope.
+ *  5. Scatter chart uses xCol values for x, not row index.
+ *  6. Pie/Donut/Heatmap correctly use the first Y field for value data.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
 
 'use strict';
 
 // ── Chart type definitions ────────────────────────────────────────────────────
 const CHART_TYPES = [
     { value:'bar',       label:'Bar',        icon:'▐█' },
-    { value:'line',      label:'Line',        icon:'📈' },
-    { value:'area',      label:'Area',        icon:'▲'  },
-    { value:'pie',       label:'Pie',         icon:'🥧' },
-    { value:'donut',     label:'Donut',       icon:'🍩' },
-    { value:'histogram', label:'Histogram',   icon:'▐▌' },
-    { value:'scatter',   label:'Scatter',     icon:'⋱'  },
-    { value:'heatmap',   label:'Heatmap',     icon:'🌡' },
+    { value:'line',      label:'Line',       icon:'📈' },
+    { value:'area',      label:'Area',       icon:'▲'  },
+    { value:'pie',       label:'Pie',        icon:'🥧' },
+    { value:'donut',     label:'Donut',      icon:'🍩' },
+    { value:'histogram', label:'Histogram',  icon:'▐▌' },
+    { value:'scatter',   label:'Scatter',    icon:'⋱'  },
+    { value:'heatmap',   label:'Heatmap',    icon:'🌡' },
 ];
 
 const CHART_COLORS_PALETTE = [
@@ -24,18 +33,23 @@ const CHART_COLORS_PALETTE = [
 ];
 
 // ── Global state ──────────────────────────────────────────────────────────────
-window._chartReportDefs    = window._chartReportDefs    || []; // field defs per slot
-window._chartReportSlotId  = window._chartReportSlotId  || null;
-window._chartReportType    = window._chartReportType    || 'bar';
-window._chartReportInst    = window._chartReportInst    || null; // Chart.js instance
-window._chartReportTimer   = window._chartReportTimer   || null;
+window._chartReportDefs   = window._chartReportDefs   || [];
+window._chartReportSlotId = window._chartReportSlotId || null;
+window._chartReportType   = window._chartReportType   || 'bar';
+window._chartReportInst   = window._chartReportInst   || null;
+window._chartReportTimer  = window._chartReportTimer  || null;
+window._chartReportXCol   = window._chartReportXCol   || null; // ← NEW: user-chosen X column
 
-// ── escHtml helper (may already exist globally) ───────────────────────────────
 function _crEsc(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Safe column reader — slot data OR DOM table headers ───────────────────────
+// ── FIX 4: def_agg_any moved before _crRenderChart ───────────────────────────
+function def_agg_any(defs) {
+    return defs.some(d => d.agg && d.agg !== 'none');
+}
+
+// ── Safe column reader ────────────────────────────────────────────────────────
 function _crGetColumns(slotId) {
     const slots = (typeof state !== 'undefined' && state && state.resultSlots) ? state.resultSlots : [];
     const slot  = slotId
@@ -45,7 +59,6 @@ function _crGetColumns(slotId) {
     if (slot && slot.columns && slot.columns.length)
         return slot.columns.map(c => c.name || String(c)).filter(Boolean);
 
-    // DOM fallback — read from visible table headers
     const table = document.querySelector('#result-table-wrap table');
     if (table)
         return Array.from(table.querySelectorAll('thead th'))
@@ -60,9 +73,13 @@ function _crGetRows(slotId) {
         ? slots.find(s => s.id === slotId)
         : slots.find(s => s.rows && s.rows.length > 0);
 
-    if (slot && slot.rows && slot.rows.length) return slot.rows;
+    if (slot && slot.rows && slot.rows.length) {
+        return slot.rows.map(row => {
+            const fields = Array.isArray(row?.fields) ? row.fields : Object.values(row?.fields || row || {});
+            return fields;
+        });
+    }
 
-    // DOM fallback
     const table = document.querySelector('#result-table-wrap table');
     if (table)
         return Array.from(table.querySelectorAll('tbody tr')).map(tr =>
@@ -71,7 +88,7 @@ function _crGetRows(slotId) {
     return [];
 }
 
-// ── Open the Chart Report modal (like Colour Describe) ───────────────────────
+// ── Open the Chart Report modal ───────────────────────────────────────────────
 function openChartReportModal() {
     let modal = document.getElementById('modal-chart-report');
     if (!modal) {
@@ -87,13 +104,32 @@ function openChartReportModal() {
     openModal('modal-chart-report');
     _crPopulateSlots();
     _crRenderFieldList();
-    setTimeout(_crRenderChart, 100);
+    // Wait for Chart.js, then render
+    _crWaitForChartJs(() => setTimeout(_crRenderChart, 100));
+}
+
+// ── Wait for Chart.js to load ─────────────────────────────────────────────────
+function _crWaitForChartJs(cb) {
+    if (typeof Chart !== 'undefined') { cb(); return; }
+    const status = document.getElementById('cr-chart-status');
+    if (status) status.textContent = 'Loading Chart.js…';
+    let attempts = 0;
+    const t = setInterval(() => {
+        if (typeof Chart !== 'undefined') {
+            clearInterval(t);
+            if (status) status.textContent = '';
+            cb();
+        } else if (++attempts > 40) {
+            clearInterval(t);
+            if (status) status.textContent = 'Chart.js failed to load — check your internet connection';
+        }
+    }, 250);
 }
 
 // ── Build modal HTML ──────────────────────────────────────────────────────────
 function _crBuildModalHTML() {
     return `
-<div class="modal" style="width:860px;max-height:92vh;display:flex;flex-direction:column;">
+<div class="modal" style="width:900px;max-height:92vh;display:flex;flex-direction:column;">
   <div class="modal-header" style="display:flex;align-items:center;gap:10px;">
     <span style="font-size:14px;">📊</span>
     <span style="font-weight:700;font-size:13px;">Chart Report</span>
@@ -109,10 +145,10 @@ function _crBuildModalHTML() {
   <div class="modal-body" style="flex:1;overflow:hidden;display:flex;gap:0;padding:0;min-height:0;">
 
     <!-- LEFT PANEL: controls -->
-    <div style="width:260px;flex-shrink:0;border-right:1px solid var(--border);
+    <div style="width:280px;flex-shrink:0;border-right:1px solid var(--border);
                 display:flex;flex-direction:column;overflow-y:auto;padding:14px 12px;gap:12px;">
 
-      <!-- 1. Select query/job slot -->
+      <!-- 1. Query slot -->
       <div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text3);
                     text-transform:uppercase;margin-bottom:6px;">Query / Job</div>
@@ -142,10 +178,25 @@ function _crBuildModalHTML() {
         </div>
       </div>
 
-      <!-- 3. Fields -->
+      <!-- 3. X-axis selector (NEW) -->
+      <div id="cr-xaxis-wrap" style="display:none;">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text3);
+                    text-transform:uppercase;margin-bottom:6px;">X Axis (Labels / Categories)</div>
+        <select id="cr-xaxis-select" onchange="_crOnXAxisChange()" style="
+          width:100%;font-size:11px;padding:5px 8px;font-family:var(--mono);
+          background:var(--bg3);border:1px solid var(--border);color:var(--text0);
+          border-radius:var(--radius);cursor:pointer;">
+          <option value="">— row index —</option>
+        </select>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px;">
+          Used as category labels on the X axis
+        </div>
+      </div>
+
+      <!-- 4. Y-axis fields -->
       <div>
         <div style="font-size:9px;font-weight:700;letter-spacing:1px;color:var(--text3);
-                    text-transform:uppercase;margin-bottom:6px;">Fields on Chart</div>
+                    text-transform:uppercase;margin-bottom:6px;">Y Axis (Values)</div>
         <div id="cr-field-list" style="display:flex;flex-direction:column;gap:6px;">
           <div style="font-size:11px;color:var(--text3);">Select a query first</div>
         </div>
@@ -153,11 +204,11 @@ function _crBuildModalHTML() {
           margin-top:8px;width:100%;padding:5px;font-size:11px;font-family:var(--mono);
           border:1px dashed rgba(0,212,170,0.4);background:rgba(0,212,170,0.05);
           color:var(--accent);border-radius:3px;cursor:pointer;display:none;">
-          ＋ Add Field
+          ＋ Add Y Field
         </button>
       </div>
 
-      <!-- 4. Live toggle -->
+      <!-- 5. Live toggle -->
       <div style="display:flex;align-items:center;gap:8px;padding-top:4px;
                   border-top:1px solid var(--border);">
         <input type="checkbox" id="cr-live-chk" checked onchange="_crToggleLive()"
@@ -167,8 +218,18 @@ function _crBuildModalHTML() {
         </label>
       </div>
 
-      <!-- 5. Manual refresh -->
-      <button onclick="_crRenderChart()" style="
+      <!-- 6. Max rows -->
+      <div style="display:flex;align-items:center;gap:6px;">
+        <label style="font-size:10px;color:var(--text3);white-space:nowrap;">Max rows:</label>
+        <input type="number" id="cr-max-rows" value="200" min="10" max="2000" step="50"
+          onchange="_crRenderChart()"
+          style="width:70px;font-size:11px;padding:3px 5px;font-family:var(--mono);
+                 background:var(--bg3);border:1px solid var(--border);color:var(--text0);
+                 border-radius:3px;" />
+      </div>
+
+      <!-- 7. Manual refresh -->
+      <button onclick="_crWaitForChartJs(_crRenderChart)" style="
         padding:6px;font-size:11px;font-family:var(--mono);width:100%;
         border:1px solid var(--border);background:var(--bg3);color:var(--text1);
         border-radius:3px;cursor:pointer;">⟳ Refresh Chart</button>
@@ -185,7 +246,7 @@ function _crBuildModalHTML() {
         <div id="cr-chart-empty" style="position:absolute;inset:0;display:flex;flex-direction:column;
              align-items:center;justify-content:center;gap:10px;color:var(--text3);">
           <span style="font-size:36px;opacity:0.25;">📊</span>
-          <span style="font-size:12px;">Select a query and add fields to see the chart</span>
+          <span style="font-size:12px;">Select a query, choose X and Y columns, then click Refresh</span>
         </div>
       </div>
       <div id="cr-chart-legend" style="display:flex;gap:12px;flex-wrap:wrap;
@@ -197,12 +258,11 @@ function _crBuildModalHTML() {
 }
 
 // ── Populate slot selector ────────────────────────────────────────────────────
-// Only SELECT-result slots are plottable — filter out SHOW/CREATE/DESC/SET results
 function _crIsPlottable(slot) {
     if (!slot) return false;
     if (!slot.rows?.length && slot.status !== 'streaming') return false;
     const sql = (slot.sql || slot.label || '').replace(/^\/\*[\s\S]*?\*\/|^\s*--.*$/mg, '').trim();
-    if (!sql) return slot.columns?.length > 1; // no SQL: require >1 column (not DDL result)
+    if (!sql) return slot.columns?.length > 1;
     return /^SELECT\b/i.test(sql);
 }
 
@@ -212,8 +272,6 @@ function _crPopulateSlots() {
 
     const allSlots = (typeof state !== 'undefined' && state && state.resultSlots)
         ? state.resultSlots : [];
-
-    // Only show SELECT results — skip SHOW TABLES, CREATE, SET, etc.
     const slots = allSlots.filter(s => _crIsPlottable(s));
 
     if (!slots.length) {
@@ -228,7 +286,6 @@ function _crPopulateSlots() {
         return `<option value="${_crEsc(s.id)}">${_crEsc(label)} (${rows} rows)${badge}</option>`;
     }).join('');
 
-    // Auto-select active slot or first
     const active = window._chartReportSlotId ||
         (typeof state !== 'undefined' && state.activeSlot) ||
         slots[slots.length - 1]?.id;
@@ -243,27 +300,61 @@ function _crOnSlotChange() {
     if (!sel) return;
     window._chartReportSlotId = sel.value || null;
 
-    const info  = document.getElementById('cr-slot-info');
+    const info   = document.getElementById('cr-slot-info');
     const addBtn = document.getElementById('cr-add-field-btn');
-    const cols  = _crGetColumns(window._chartReportSlotId);
-    const rows  = _crGetRows(window._chartReportSlotId);
+    const xWrap  = document.getElementById('cr-xaxis-wrap');
+    const xSel   = document.getElementById('cr-xaxis-select');
+    const cols   = _crGetColumns(window._chartReportSlotId);
+    const rows   = _crGetRows(window._chartReportSlotId);
 
     if (info) info.textContent = `${rows.length} rows · ${cols.length} columns`;
-
-    // Show "Add Field" only when there are columns
     if (addBtn) addBtn.style.display = cols.length ? 'block' : 'none';
 
-    // If no fields defined yet, add one automatically
+    // Show X-axis selector
+    if (xWrap) xWrap.style.display = cols.length ? 'block' : 'none';
+
+    // Populate X-axis selector
+    if (xSel && cols.length) {
+        const prevX = window._chartReportXCol;
+        xSel.innerHTML = '<option value="">— row index —</option>'
+            + cols.map(c => `<option value="${_crEsc(c)}">${_crEsc(c)}</option>`).join('');
+        // Try to restore previous X column selection
+        if (prevX && cols.includes(prevX)) {
+            xSel.value = prevX;
+        } else {
+            // Default: first string/varchar column as X if available
+            const defaultX = cols.find(c => {
+                const slot = (state?.resultSlots||[]).find(s => s.id === window._chartReportSlotId);
+                if (!slot) return false;
+                const col = (slot.columns||[]).find(col => (col.name||col) === c);
+                const type = (col?.logicalType?.type || col?.type || '').toUpperCase();
+                return type.includes('CHAR') || type.includes('STRING') || type.includes('VARCHAR');
+            }) || cols[0];
+            xSel.value = defaultX || '';
+            window._chartReportXCol = xSel.value || null;
+        }
+    }
+
+    // Auto-add first Y field if none defined
     if (cols.length && !window._chartReportDefs.length) {
+        // Default Y = second column (or first if only one column)
+        const defaultY = cols.length > 1 ? cols[1] : cols[0];
         window._chartReportDefs = [{
-            field: cols[0],
+            field: defaultY,
             color: CHART_COLORS_PALETTE[0],
             agg:   'none',
-            label: cols[0],
+            label: defaultY,
         }];
     }
 
     _crRenderFieldList();
+    _crWaitForChartJs(_crRenderChart);
+}
+
+// ── X-axis changed ────────────────────────────────────────────────────────────
+function _crOnXAxisChange() {
+    const xSel = document.getElementById('cr-xaxis-select');
+    window._chartReportXCol = xSel ? (xSel.value || null) : null;
     _crRenderChart();
 }
 
@@ -275,7 +366,7 @@ function _crSelectType(type, btn) {
     _crRenderChart();
 }
 
-// ── Render field list (the rows of field selectors with color pickers) ────────
+// ── Render Y field list ───────────────────────────────────────────────────────
 function _crRenderFieldList() {
     const container = document.getElementById('cr-field-list');
     if (!container) return;
@@ -288,7 +379,7 @@ function _crRenderFieldList() {
 
     const defs = window._chartReportDefs;
     if (!defs.length) {
-        container.innerHTML = '<div style="font-size:11px;color:var(--text3);">Click ＋ Add Field</div>';
+        container.innerHTML = '<div style="font-size:11px;color:var(--text3);">Click ＋ Add Y Field</div>';
         return;
     }
 
@@ -314,14 +405,14 @@ function _crRenderFieldList() {
         </select>
         <button onclick="window._chartReportDefs.splice(${idx},1);_crRenderFieldList();_crRenderChart()"
           style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;
-                 padding:0;line-height:1;flex-shrink:0;" title="Remove field">×</button>
+                 padding:0;line-height:1;flex-shrink:0;" title="Remove Y field">×</button>
       </div>
       <div style="display:flex;gap:4px;align-items:center;">
         <select onchange="window._chartReportDefs[${idx}].agg=this.value;_crRenderChart()"
           style="font-size:10px;padding:2px 4px;font-family:var(--mono);
                  background:var(--bg3);border:1px solid var(--border);color:var(--text1);
                  border-radius:3px;cursor:pointer;flex:1;">
-          <option value="none" ${def.agg==='none'?'selected':''}>Raw values</option>
+          <option value="none"  ${def.agg==='none' ?'selected':''}>Raw values</option>
           <option value="count" ${def.agg==='count'?'selected':''}>COUNT</option>
           <option value="sum"   ${def.agg==='sum'  ?'selected':''}>SUM</option>
           <option value="avg"   ${def.agg==='avg'  ?'selected':''}>AVG</option>
@@ -339,7 +430,7 @@ function _crRenderFieldList() {
     }).join('');
 }
 
-// ── Add a new field ───────────────────────────────────────────────────────────
+// ── Add Y field ───────────────────────────────────────────────────────────────
 function _crAddField() {
     const cols = _crGetColumns(window._chartReportSlotId);
     if (!cols.length) return;
@@ -373,11 +464,11 @@ function _crStopLive() {
     }
 }
 
-// ── Render the chart ──────────────────────────────────────────────────────────
+// ── FIX: Main chart render ────────────────────────────────────────────────────
 function _crRenderChart() {
-    const canvas  = document.getElementById('cr-chart-canvas');
-    const emptyEl = document.getElementById('cr-chart-empty');
-    const status  = document.getElementById('cr-chart-status');
+    const canvas   = document.getElementById('cr-chart-canvas');
+    const emptyEl  = document.getElementById('cr-chart-empty');
+    const statusEl = document.getElementById('cr-chart-status');
     const legendEl = document.getElementById('cr-chart-legend');
     if (!canvas) return;
 
@@ -386,21 +477,20 @@ function _crRenderChart() {
 
     if (!defs.length) {
         if (emptyEl) emptyEl.style.display = 'flex';
-        if (status)  status.textContent = '';
+        if (statusEl) statusEl.textContent = '';
         return;
     }
 
-    const cols  = _crGetColumns(window._chartReportSlotId);
-    const rows  = _crGetRows(window._chartReportSlotId);
+    const cols = _crGetColumns(window._chartReportSlotId);
+    const rows = _crGetRows(window._chartReportSlotId);
 
     if (!rows.length || !cols.length) {
         if (emptyEl) emptyEl.style.display = 'flex';
-        if (status)  status.textContent = 'No data in selected query';
+        if (statusEl) statusEl.textContent = 'No data in selected query — run a SELECT first';
         return;
     }
 
     if (emptyEl) emptyEl.style.display = 'none';
-    if (status)  status.textContent = `${rows.length} rows · ${cols.length} cols · ${CHART_TYPES.find(t=>t.value===type)?.label||type}`;
 
     // Destroy previous Chart.js instance
     if (window._chartReportInst) {
@@ -408,144 +498,207 @@ function _crRenderChart() {
         window._chartReportInst = null;
     }
 
-    // Use only last 500 rows for performance
-    const data = rows.slice(-500);
+    // ── FIX 3: get max rows from input ───────────────────────────────────────
+    const maxRows  = parseInt(document.getElementById('cr-max-rows')?.value || '200') || 200;
+    const data     = rows.slice(-maxRows);
 
-    // Build datasets — one per field def
-    // X-axis: first column (or row index)
-    const xCol  = cols[0];
-    const xIdx  = 0; // first column always = X axis
-    const labels = data.map((row, i) => row[xIdx] != null ? String(row[xIdx]).slice(0,15) : String(i));
+    // ── FIX 1: resolve X column index ────────────────────────────────────────
+    const xColName = window._chartReportXCol ||
+        (document.getElementById('cr-xaxis-select')?.value || null);
 
-    // Special case: heatmap uses canvas renderer
+    // Re-sync xCol state from selector in case modal was refreshed
+    const xSelEl = document.getElementById('cr-xaxis-select');
+    if (xSelEl && xSelEl.value !== (window._chartReportXCol || '')) {
+        window._chartReportXCol = xSelEl.value || null;
+    }
+
+    // xIdx is the column index used for X-axis labels
+    const xIdx = xColName ? cols.indexOf(xColName) : -1;
+
+    if (statusEl) statusEl.textContent =
+        `${data.length} rows · X: ${xColName || 'row index'} · ` +
+        `Y: ${defs.map(d=>d.label||d.field).join(', ')} · ` +
+        `${CHART_TYPES.find(t=>t.value===type)?.label||type}`;
+
+    // Heatmap — custom canvas renderer
     if (type === 'heatmap') {
-        const def = defs[0];
+        const def  = defs[0];
         const yIdx = cols.indexOf(def.field);
-        const values = data.map(row => parseFloat(row[yIdx>=0?yIdx:1]) || 0);
-        _crDrawHeatmap(canvas, labels, values, def.color);
-        if (legendEl) _crRenderLegend(legendEl, defs, null, null);
+        // ── FIX 3: build labels fresh, not mutating a shared array ───────────
+        const hmLabels = data.map((row, i) =>
+            xIdx >= 0 ? String(row[xIdx]??i).slice(0,15) : String(i+1)
+        );
+        const values = data.map(row => parseFloat(row[yIdx>=0?yIdx:0]) || 0);
+        _crDrawHeatmap(canvas, hmLabels, values, def.color);
+        if (legendEl) _crRenderLegend(legendEl, defs);
         return;
     }
 
+    // Wait for Chart.js
     if (typeof Chart === 'undefined') {
-        // Fallback canvas bar chart if Chart.js not loaded yet
-        const def = defs[0];
-        const yIdx = cols.indexOf(def.field);
-        const values = data.slice(-50).map(row => parseFloat(row[yIdx>=0?yIdx:1]) || 0);
-        _crDrawFallbackBar(canvas, labels.slice(-50), values, def.color);
-        if (status) status.textContent += ' (Chart.js loading…)';
+        if (statusEl) statusEl.textContent = '⏳ Chart.js loading — click Refresh once loaded';
         return;
     }
 
-    const isDark = !document.body.classList.contains('theme-light');
-    const gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
-    const tickColor  = isDark ? '#8b949e' : '#666';
+    const isDark    = !document.body.classList.contains('theme-light');
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
+    const tickColor = isDark ? '#8b949e' : '#666';
 
-    // Build Chart.js datasets
+    const isMultiColor = ['pie','doughnut'].includes(
+        type === 'donut' ? 'doughnut' : type
+    );
+
+    // ── FIX 3: build labels fresh each render ────────────────────────────────
+    let chartLabels;
+    let useData = data;
+
+    const useAgg = def_agg_any(defs);
+
+    if (useAgg) {
+        // Group by X column value (or row index if no X selected)
+        const groups = {};
+        data.forEach((row, i) => {
+            const k = xIdx >= 0 ? String(row[xIdx] ?? 'null') : String(i + 1);
+            if (!groups[k]) groups[k] = [];
+            groups[k].push(row);
+        });
+        const entries = Object.entries(groups).slice(0, 50);
+        chartLabels = entries.map(e => e[0]);
+        useData     = entries.map(e => e[1]); // array of rows per group
+    } else {
+        chartLabels = data.map((row, i) =>
+            xIdx >= 0 ? String(row[xIdx] ?? i).slice(0, 20) : String(i + 1)
+        );
+    }
+
+    // ── Build datasets ────────────────────────────────────────────────────────
     const datasets = defs.map(def => {
         const yIdx = cols.indexOf(def.field);
-        let values;
 
-        if (def.agg === 'none' || !def.agg) {
-            values = data.slice(-100).map(row => {
-                const v = row[yIdx >= 0 ? yIdx : 1];
-                return v != null ? (parseFloat(v) || 0) : 0;
+        let values;
+        if (useAgg) {
+            values = useData.map(rowGroup => {
+                const nums = rowGroup.map(r => parseFloat(r[yIdx>=0?yIdx:0]) || 0);
+                switch (def.agg) {
+                    case 'count': return nums.length;
+                    case 'sum':   return nums.reduce((a,b)=>a+b,0);
+                    case 'avg':   return nums.reduce((a,b)=>a+b,0)/nums.length;
+                    case 'max':   return Math.max(...nums);
+                    case 'min':   return Math.min(...nums);
+                    default:      return nums[nums.length-1];
+                }
             });
         } else {
-            // Group by X, aggregate Y
-            const groups = {};
-            data.forEach(row => {
-                const k = row[xIdx] != null ? String(row[xIdx]) : 'null';
-                const v = yIdx >= 0 && row[yIdx] != null ? parseFloat(row[yIdx]) || 0 : 1;
-                if (!groups[k]) groups[k] = [];
-                groups[k].push(v);
-            });
-            const entries = Object.entries(groups).slice(0, 50);
-            // update labels for aggregated
-            labels.length = 0;
-            entries.forEach(e => labels.push(e[0]));
-            values = entries.map(([, arr]) => {
-                switch(def.agg) {
-                    case 'count': return arr.length;
-                    case 'sum':   return arr.reduce((a,b)=>a+b,0);
-                    case 'avg':   return arr.reduce((a,b)=>a+b,0)/arr.length;
-                    case 'max':   return Math.max(...arr);
-                    case 'min':   return Math.min(...arr);
-                    default:      return arr[arr.length-1];
-                }
+            values = data.map(row => {
+                const v = row[yIdx>=0?yIdx:0];
+                return v != null ? (parseFloat(v) || 0) : 0;
             });
         }
 
-        const isMulti = ['pie','doughnut'].includes(type === 'donut' ? 'doughnut' : type);
+        // Scatter: use X column as numeric X value
+        const scatterData = type === 'scatter'
+            ? data.map((row, i) => ({
+                x: xIdx >= 0 ? (parseFloat(row[xIdx]) || i) : i,
+                y: yIdx >= 0 ? (parseFloat(row[yIdx]) || 0) : 0,
+            }))
+            : null;
+
         return {
             label: def.label || def.field,
-            data:  type === 'scatter'
-                ? labels.map((l,i) => ({ x: parseFloat(l)||i, y: values[i]||0 }))
-                : values,
-            backgroundColor: isMulti
-                ? CHART_COLORS_PALETTE.map(c => c+'99')
+            data:  scatterData || values,
+            backgroundColor: isMultiColor
+                ? CHART_COLORS_PALETTE.map(c => c + '99')
                 : def.color + '40',
-            borderColor: isMulti ? CHART_COLORS_PALETTE : def.color,
+            borderColor: isMultiColor
+                ? CHART_COLORS_PALETTE
+                : def.color,
             borderWidth: 2,
-            fill: type === 'area',
-            tension: 0.3,
-            pointRadius: type === 'scatter' ? 4 : 2,
+            fill:        type === 'area',
+            tension:     0.3,
+            pointRadius: type === 'scatter' ? 4 : (data.length > 100 ? 0 : 2),
             pointBackgroundColor: def.color,
         };
     });
 
-    let chartType = type;
-    if (type === 'area')      chartType = 'line';
-    if (type === 'histogram') chartType = 'bar';
-    if (type === 'donut')     chartType = 'doughnut';
-    if (type === 'scatter')   chartType = 'scatter';
-
-    const isMultiColor = ['pie','doughnut'].includes(chartType);
-    const labelsForChart = def_agg_any(defs) ? labels : labels.slice(-100);
+    // Map chart type to Chart.js type
+    let chartJsType = type;
+    if (type === 'area')      chartJsType = 'line';
+    if (type === 'histogram') chartJsType = 'bar';
+    if (type === 'donut')     chartJsType = 'doughnut';
 
     const ctx = canvas.getContext('2d');
     window._chartReportInst = new Chart(ctx, {
-        type: chartType,
-        data: { labels: labelsForChart, datasets },
+        type: chartJsType,
+        data: { labels: chartLabels, datasets },
         options: {
-            responsive: true,
+            responsive:          true,
             maintainAspectRatio: false,
-            animation: { duration: 300 },
+            animation:           { duration: 200 },
             plugins: {
                 legend: {
-                    display: defs.length > 1 || isMultiColor,
+                    display:  defs.length > 1 || isMultiColor,
                     position: 'bottom',
-                    labels: { color: tickColor, font: { size: 11, family: 'IBM Plex Mono' }, boxWidth: 12 },
+                    labels: {
+                        color:  tickColor,
+                        font:   { size: 11, family: 'IBM Plex Mono' },
+                        boxWidth: 12,
+                    },
                 },
                 tooltip: {
                     backgroundColor: isDark ? '#131920' : '#fff',
-                    borderColor: isDark ? '#253348' : '#ddd',
+                    borderColor:     isDark ? '#253348' : '#ddd',
                     borderWidth: 1,
-                    titleColor: isDark ? '#f0f6fc' : '#111',
-                    bodyColor:  isDark ? '#c9d1d9' : '#444',
+                    titleColor:      isDark ? '#f0f6fc' : '#111',
+                    bodyColor:       isDark ? '#c9d1d9' : '#444',
+                    callbacks: {
+                        title: (items) => {
+                            const label = items[0]?.label || '';
+                            return xColName ? `${xColName}: ${label}` : `Row ${label}`;
+                        },
+                    },
                 },
             },
             scales: isMultiColor ? {} : {
-                x: { ticks: { color: tickColor, font: { size: 10 }, maxRotation: 45 }, grid: { color: gridColor } },
-                y: { ticks: { color: tickColor, font: { size: 10 } },                  grid: { color: gridColor } },
+                x: {
+                    title: {
+                        display: !!xColName,
+                        text:    xColName || '',
+                        color:   tickColor,
+                        font:    { size: 10 },
+                    },
+                    ticks: { color: tickColor, font: { size: 10 }, maxRotation: 45, maxTicksLimit: 20 },
+                    grid:  { color: gridColor },
+                },
+                y: {
+                    title: {
+                        display: defs.length === 1,
+                        text:    defs[0]?.label || defs[0]?.field || '',
+                        color:   tickColor,
+                        font:    { size: 10 },
+                    },
+                    ticks: { color: tickColor, font: { size: 10 } },
+                    grid:  { color: gridColor },
+                },
             },
         },
     });
 
-    // Legend row below chart
-    if (legendEl) _crRenderLegend(legendEl, defs, null, null);
-}
-
-function def_agg_any(defs) {
-    return defs.some(d => d.agg && d.agg !== 'none');
+    if (legendEl) _crRenderLegend(legendEl, defs);
 }
 
 // ── Legend row ────────────────────────────────────────────────────────────────
 function _crRenderLegend(el, defs) {
     if (!el) return;
-    el.innerHTML = defs.map(d => `
+    const xColName = window._chartReportXCol;
+    el.innerHTML = (xColName
+            ? `<div style="display:flex;align-items:center;gap:4px;color:var(--text3);font-size:10px;">
+            <span style="font-weight:700;color:var(--text2);">X:</span> ${_crEsc(xColName)}
+           </div><span style="color:var(--border);margin:0 4px;">|</span>`
+            : '') +
+        defs.map(d => `
     <div style="display:flex;align-items:center;gap:5px;color:var(--text2);">
       <div style="width:10px;height:10px;border-radius:2px;background:${d.color};flex-shrink:0;"></div>
+      <span style="font-size:10px;font-weight:700;color:var(--text3);">Y:</span>
       <span>${_crEsc(d.label||d.field)}</span>
       ${d.agg&&d.agg!=='none' ? `<span style="font-size:9px;color:var(--text3);">(${d.agg.toUpperCase()})</span>` : ''}
     </div>`).join('');
@@ -591,40 +744,14 @@ function _crDrawHeatmap(canvas, labels, values, color) {
     ctx.beginPath(); ctx.moveTo(pad.l,H-pad.b); ctx.lineTo(W-pad.r,H-pad.b); ctx.stroke();
 }
 
-// ── Fallback bar chart (no Chart.js) ─────────────────────────────────────────
-function _crDrawFallbackBar(canvas, labels, values, color) {
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width  = canvas.parentElement?.offsetWidth  || 700;
-    const H = canvas.height = 360;
-    const pad = { t:20, b:40, l:50, r:20 };
-    ctx.clearRect(0, 0, W, H);
-    const maxV = Math.max(...values, 1);
-    const bW = (W - pad.l - pad.r) / values.length;
-    const r = parseInt(color.slice(1,3),16)||0;
-    const g = parseInt(color.slice(3,5),16)||212;
-    const b = parseInt(color.slice(5,7),16)||170;
-    values.forEach((v, i) => {
-        const x  = pad.l + i*bW;
-        const bH = (v/maxV) * (H-pad.t-pad.b);
-        const y  = H - pad.b - bH;
-        ctx.fillStyle = `rgba(${r},${g},${b},0.7)`;
-        ctx.fillRect(x+2, y, bW-4, bH);
-        ctx.fillStyle = '#8b949e'; ctx.font = '9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(String(labels[i]).slice(0,8), x+bW/2, H-pad.b+12);
-    });
-    ctx.strokeStyle='#253348'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,H-pad.b); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(pad.l,H-pad.b); ctx.lineTo(W-pad.r,H-pad.b); ctx.stroke();
-}
-
 // ── PDF export ────────────────────────────────────────────────────────────────
 function _crExportPDF() {
     const canvas = document.getElementById('cr-chart-canvas');
     if (!canvas) { if(typeof toast==='function') toast('No chart to export','err'); return; }
     const img  = canvas.toDataURL('image/png');
     const type = CHART_TYPES.find(t=>t.value===window._chartReportType)?.label || window._chartReportType;
-    const fields = window._chartReportDefs.map(d=>d.label||d.field).join(', ');
+    const xCol = window._chartReportXCol || 'row index';
+    const yFields = window._chartReportDefs.map(d=>d.label||d.field).join(', ');
     const win  = window.open('','_blank');
     if (!win) { if(typeof toast==='function') toast('Allow popups for PDF export','err'); return; }
     win.document.write(`<!DOCTYPE html><html><head>
@@ -637,7 +764,7 @@ function _crExportPDF() {
       @media print{body{background:#fff;color:#111;}}
     </style></head><body>
     <h1>📊 Chart Report</h1>
-    <p>Type: ${type} · Fields: ${fields} · Generated: ${new Date().toLocaleString()} · Str:::lab Studio</p>
+    <p>Type: ${type} · X: ${xCol} · Y: ${yFields} · Generated: ${new Date().toLocaleString()} · Str:::lab Studio</p>
     <img src="${img}" />
     <script>window.onload=()=>window.print();<\/script>
   </body></html>`);
@@ -662,17 +789,16 @@ function _crExportPDF() {
     document.head.appendChild(s);
 })();
 
-// ── Patch renderResults to repopulate slot selector when results change ────────
+// ── Patch renderResults to refresh chart slot selector when results change ────
 (function() {
     function _crPatchRR() {
         if (typeof renderResults !== 'function' || renderResults._crPatched) return false;
         const _orig = renderResults;
         window.renderResults = function() {
             _orig.apply(this, arguments);
-            // If modal is open, refresh slot list
             const modal = document.getElementById('modal-chart-report');
             if (modal && modal.classList.contains('open')) {
-                setTimeout(_crPopulateSlots, 100);
+                setTimeout(_crPopulateSlots, 150);
             }
         };
         renderResults._crPatched = true;
@@ -694,8 +820,11 @@ function _crExportPDF() {
             if (!chk || chk.checked) {
                 window._chartReportTimer = setInterval(() => {
                     const m = document.getElementById('modal-chart-report');
-                    if (m && m.classList.contains('open')) _crRenderChart();
-                    else _crStopLive();
+                    if (m && m.classList.contains('open')) {
+                        if (typeof Chart !== 'undefined') _crRenderChart();
+                    } else {
+                        _crStopLive();
+                    }
                 }, 2000);
             }
         }

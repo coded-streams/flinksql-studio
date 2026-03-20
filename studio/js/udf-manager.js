@@ -294,7 +294,7 @@ function _buildModal() {
       <div style="font-size:14px;font-weight:700;color:var(--text0);">
         <span style="color:var(--blue,#4fa3e0);">⨍</span> UDF Manager
       </div>
-      <div style="font-size:10px;color:var(--blue,#4fa3e0);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Flink 1.15 – 1.20+ · v1.3.0</div>
+      <div style="font-size:10px;color:var(--blue,#4fa3e0);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">Flink 1.15 – 2.0+ · v1.3.1</div>
     </div>
     <button class="modal-close" onclick="closeModal('modal-udf-manager')">×</button>
   </div>
