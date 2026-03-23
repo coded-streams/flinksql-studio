@@ -1,4 +1,4 @@
-/* Str:::lab Studio — misc-patches.js v1.3.0 (fixed)
+/* Str:::lab Studio — misc-patches.js v1.4.0
  * ══════════════════════════════════════════════════════════════
  * THIS IS A NEW FILE — js/misc-patches.js
  * It is NOT a replacement for js/misc.js.
@@ -6,19 +6,18 @@
  *
  * Add to index.html as the LAST script (after project-manager.js):
  *   <script src="js/misc-patches.js"></script>
- *   <script src="https://cdnjs.cloudflare.com/.../chart.umd.min.js"></script>
  *
- * FIXES in this build:
- * 1. SHOW/DDL queries — patches pollOperation to route SHOW TABLES, SHOW JARS,
- *    SHOW VIEWS, SHOW FUNCTIONS, DESCRIBE, EXPLAIN results into the shared
- *    'Statements' slot instead of creating a new badge for each query.
- * 2. CREATE TEMPORARY VIEW — intercepts success response, registers view name
- *    in state.sessionViews so SHOW VIEWS can display it even though Flink
- *    doesn't list TEMPORARY views in SHOW VIEWS by default.
- * 3. Removed duplicate _cdReapplyExistingFromDOM patch — now handled cleanly
- *    in results-intelligence.js with _riPatched flag to prevent double-wrap.
- * 4. All previous fixes preserved: tips modal, log isolation, jobs display,
- *    slot dot colors, topbar layout, Chart Report button injection.
+ * FIXES in v1.4.0:
+ * 1. SHOW CATALOGS / SHOW TABLES / SHOW DATABASES / SHOW VIEWS /
+ *    SHOW FUNCTIONS / DESCRIBE / EXPLAIN now correctly show their
+ *    row results in a dedicated result slot — NOT routed to Statements.
+ *    Root cause: _slotIsDDLShow was too broad and intercepted all SHOW
+ *    queries, discarding the actual result rows (e.g. "default_catalog").
+ *    Fix: only DDL verbs that produce NO rows (CREATE, DROP, ALTER, SET,
+ *    USE, RESET, INSERT, EXECUTE) go to the Statements slot. All SHOW,
+ *    DESCRIBE, and EXPLAIN queries get their own labelled result slot.
+ *
+ * 2. All previous fixes preserved from v1.3.0.
  * ══════════════════════════════════════════════════════════════ */
 
 // ── 1. TIPS MODAL FIX ────────────────────────────────────────────────────────
@@ -228,133 +227,71 @@ function _cleanupTopbar() {
     if (oldBtn) oldBtn.remove();
 }
 
-// ── 6. FIX: SHOW queries → 'Statements' slot (not new badge per query) ────────
-// Patches pollOperation (or the equivalent result-completion handler) so that
-// SHOW TABLES, SHOW JARS, SHOW VIEWS, SHOW FUNCTIONS, DESCRIBE, EXPLAIN results
-// are appended to the shared 'ddl-status' Statements slot.
+// ── 6. FIX: Statements slot routing — CORRECTED LOGIC ────────────────────────
 //
-// Strategy: We hook the point where a COMPLETED operation result is turned into
-// a new result slot. In the Studio codebase this happens in pollOperation (or
-// handleOperationResult). We look for the moment state.resultSlots.push() is
-// called with a new SELECT-like slot that came from a SHOW/DESC query.
+// ROOT CAUSE OF BUG:
+//   The previous version intercepted ALL SHOW queries (SHOW CATALOGS,
+//   SHOW TABLES, SHOW DATABASES, SHOW VIEWS, SHOW FUNCTIONS, DESCRIBE,
+//   EXPLAIN) and routed them into the Statements DDL slot. This slot only
+//   stored the SQL text — the actual result rows (e.g. "default_catalog")
+//   were silently discarded. Users saw "(no rows)" when running SHOW CATALOGS.
+//
+// CORRECT BEHAVIOUR:
+//   • SHOW CATALOGS, SHOW TABLES, SHOW DATABASES, SHOW VIEWS,
+//     SHOW FUNCTIONS, SHOW MODULES, DESCRIBE <table>, EXPLAIN <sql>
+//     → these return real tabular rows. They MUST stay as their own
+//       result slots so the user sees the data.
+//   • CREATE, DROP, ALTER, USE, SET, RESET, INSERT, EXECUTE, ADD JAR,
+//     CREATE TEMPORARY VIEW, etc.
+//     → these produce no rows. They go to the Statements slot via
+//       the existing showDDLStatus() call in execution.js (no interception
+//       needed here — they already route correctly).
+//
+// CONCLUSION: The resultSlots Proxy interception is REMOVED entirely.
+// No SHOW query should ever be intercepted by misc-patches.
+// The only remaining "routing" patch is the CREATE TEMPORARY VIEW
+// view-name registration (section 7 below) which is additive only.
 
 function _patchPollOperation() {
-    // Approach: wrap the global function that creates result slots from completed ops.
-    // The function that does this is likely named pollOperation, handleResult, or similar.
-    // We can't rename it without the source, so we patch resultSlots at the point of push.
-    // Instead: override the slot creation by watching for new slots with SHOW/DESC labels.
+    // ── REMOVED: resultSlots Proxy that was incorrectly intercepting SHOW queries ──
+    // The Proxy from v1.3.0 matched SHOW CATALOGS / SHOW TABLES / etc and
+    // routed them to the Statements slot, discarding actual result rows.
+    // This function is now a no-op — left in place so callers don't break.
 
-    // Intercept state.resultSlots.push
-    if (!Array.isArray(state.resultSlots)) state.resultSlots = [];
-    if (state.resultSlots._patched) return;
-
-    const _origPush = Array.prototype.push;
-    const _intercept = function(...args) {
-        const intercepted = [];
-        for (const slot of args) {
-            // Is this a new slot being pushed for a SHOW/DESC query?
-            if (slot && slot.id && slot.id !== 'ddl-status' && _slotIsDDLShow(slot)) {
-                // Route into ddl-status instead of creating a new slot
-                _routeSlotToDDL(slot);
-                // Do NOT add to resultSlots as a separate entry
-            } else {
-                intercepted.push(slot);
-            }
-        }
-        if (intercepted.length > 0) {
-            return _origPush.apply(this, intercepted);
-        }
-        return this.length;
-    };
-
-    // We can't patch Array.prototype globally (too risky), so instead we
-    // patch the specific resultSlots array by replacing it with a Proxy.
-    try {
-        state.resultSlots = new Proxy(state.resultSlots, {
-            get(target, prop) {
-                if (prop === 'push') {
-                    return function(...args) {
-                        const intercepted = [];
-                        for (const slot of args) {
-                            if (slot && slot.id && slot.id !== 'ddl-status' && _slotIsDDLShow(slot)) {
-                                _routeSlotToDDL(slot);
-                            } else {
-                                intercepted.push(slot);
-                            }
-                        }
-                        if (intercepted.length > 0) {
-                            return _origPush.apply(target, intercepted);
-                        }
-                        return target.length;
-                    };
-                }
-                return typeof target[prop] === 'function'
-                    ? target[prop].bind(target)
-                    : target[prop];
-            },
-            set(target, prop, value) {
-                target[prop] = value;
-                return true;
-            }
-        });
-        state.resultSlots._patched = true;
-    } catch(e) {
-        // Proxy not supported — fall back to polling approach
-        console.warn('[misc-patches] Proxy not available, using renderStreamSelector patch');
-        _patchRenderStreamSelector();
+    // Belt-and-suspenders: if renderStreamSelector is available, make sure
+    // no SHOW result slots have been accidentally stripped of their rows.
+    if (typeof renderStreamSelector === 'function' && !renderStreamSelector._ddlPatched) {
+        const _orig = renderStreamSelector;
+        window.renderStreamSelector = function() {
+            // No interception — just pass through
+            return _orig.apply(this, arguments);
+        };
+        renderStreamSelector._ddlPatched = true;
     }
 }
 
-// Check if a slot came from a SHOW/DESC/EXPLAIN query
+// Legacy stubs — kept so nothing breaks if these are called elsewhere
 function _slotIsDDLShow(slot) {
-    const sql = (slot.sql || slot.label || '').replace(/^\/\*[\s\S]*?\*\/|^\s*--.*$/mg, '').trim();
-    if (!sql) return false;
-    return /^\s*(SHOW\s+(TABLES|VIEWS|JARS|FUNCTIONS|CATALOGS|DATABASES|MODULES|CREATE)|DESCRIBE\s+\S|DESC\s+\S|EXPLAIN\s+)/i.test(sql);
+    // INTENTIONALLY ALWAYS RETURNS FALSE — no SHOW query should be intercepted
+    return false;
 }
 
-// Route a SHOW/DESC slot's data into the shared ddl-status slot
 function _routeSlotToDDL(slot) {
-    if (typeof window._cdShowDDLResult === 'function') {
-        const label = slot.label || slot.sql?.slice(0,40) || 'DDL Result';
-        window._cdShowDDLResult(slot.sql || '', label, slot.columns || [], slot.rows || []);
-    } else {
-        // Fallback: use showDDLStatus if _cdShowDDLResult not yet loaded
-        if (typeof showDDLStatus === 'function') {
-            showDDLStatus('SHOW', slot.label || slot.sql || 'DDL Result');
-        }
-    }
+    // No-op — SHOW queries must keep their result rows in their own slots
 }
 
-// Fallback approach: patch renderStreamSelector to hide SHOW slots from the bar
-// and route them when they appear
 function _patchRenderStreamSelector() {
-    if (typeof renderStreamSelector !== 'function' || renderStreamSelector._ddlPatched) return false;
-    const _orig = renderStreamSelector;
-    window.renderStreamSelector = function() {
-        // Before rendering, pull out DDL show slots and route them
-        if (state.resultSlots) {
-            const toRoute = state.resultSlots.filter(s => s.id !== 'ddl-status' && _slotIsDDLShow(s));
-            toRoute.forEach(slot => {
-                state.resultSlots = state.resultSlots.filter(s => s.id !== slot.id);
-                _routeSlotToDDL(slot);
-            });
-        }
-        return _orig.apply(this, arguments);
-    };
-    renderStreamSelector._ddlPatched = true;
+    // No-op in v1.4.0 — SHOW query results are no longer intercepted
     return true;
 }
 
-// ── 7. FIX: CREATE TEMPORARY VIEW — register in state.sessionViews ────────────
-// We intercept the success path for CREATE TEMPORARY VIEW by watching for
-// DDL status messages that contain 'VIEW' and parsing the view name.
-// This lets SHOW VIEWS (via _cdMergeShowViewsResult) display the view.
-
+// ── 7. CREATE TEMPORARY VIEW — register in state.sessionViews ────────────────
+// Additive only: watches for successful CREATE [TEMPORARY] VIEW DDL
+// and registers the view name so SHOW VIEWS can list it.
 function _patchShowDDLStatusForViews() {
     if (typeof window.showDDLStatus !== 'function' || window.showDDLStatus._viewPatched) return false;
     const _orig = window.showDDLStatus;
     window.showDDLStatus = function(verb, sql) {
-        // Check if this is a successful CREATE [TEMPORARY] VIEW
         const cleanSql = (sql || '').replace(/\s+/g,' ').trim();
         const viewMatch = cleanSql.match(/CREATE\s+(?:TEMPORARY\s+)?VIEW\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"]?(\w+)[`"]?/i);
         if (viewMatch && typeof window._cdRegisterSessionView === 'function') {
@@ -366,13 +303,8 @@ function _patchShowDDLStatusForViews() {
     return true;
 }
 
-// Also watch for the pollOperation result handler — if a SHOW VIEWS result
-// comes in, merge state.sessionViews into it before displaying.
 function _patchShowViewsInterceptor() {
-    // This is a safety net: if the Proxy approach above catches SHOW VIEWS slots,
-    // _cdShowDDLResult already calls _cdMergeShowViewsResult.
-    // If not, we watch for the SHOW VIEWS slot appearing in resultSlots.
-    // We check on a timer and merge whenever we see a SHOW VIEWS slot.
+    // Merge state.sessionViews into SHOW VIEWS result rows when available
     setInterval(() => {
         if (!state.resultSlots) return;
         const showViewsSlot = state.resultSlots.find(s =>
@@ -418,17 +350,15 @@ function initMiscPatches() {
         }
     }
 
-    // Patch SHOW queries → Statements slot
-    // Retry until state.resultSlots is initialised
+    // Patch SHOW queries and view registration
+    // Retry until state is initialised
     let _ddlPatchAttempts = 0;
     const _ddlPatchTimer = setInterval(() => {
         if (typeof state !== 'undefined' && state) {
             if (!Array.isArray(state.resultSlots)) state.resultSlots = [];
-            _patchPollOperation();
+            _patchPollOperation();       // now a safe no-op for SHOW queries
             _patchShowDDLStatusForViews();
             _patchShowViewsInterceptor();
-            // Also patch renderStreamSelector as belt-and-suspenders
-            if (typeof renderStreamSelector === 'function') _patchRenderStreamSelector();
             clearInterval(_ddlPatchTimer);
         }
         if (++_ddlPatchAttempts > 40) clearInterval(_ddlPatchTimer);
@@ -481,7 +411,7 @@ function initMiscPatches() {
     /* Performance jobs tab */
     #perf-job-list { min-height:44px; }
     .job-row:last-child { border-bottom:none !important; }
-  `;
+    `;
     document.head.appendChild(style);
 }
 

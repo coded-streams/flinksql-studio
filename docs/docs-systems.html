@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Str:::lab Studio — Systems Integration</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23090c12'/%3E%3Cpolyline points='20 24 28 16 20 8' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='12 8 4 16 12 24' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg0:#090c12;--bg1:#0d1117;--bg2:#131920;--bg3:#1a2130;--border:#1e2d3d;--border2:#253348;--accent:#00d4aa;--accent3:#7ee8d0;--blue:#4fa3e0;--purple:#9b72cf;--orange:#f0a500;--red:#e05c5c;--green:#3fb950;--yellow:#f0a500;--text0:#f0f6fc;--text1:#c9d1d9;--text2:#8b949e;--text3:#4a5568;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:8px;--nav-h:58px;}
+        *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:var(--sans);background:var(--bg1);color:var(--text1);line-height:1.7;font-size:15px}a{color:var(--accent);text-decoration:none}a:hover{color:var(--accent3);text-decoration:underline}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg1)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+        .nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
+        .nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}.logo-mark{width:26px;height:26px;background:#0c1018;border:1px solid rgba(0,212,170,0.35);clip-path:polygon(0 0,80% 0,100% 20%,100% 100%,20% 100%,0 80%);display:flex;align-items:center;justify-content:center}.logo-text{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text0)}.logo-ver{font-size:9px;color:var(--text3);margin-left:4px}
+        .nav-links{display:flex;align-items:center;gap:2px;list-style:none;flex:1;overflow-x:auto}.nav-links a{font-size:12px;color:var(--text2);padding:6px 9px;border-radius:5px;white-space:nowrap;transition:all .15s}.nav-links a:hover,.nav-links a.active{color:var(--text0);background:var(--bg3);text-decoration:none}.nav-links a.active{color:var(--accent)}
+        .nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}.nav-btn{font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text1);text-decoration:none;display:flex;align-items:center;gap:5px}.nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+        .hero{background:var(--bg0);padding:64px 32px 48px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 60% 0%,rgba(79,163,224,0.07),transparent 70%);pointer-events:none}
+        .hero-eyebrow{font-family:var(--mono);font-size:11px;color:var(--blue);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+        .hero-title{font-family:var(--mono);font-size:36px;font-weight:700;color:var(--text0);letter-spacing:-1px;line-height:1.15;margin-bottom:14px}
+        .hero-sub{font-size:16px;color:var(--text2);max-width:640px;line-height:1.8;margin-bottom:24px}
+        .hero-badges{display:flex;gap:8px;flex-wrap:wrap}.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--mono)}.badge.blue{border:1px solid rgba(79,163,224,0.4);color:var(--blue);background:rgba(79,163,224,0.06)}.badge.teal{border:1px solid rgba(0,212,170,0.4);color:var(--accent);background:rgba(0,212,170,0.06)}.badge.green{border:1px solid rgba(63,185,80,0.4);color:var(--green);background:rgba(63,185,80,0.06)}
+        .page{display:flex;max-width:1280px;margin:0 auto}
+        .toc{width:216px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:24px 0 24px 16px;border-right:1px solid var(--border)}.toc-label{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:5px;display:block;margin-top:14px}.toc a{display:block;font-size:12px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}.toc a:hover{color:var(--text0);text-decoration:none}.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
+        .content{flex:1;min-width:0;padding:40px 48px 96px}
+        .doc-section{margin-bottom:60px}
+        h2{font-size:22px;font-weight:700;color:var(--text0);margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+        .si{width:28px;height:28px;border-radius:6px;background:rgba(79,163,224,0.1);border:1px solid rgba(79,163,224,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+        h3{font-size:16px;font-weight:600;color:var(--text0);margin:26px 0 10px}h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 6px}
+        p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
+        ul.doc-ul{margin:6px 0 14px 20px}ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}ul.doc-ul li strong{color:var(--text1)}
+        code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
+        pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:var(--radius);padding:16px 20px;overflow-x:auto;margin:12px 0}pre code{background:none;border:none;padding:0;font-size:12px;color:var(--text1);line-height:1.7}
+        .callout{border-radius:var(--radius);padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.7;display:flex;gap:10px}.callout-icon{font-size:15px;flex-shrink:0}.callout-body{flex:1}.callout-body strong{display:block;margin-bottom:2px}.callout.tip{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2)}.callout.tip strong{color:var(--accent)}.callout.warn{background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2)}.callout.warn strong{color:var(--orange)}.callout.info{background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2)}.callout.info strong{color:var(--blue)}.callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2)}.callout.danger strong{color:var(--red)}
+        .sys-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:16px 0}
+        .sys-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;border-top:3px solid}
+        .sys-card h4{margin:0 0 6px;font-size:13px;color:var(--text0)}.sys-card p{font-size:12px;color:var(--text2);margin:0;line-height:1.6}.sys-card .tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.sys-card .tag{font-size:9px;font-family:var(--mono);padding:1px 6px;border-radius:3px;border:1px solid var(--border);color:var(--text3)}
+        .table-wrap{overflow-x:auto;margin:12px 0;border-radius:var(--radius);border:1px solid var(--border)}table{width:100%;border-collapse:collapse;font-size:13px}thead tr{background:var(--bg2)}th{text-align:left;padding:8px 12px;color:var(--text0);font-weight:600;font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}tr:last-child td{border-bottom:none}td code{font-size:11px}
+        .steps{margin:16px 0}.step{display:flex;gap:14px;margin-bottom:22px;position:relative}.step::before{content:'';position:absolute;left:15px;top:36px;width:2px;bottom:-6px;background:var(--border)}.step:last-child::before{display:none}.step-num{width:32px;height:32px;border-radius:50%;background:var(--bg2);border:2px solid var(--blue);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue);flex-shrink:0;z-index:1}.step-body{flex:1;padding-top:4px}.step-body h4{margin:0 0 4px}
+        .tab-group{margin:16px 0}.tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}.tab-btn{font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .12s}.tab-btn.active{background:var(--bg0);border-color:var(--border);color:var(--blue);border-bottom-color:var(--bg0)}.tab-pane{display:none}.tab-pane.active{display:block}
+        footer{border-top:1px solid var(--border);background:var(--bg0);padding:28px 32px;text-align:center}footer p{font-size:13px;color:var(--text3);margin-bottom:4px}footer a{color:var(--text2)}
+        @media(max-width:900px){.toc{display:none}.content{padding:24px 16px 64px}.hero-title{font-size:26px}}
+    </style>
+</head>
+<body>
+<nav class="nav">
+    <a href="index.html" class="nav-logo">
+        <div class="logo-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <span class="logo-text">Str:::lab<span class="logo-ver">Studio</span></span>
+    </a>
+    <ul class="nav-links">
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="docs-pipeline.html">Pipeline Manager</a></li>
+        <li><a href="docs-systems.html" class="active">Systems Integration</a></li>
+        <li><a href="docs-catalog.html">Catalog Management</a></li>
+        <li><a href="index.html#udf-manager">UDF Manager</a></li>
+        <li><a href="index.html#changelog">Changelog</a></li>
+    </ul>
+    <div class="nav-right">
+        <a href="https://github.com/coded-streams/strlabstudio" target="_blank" class="nav-btn">GitHub</a>
+        <a href="../studio/index.html" target="_blank" class="nav-btn primary">Open IDE →</a>
+    </div>
+</nav>
+
+<div class="hero">
+    <div class="hero-eyebrow">Feature Reference</div>
+    <h1 class="hero-title">Systems Integration</h1>
+    <p class="hero-sub">Connect Str:::lab Studio to Kafka, databases, object stores, Elasticsearch, and other external systems. Manage connector JARs, pre-fill Pipeline Manager nodes with connection details, and validate connectivity before building pipelines.</p>
+    <div class="hero-badges">
+        <span class="badge blue">Kafka</span><span class="badge teal">JDBC / PostgreSQL</span><span class="badge blue">Elasticsearch</span><span class="badge green">S3 / MinIO</span><span class="badge blue">Pulsar</span><span class="badge teal">MongoDB</span><span class="badge blue">Kinesis</span>
+    </div>
+</div>
+
+<div class="page">
+    <aside class="toc">
+        <span class="toc-label">Overview</span>
+        <a href="#overview">What is Systems Manager?</a>
+        <a href="#opening">Opening & Interface</a>
+        <span class="toc-label">Connectors</span>
+        <a href="#add-connector">Adding a Connector</a>
+        <a href="#connector-types">Connector Types</a>
+        <a href="#connector-fields">Field Reference</a>
+        <span class="toc-label">Integration</span>
+        <a href="#pipeline-prefill">Pipeline Manager Prefill</a>
+        <a href="#jar-management">JAR Management</a>
+        <span class="toc-label">Systems</span>
+        <a href="#kafka">Apache Kafka</a>
+        <a href="#jdbc">JDBC / Databases</a>
+        <a href="#elasticsearch">Elasticsearch</a>
+        <a href="#s3">S3 / Object Storage</a>
+        <a href="#pulsar">Apache Pulsar</a>
+        <a href="#mongodb">MongoDB</a>
+        <a href="#kinesis">Amazon Kinesis</a>
+        <span class="toc-label">Tutorials</span>
+        <a href="#tutorial-kafka">Tutorial — Kafka</a>
+        <a href="#tutorial-jdbc">Tutorial — PostgreSQL</a>
+    </aside>
+
+    <main class="content">
+
+        <section class="doc-section" id="overview">
+            <h2><span class="si">⊙</span> What is Systems Manager?</h2>
+            <p>The <strong>Systems Manager</strong> (⊙ Systems in the topbar) is the central registry for all external connections your Flink pipelines will use. You register connection details once — bootstrap servers, JDBC URLs, credentials, endpoints — and the Pipeline Manager can then auto-fill those values into any compatible operator node.</p>
+            <div class="sys-grid">
+                <div class="sys-card" style="border-top-color:#00d4aa"><h4>Connection Registry</h4><p>Store named connector configurations (Kafka, JDBC, ES, S3, Pulsar, MongoDB, Kinesis) in browser localStorage.</p></div>
+                <div class="sys-card" style="border-top-color:#4fa3e0"><h4>Pipeline Prefill</h4><p>In the Pipeline Manager, compatible operator nodes show a connector banner. Click "Use" to auto-fill all connection parameters from the registry.</p></div>
+                <div class="sys-card" style="border-top-color:#3fb950"><h4>JAR Tracking</h4><p>See which connector JARs are required for your registered connectors and get direct download links for the correct versions.</p></div>
+                <div class="sys-card" style="border-top-color:#f0a500"><h4>Environment Awareness</h4><p>Tag connectors as Dev, Staging, or Production. Color-coded badges show environment at a glance.</p></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="opening">
+            <h2><span class="si">⊙</span> Opening & Interface</h2>
+            <p>Click <strong>⊙ Systems</strong> in the topbar. The Systems Manager modal opens with two main areas:</p>
+            <ul class="doc-ul">
+                <li><strong>Left panel</strong> — list of all registered connectors with type icon, name, environment badge, and quick-test button.</li>
+                <li><strong>Right panel</strong> — connector detail form for adding or editing a connector.</li>
+            </ul>
+            <p>Connector data is saved to <code>localStorage('strlabstudio_systems')</code> and persists across page reloads.</p>
+        </section>
+
+        <section class="doc-section" id="add-connector">
+            <h2><span class="si">＋</span> Adding a Connector</h2>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Click + Add Connector</h4><p>In the left panel, click the Add button. The right panel shows an empty connector form.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Select connector type</h4><p>Choose from the type dropdown: Kafka, JDBC, Elasticsearch, S3/MinIO, Pulsar, MongoDB, Kinesis, or Custom. The form adjusts to show the relevant fields for that connector type.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Fill in connection details</h4><p>Enter the name, environment (Dev/Staging/Production), and all connector-specific fields (bootstrap servers, JDBC URL, etc). See Field Reference below.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Save</h4><p>Click Save. The connector appears in the left panel list. It is now available for Pipeline Manager auto-fill.</p></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="connector-types">
+            <h2><span class="si">⊟</span> Connector Types</h2>
+            <div class="sys-grid">
+                <div class="sys-card" style="border-top-color:#1a6fa8"><h4>Kafka</h4><p>Bootstrap servers, topic, consumer group, format, security protocol, SASL credentials.</p><div class="tags"><span class="tag">Source</span><span class="tag">Sink</span></div></div>
+                <div class="sys-card" style="border-top-color:#4a8fa8"><h4>JDBC</h4><p>JDBC URL, username, password, driver class, table name. Supports PostgreSQL, MySQL, SQL Server, Oracle.</p><div class="tags"><span class="tag">Source</span><span class="tag">Sink</span></div></div>
+                <div class="sys-card" style="border-top-color:#5a0a00"><h4>Elasticsearch</h4><p>Hosts (http://host:9200), index name, ES version (7 or 8), username, password.</p><div class="tags"><span class="tag">Sink</span></div></div>
+                <div class="sys-card" style="border-top-color:#b07820"><h4>S3 / MinIO</h4><p>Endpoint URL, access key, secret key, bucket, path prefix, region, format.</p><div class="tags"><span class="tag">Source</span><span class="tag">Sink</span></div></div>
+                <div class="sys-card" style="border-top-color:#6a2d8a"><h4>Apache Pulsar</h4><p>Service URL (pulsar://host:6650), admin URL, topic, subscription, format.</p><div class="tags"><span class="tag">Source</span><span class="tag">Sink</span></div></div>
+                <div class="sys-card" style="border-top-color:#0a5a2a"><h4>MongoDB</h4><p>Connection URI (mongodb://host:27017/db), database, collection name.</p><div class="tags"><span class="tag">Sink</span></div></div>
+                <div class="sys-card" style="border-top-color:#e8620a"><h4>Amazon Kinesis</h4><p>Stream name, AWS region, access key, secret key, endpoint override.</p><div class="tags"><span class="tag">Source</span><span class="tag">Sink</span></div></div>
+                <div class="sys-card" style="border-top-color:#4a5568"><h4>Custom</h4><p>Free-form key=value connector properties. For any connector not covered above.</p><div class="tags"><span class="tag">Any</span></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="connector-fields">
+            <h2><span class="si">⊞</span> Field Reference</h2>
+            <div class="table-wrap"><table><thead><tr><th>Field</th><th>Connector</th><th>Maps to Pipeline Manager param</th></tr></thead><tbody>
+            <tr><td><code>bootstrap_servers</code></td><td>Kafka</td><td>Bootstrap Servers in Kafka Source/Sink nodes</td></tr>
+            <tr><td><code>topic</code></td><td>Kafka</td><td>Topic in Kafka Source/Sink nodes</td></tr>
+            <tr><td><code>group_id</code></td><td>Kafka</td><td>Consumer Group in Kafka Source node</td></tr>
+            <tr><td><code>jdbc_url</code></td><td>JDBC</td><td>JDBC URL in JDBC Source/Sink nodes</td></tr>
+            <tr><td><code>hosts</code></td><td>Elasticsearch</td><td>ES Hosts in Elasticsearch Sink node</td></tr>
+            <tr><td><code>index</code></td><td>Elasticsearch</td><td>Index in Elasticsearch Sink node</td></tr>
+            <tr><td><code>service_url</code></td><td>Pulsar</td><td>Service URL in Pulsar Source node</td></tr>
+            <tr><td><code>uri</code></td><td>MongoDB</td><td>MongoDB URI in MongoDB Sink node</td></tr>
+            <tr><td><code>collection</code></td><td>MongoDB</td><td>Collection in MongoDB Sink node</td></tr>
+            <tr><td><code>stream</code></td><td>Kinesis</td><td>Stream Name in Kinesis Source node</td></tr>
+            </tbody></table></div>
+        </section>
+
+        <section class="doc-section" id="pipeline-prefill">
+            <h2><span class="si">⚡</span> Pipeline Manager Prefill</h2>
+            <p>When you drop a connector-aware operator onto the Pipeline Manager canvas and double-click to configure it, the inline form shows a <strong>connector banner</strong> at the top if a matching connector is registered in Systems Manager. Click <strong>Use</strong> next to a connector name to auto-fill all compatible fields instantly.</p>
+            <div class="callout tip"><span class="callout-icon">💡</span><div class="callout-body"><strong>Connector matching</strong> The Pipeline Manager matches connectors by type keyword in the name — e.g. a connector named "prod-kafka-cluster" matches Kafka source and sink nodes. Name your connectors descriptively for better auto-matching.</div></div>
+            <p>If no matching connector is registered and the operator requires a JAR, a warning banner with a link to the Systems Manager appears instead.</p>
+        </section>
+
+        <section class="doc-section" id="jar-management">
+            <h2><span class="si">📦</span> JAR Management</h2>
+            <p>Each connector type that requires an external JAR displays the correct Maven artifact name and a download link. The required JARs vary by Flink version — always match the connector JAR version to your Flink cluster version.</p>
+            <div class="callout danger"><span class="callout-icon">🚨</span><div class="callout-body"><strong>Version mismatch causes NoClassDefFoundError</strong> A Kafka connector built for Flink 1.18 will not work on Flink 1.19 or 2.0. Always download the connector JAR that matches your exact Flink version.</div></div>
+            <p>After downloading, place JARs in <code>/opt/flink/lib/</code> on all JobManager and TaskManager containers (or use the UDF Manager's Upload JAR feature for session-scoped loading).</p>
+        </section>
+
+        <section class="doc-section" id="kafka">
+            <h2><span class="si">⬡</span> Apache Kafka</h2>
+            <h3>Prerequisites</h3>
+            <ul class="doc-ul">
+                <li>Kafka broker reachable from Flink TaskManagers (not just from your laptop).</li>
+                <li>Flink Kafka connector JAR on the classpath: <code>flink-sql-connector-kafka-3.3.0-1.19.jar</code> (adjust for your Flink version).</li>
+            </ul>
+            <h3>Connection fields</h3>
+            <div class="table-wrap"><table><thead><tr><th>Field</th><th>Example</th><th>Notes</th></tr></thead><tbody>
+            <tr><td>Bootstrap Servers</td><td><code>kafka:9092</code></td><td>Use container name, not localhost, inside Docker</td></tr>
+            <tr><td>Topic</td><td><code>my-topic</code></td><td>Source and sink can use different topics</td></tr>
+            <tr><td>Group ID</td><td><code>flink-group</code></td><td>Source only. Used for consumer group tracking.</td></tr>
+            <tr><td>Security Protocol</td><td><code>PLAINTEXT</code></td><td>PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL</td></tr>
+            <tr><td>SASL Mechanism</td><td><code>PLAIN</code></td><td>For Confluent Cloud: PLAIN with API key credentials</td></tr>
+            <tr><td>SASL Username</td><td><code>api-key</code></td><td>Confluent Cloud API key</td></tr>
+            <tr><td>SASL Password</td><td><code>api-secret</code></td><td>Confluent Cloud API secret</td></tr>
+            </tbody></table></div>
+            <h3>Confluent Cloud Kafka</h3>
+            <pre><code>-- Confluent Cloud connection with SASL_SSL
+'connector'                       = 'kafka',
+'topic'                           = 'my-topic',
+'properties.bootstrap.servers'    = 'pkc-xxxxx.us-east-1.aws.confluent.cloud:9092',
+'properties.security.protocol'    = 'SASL_SSL',
+'properties.sasl.mechanism'       = 'PLAIN',
+'properties.sasl.jaas.config'     = 'org.apache.kafka.common.security.plain.PlainLoginModule required username="API_KEY" password="API_SECRET";',
+'format'                          = 'json'</code></pre>
+        </section>
+
+        <section class="doc-section" id="jdbc">
+            <h2><span class="si">🗄</span> JDBC / Databases</h2>
+            <h3>Prerequisites</h3>
+            <ul class="doc-ul">
+                <li>Flink JDBC connector JAR: <code>flink-connector-jdbc-3.1.2-1.17.jar</code></li>
+                <li>Database driver JAR (e.g. <code>postgresql-42.7.1.jar</code> for PostgreSQL)</li>
+                <li>Both JARs must be in <code>/opt/flink/lib/</code> on all cluster containers</li>
+            </ul>
+            <div class="tab-group">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab(this,'jdbc-pg')">PostgreSQL</button>
+                    <button class="tab-btn" onclick="switchTab(this,'jdbc-mysql')">MySQL</button>
+                    <button class="tab-btn" onclick="switchTab(this,'jdbc-sqlserver')">SQL Server</button>
+                </div>
+                <div id="jdbc-pg" class="tab-pane active"><pre><code>'connector'  = 'jdbc',
+'url'        = 'jdbc:postgresql://postgres:5432/mydb',
+'table-name' = 'public.orders',
+'username'   = 'flink_user',
+'password'   = 'secret'</code></pre></div>
+                <div id="jdbc-mysql" class="tab-pane"><pre><code>'connector'  = 'jdbc',
+'url'        = 'jdbc:mysql://mysql:3306/mydb',
+'table-name' = 'orders',
+'username'   = 'flink_user',
+'password'   = 'secret',
+'driver'     = 'com.mysql.cj.jdbc.Driver'</code></pre></div>
+                <div id="jdbc-sqlserver" class="tab-pane"><pre><code>'connector'  = 'jdbc',
+'url'        = 'jdbc:sqlserver://sqlserver:1433;database=mydb',
+'table-name' = 'dbo.orders',
+'username'   = 'sa',
+'password'   = 'Password123'</code></pre></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="elasticsearch">
+            <h2><span class="si">🔍</span> Elasticsearch</h2>
+            <pre><code>'connector' = 'elasticsearch-7',    -- or 'elasticsearch-8' for ES 8+
+'hosts'     = 'http://elasticsearch:9200',
+'index'     = 'my-index'
+-- Note: PRIMARY KEY NOT ENFORCED required for upsert mode</code></pre>
+            <div class="callout warn"><span class="callout-icon">⚠</span><div class="callout-body"><strong>ES 8 connector</strong> Use <code>elasticsearch-8</code> connector identifier and the corresponding JAR version. The connector field value and the JAR version must both match your ES cluster major version.</div></div>
+        </section>
+
+        <section class="doc-section" id="s3">
+            <h2><span class="si">☁</span> S3 / Object Storage</h2>
+            <p>Flink reads and writes S3-compatible object storage (AWS S3, MinIO, GCS) using the Hadoop S3A filesystem. No separate connector JAR needed — configure the S3A credentials in Flink's <code>config.yaml</code>.</p>
+            <pre><code>-- flink config.yaml (Flink 2.0+) or flink-conf.yaml (Flink 1.x)
+fs.s3a.endpoint: http://minio:9000
+fs.s3a.access.key: minioadmin
+fs.s3a.secret.key: minioadmin
+fs.s3a.path.style.access: true</code></pre>
+            <pre><code>-- Then in Flink SQL:
+CREATE TABLE s3_sink (
+  id BIGINT, payload STRING, ts TIMESTAMP(3)
+) WITH (
+  'connector' = 'filesystem',
+  'path'      = 's3a://my-bucket/output/',
+  'format'    = 'parquet'
+);</code></pre>
+        </section>
+
+        <section class="doc-section" id="pulsar">
+            <h2><span class="si">◎</span> Apache Pulsar</h2>
+            <pre><code>'connector'   = 'pulsar',
+'service-url' = 'pulsar://pulsar-broker:6650',
+'admin-url'   = 'http://pulsar-broker:8080',
+'topics'      = 'persistent://public/default/my-topic',
+'format'      = 'json'</code></pre>
+            <div class="callout info"><span class="callout-icon">ℹ</span><div class="callout-body"><strong>Pulsar connector JAR</strong> Download from <a href="https://repo.maven.apache.org/maven2/org/apache/flink/flink-sql-connector-pulsar/" target="_blank">Maven Central</a>. Match the JAR version to your Flink version.</div></div>
+        </section>
+
+        <section class="doc-section" id="mongodb">
+            <h2><span class="si">🍃</span> MongoDB</h2>
+            <pre><code>'connector'  = 'mongodb',
+'uri'        = 'mongodb://mongodb:27017/mydb',
+'collection' = 'my-collection'
+-- PRIMARY KEY (id) NOT ENFORCED required — maps to MongoDB _id</code></pre>
+        </section>
+
+        <section class="doc-section" id="kinesis">
+            <h2><span class="si">⧖</span> Amazon Kinesis</h2>
+            <pre><code>'connector'                = 'kinesis',
+'stream'                   = 'my-kinesis-stream',
+'aws.region'               = 'us-east-1',
+'aws.credentials.provider' = 'BASIC',
+'aws.credentials.basic.accesskeyid'     = 'ACCESS_KEY',
+'aws.credentials.basic.secretkey'       = 'SECRET_KEY',
+'format'                   = 'json'</code></pre>
+        </section>
+
+        <section class="doc-section" id="tutorial-kafka">
+            <h2><span class="si">①</span> Tutorial — Register a Kafka Connector</h2>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Open Systems Manager</h4><p>Click <strong>⊙ Systems</strong> in the topbar.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Add Connector</h4><p>Click <strong>+ Add Connector</strong>. Select type <strong>Kafka</strong>.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Fill in details</h4><p>Name: <code>local-kafka</code>, Environment: Dev, Bootstrap Servers: <code>kafka:9092</code>, Topic: <code>events</code>, Group ID: <code>flink-group</code>, Format: <code>json</code>.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Save</h4><p>Click Save. The connector appears in the list with a Kafka icon and Dev badge.</p></div></div>
+                <div class="step"><div class="step-num">5</div><div class="step-body"><h4>Use in Pipeline Manager</h4><p>Open the Pipeline Manager. Drag a <strong>Kafka Source</strong> node. Double-click to expand. The connector banner shows <code>local-kafka</code>. Click <strong>Use</strong> — all Kafka fields are auto-filled instantly.</p></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="tutorial-jdbc">
+            <h2><span class="si">②</span> Tutorial — Register a PostgreSQL Connector</h2>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Ensure JARs are in place</h4><p>Copy <code>flink-connector-jdbc-3.1.2-1.19.jar</code> and <code>postgresql-42.7.1.jar</code> to <code>/opt/flink/lib/</code> on all containers and restart the cluster.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Register in Systems Manager</h4><p>Open ⊙ Systems → Add Connector → Type: JDBC. Name: <code>postgres-dev</code>, JDBC URL: <code>jdbc:postgresql://postgres:5432/mydb</code>, Username: <code>flink_user</code>, Password: <code>secret</code>.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Use in Pipeline Manager</h4><p>Add a <strong>JDBC Sink</strong> node. Double-click to expand — the connector banner shows <code>postgres-dev</code>. Click Use. JDBC URL is auto-filled. Enter the table name, then Apply.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Test with a query</h4><p>In the SQL editor: <code>CREATE TABLE test_pg (...) WITH ('connector'='jdbc','url'='jdbc:postgresql://postgres:5432/mydb','table-name'='test');</code> then <code>INSERT INTO test_pg SELECT ...</code>.</p></div></div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<footer>
+    <p>Str:::lab Studio · Systems Integration · <a href="index.html">Back to Overview</a></p>
+    <p>Created by <a href="https://www.linkedin.com/in/nestor-abiangang/" target="_blank">Nestor Martourez A. A</a> · MIT License</p>
+</footer>
+<script>function switchTab(btn,id){const g=btn.closest('.tab-group');g.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));g.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById(id).classList.add('active');}
+const obs=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting){document.querySelectorAll('.toc a').forEach(l=>l.classList.remove('active'));const lk=document.querySelector('.toc a[href="#'+en.target.id+'"]');if(lk)lk.classList.add('active');}});},{rootMargin:'-15% 0px -60% 0px'});document.querySelectorAll('.doc-section').forEach(s=>obs.observe(s));</script>
+</body>
+</html>

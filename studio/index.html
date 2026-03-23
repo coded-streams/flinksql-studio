@@ -15,6 +15,7 @@
 
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/theme-stdark.css">
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/panels.css">
 
@@ -238,16 +239,36 @@
     </div>
     <div class="topbar-actions">
       <button class="topbar-btn" onclick="openNewSessionModal()"    title="New Session">＋ New Session</button>
+      <button class="topbar-btn" onclick="openCatalogManager()" title="Catalog Manager — register external catalogs">⊕ Catalogs</button>
       <button class="topbar-btn" onclick="refreshCatalog()"         title="Refresh Catalog">⟳ Catalog</button>
-      <button class="topbar-btn" onclick="openSnippets()"           title="Snippets">✂ Snippets</button>
       <button class="topbar-btn" onclick="openProjectManager()"      title="Project Manager — save, load and run Str:::lab projects">⬡ Projects</button>
+      <button class="topbar-btn" onclick="openSystemsManager()" title="Systems Manager — connector JARs and external integrations">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+        </svg>
+        Systems
+      </button>
+
+      <button class="topbar-btn" onclick="openPipelineManager()" title="Pipeline Manager — visual pipeline builder">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px;">
+          <circle cx="5" cy="12" r="3"/>
+          <circle cx="19" cy="5" r="3"/>
+          <circle cx="19" cy="19" r="3"/>
+          <line x1="8" y1="11.5" x2="16" y2="6.5"/>
+          <line x1="8" y1="12.5" x2="16" y2="17.5"/>
+        </svg>
+        Pipeline
+      </button>
       <button class="topbar-btn" onclick="openUdfManager()"          title="UDF Manager — User-Defined Functions">⨍ UDFs</button>
+      <button class="topbar-btn" onclick="openSnippets()"           title="Snippets">✂ Snippets</button>
       <button class="topbar-btn" onclick="showTipsModal()"          title="Tips &amp; Flink Concepts">💡 Tips</button>
       <button class="topbar-btn" onclick="openModal('modal-about')" title="About">ℹ About</button>
       <div class="topbar-theme-wrap" title="Switch theme">
         <span id="theme-icon" style="font-size:12px;pointer-events:none;">🌙</span>
         <select id="theme-select" onchange="selectTheme(this.value)">
           <option value="dark">Dark</option>
+          <option value="stdark">ST Dark</option>
           <option value="light">Light</option>
           <option value="monokai">Monokai</option>
           <option value="dracula">Dracula</option>
@@ -1030,6 +1051,11 @@ SHOW CATALOGS;"></textarea>
 <!-- 19. UDF Manager — library, register, SQL UDF creator, templates -->
 <script src="js/udf-manager.js"></script>
 
+<!-- 19b. Catalog Manager — external catalog registration -->
+
+<script src="js/catalog-manager.js"></script>
+<script src="js/systems-manager.js"></script>
+<script src="js/pipeline-manager.js"></script>
 <!-- 20. Project Manager — create, load, run, save, delete Str:::lab projects -->
 <script src="js/project-manager.js"></script>
 

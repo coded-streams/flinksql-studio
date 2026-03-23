@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Str:::lab Studio — Pipeline Manager v2.0</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23090c12'/%3E%3Cpolyline points='20 24 28 16 20 8' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='12 8 4 16 12 24' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg0:#090c12;--bg1:#0d1117;--bg2:#131920;--bg3:#1a2130;--border:#1e2d3d;--border2:#253348;--accent:#00d4aa;--accent3:#7ee8d0;--blue:#4fa3e0;--purple:#9b72cf;--orange:#f0a500;--red:#e05c5c;--green:#3fb950;--yellow:#f0a500;--text0:#f0f6fc;--text1:#c9d1d9;--text2:#8b949e;--text3:#4a5568;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:8px;--nav-h:58px;}
+        *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:var(--sans);background:var(--bg1);color:var(--text1);line-height:1.7;font-size:15px}a{color:var(--accent);text-decoration:none}a:hover{color:var(--accent3);text-decoration:underline}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg1)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+        .nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
+        .nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}.logo-mark{width:26px;height:26px;background:#0c1018;border:1px solid rgba(0,212,170,0.35);clip-path:polygon(0 0,80% 0,100% 20%,100% 100%,20% 100%,0 80%);display:flex;align-items:center;justify-content:center}.logo-text{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text0)}.logo-ver{font-size:9px;color:var(--text3);margin-left:4px}
+        .nav-links{display:flex;align-items:center;gap:2px;list-style:none;flex:1;overflow-x:auto}.nav-links a{font-size:12px;color:var(--text2);padding:6px 9px;border-radius:5px;white-space:nowrap;transition:all .15s}.nav-links a:hover,.nav-links a.active{color:var(--text0);background:var(--bg3);text-decoration:none}.nav-links a.active{color:var(--accent)}
+        .nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}.nav-btn{font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text1);text-decoration:none;display:flex;align-items:center;gap:5px}.nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+        .hero{background:var(--bg0);padding:64px 32px 48px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 40% 0%,rgba(0,212,170,0.07),transparent 70%);pointer-events:none}
+        .hero-eyebrow{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}.hero-title{font-family:var(--mono);font-size:36px;font-weight:700;color:var(--text0);letter-spacing:-1px;line-height:1.15;margin-bottom:14px}.hero-sub{font-size:16px;color:var(--text2);max-width:640px;line-height:1.8;margin-bottom:24px}
+        .hero-badges{display:flex;gap:8px;flex-wrap:wrap}.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--mono)}.badge.teal{border:1px solid rgba(0,212,170,0.4);color:var(--accent);background:rgba(0,212,170,0.06)}.badge.blue{border:1px solid rgba(79,163,224,0.4);color:var(--blue);background:rgba(79,163,224,0.06)}.badge.green{border:1px solid rgba(63,185,80,0.4);color:var(--green);background:rgba(63,185,80,0.06)}.badge.yellow{border:1px solid rgba(240,165,0,0.4);color:var(--yellow);background:rgba(240,165,0,0.06)}.badge.purple{border:1px solid rgba(155,114,207,0.4);color:var(--purple);background:rgba(155,114,207,0.06)}
+        .page{display:flex;max-width:1280px;margin:0 auto}
+        .toc{width:216px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:24px 0 24px 16px;border-right:1px solid var(--border)}.toc-label{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:5px;display:block;margin-top:14px}.toc a{display:block;font-size:12px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}.toc a:hover{color:var(--text0);text-decoration:none}.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
+        .content{flex:1;min-width:0;padding:40px 48px 96px}.doc-section{margin-bottom:60px}
+        h2{font-size:22px;font-weight:700;color:var(--text0);margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+        .si{width:28px;height:28px;border-radius:6px;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+        h3{font-size:16px;font-weight:600;color:var(--text0);margin:26px 0 10px}h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 6px}
+        p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
+        ul.doc-ul{margin:6px 0 14px 20px}ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}ul.doc-ul li strong{color:var(--text1)}
+        code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
+        pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:16px 20px;overflow-x:auto;margin:12px 0}pre code{background:none;border:none;padding:0;font-size:12px;color:var(--text1);line-height:1.7}
+        .callout{border-radius:var(--radius);padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.7;display:flex;gap:10px}.callout-icon{font-size:15px;flex-shrink:0}.callout-body{flex:1}.callout-body strong{display:block;margin-bottom:2px}.callout.tip{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2)}.callout.tip strong{color:var(--accent)}.callout.warn{background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2)}.callout.warn strong{color:var(--orange)}.callout.info{background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2)}.callout.info strong{color:var(--blue)}.callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2)}.callout.danger strong{color:var(--red)}
+        .feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:16px 0}.feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),transparent);opacity:0;transition:opacity .15s}.feature-card:hover::before{opacity:1}.fci{font-size:20px;margin-bottom:7px;display:block}.feature-card h3{margin:0 0 5px;color:var(--text0);font-size:13px}.feature-card p{font-size:12px;margin:0;color:var(--text2);line-height:1.6}
+        .table-wrap{overflow-x:auto;margin:12px 0;border-radius:var(--radius);border:1px solid var(--border)}table{width:100%;border-collapse:collapse;font-size:13px}thead tr{background:var(--bg2)}th{text-align:left;padding:8px 12px;color:var(--text0);font-weight:600;font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}tr:last-child td{border-bottom:none}td code{font-size:11px}
+        .steps{margin:16px 0}.step{display:flex;gap:14px;margin-bottom:22px;position:relative}.step::before{content:'';position:absolute;left:15px;top:36px;width:2px;bottom:-6px;background:var(--border)}.step:last-child::before{display:none}.step-num{width:32px;height:32px;border-radius:50%;background:var(--bg2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0;z-index:1}.step-body{flex:1;padding-top:4px}.step-body h4{margin:0 0 4px}
+        .op-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:14px 0}.op-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:12px 14px;border-left:3px solid}.op-card h4{margin:0 0 5px;font-size:13px;color:var(--text0)}.op-card p{font-size:11px;color:var(--text3);margin:0 0 6px;line-height:1.6}.op-card .tags{display:flex;gap:4px;flex-wrap:wrap}.op-card .tag{font-size:9px;font-family:var(--mono);padding:1px 6px;border-radius:3px;border:1px solid var(--border);color:var(--text3)}
+        .auth-box{background:rgba(79,163,224,0.05);border:1px solid rgba(79,163,224,0.2);border-radius:6px;padding:10px 14px;margin:8px 0;font-size:12px;color:var(--text2);line-height:2}.auth-box strong{color:var(--blue);display:block;margin-bottom:4px}
+        .tab-group{margin:16px 0}.tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}.tab-btn{font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer}.tab-btn.active{background:var(--bg0);border-color:var(--border);color:var(--accent);border-bottom-color:var(--bg0)}.tab-pane{display:none}.tab-pane.active{display:block}
+        .color-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+        footer{border-top:1px solid var(--border);background:var(--bg0);padding:28px 32px;text-align:center}footer p{font-size:13px;color:var(--text3);margin-bottom:4px}footer a{color:var(--text2)}
+        @media(max-width:900px){.toc{display:none}.content{padding:24px 16px 64px}.hero-title{font-size:26px}}
+    </style>
+</head>
+<body>
+<nav class="nav">
+    <a href="index.html" class="nav-logo">
+        <div class="logo-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <span class="logo-text">Str:::lab<span class="logo-ver">Studio</span></span>
+    </a>
+    <ul class="nav-links">
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="docs-pipeline.html" class="active">Pipeline Manager</a></li>
+        <li><a href="docs-systems.html">Systems Integration</a></li>
+        <li><a href="docs-catalog.html">Catalog Management</a></li>
+        <li><a href="index.html#udf-manager">UDF Manager</a></li>
+        <li><a href="index.html#otter-streams">Otter Streams</a></li>
+        <li><a href="index.html#changelog">Changelog</a></li>
+    </ul>
+    <div class="nav-right">
+        <a href="https://github.com/coded-streams/strlabstudio" target="_blank" class="nav-btn">GitHub</a>
+        <a href="../studio/index.html" target="_blank" class="nav-btn primary">Open IDE →</a>
+    </div>
+</nav>
+
+<div class="hero">
+    <div class="hero-eyebrow">Feature Reference · v2.0 · Updated v1.3.2</div>
+    <h1 class="hero-title">Pipeline Manager</h1>
+    <p class="hero-sub">Visual Flink SQL builder — drag operators onto the canvas, <strong>double-click any node</strong> to open its configuration modal, connect with typed edges, and generate production-ready Flink SQL in one click.</p>
+    <div class="hero-badges">
+        <span class="badge teal">35+ Operators</span>
+        <span class="badge blue">Auth on All Connectors</span>
+        <span class="badge green">Schema Registry</span>
+        <span class="badge purple">AI Model Operator</span>
+        <span class="badge yellow">My UDFs</span>
+        <span class="badge teal">Double-click to Configure</span>
+    </div>
+</div>
+
+<div class="page">
+    <aside class="toc">
+        <span class="toc-label">Overview</span>
+        <a href="#overview">What is it?</a>
+        <a href="#opening">Opening &amp; Tabs</a>
+        <span class="toc-label">Canvas</span>
+        <a href="#palette">Operator Palette</a>
+        <a href="#canvas-ops">Canvas Operations</a>
+        <a href="#configure">Configuring Nodes</a>
+        <a href="#edges">Edges &amp; Types</a>
+        <span class="toc-label">Sources</span>
+        <a href="#sources">All Sources (6)</a>
+        <a href="#auth-kafka">Kafka Auth &amp; Schema Registry</a>
+        <a href="#auth-jdbc">JDBC Auth</a>
+        <span class="toc-label">Processing</span>
+        <a href="#transforms">Transformations (6)</a>
+        <a href="#windows">Windows (4)</a>
+        <a href="#aggregations">Aggregations (3)</a>
+        <a href="#joins">Joins (3)</a>
+        <a href="#cep">CEP (2)</a>
+        <span class="toc-label">Sinks &amp; Output</span>
+        <a href="#sinks">Sinks (7)</a>
+        <a href="#output">Output (2)</a>
+        <a href="#ai-model">AI Model Operator</a>
+        <a href="#my-udfs">My UDFs</a>
+        <span class="toc-label">Features</span>
+        <a href="#animation">Animation &amp; Errors</a>
+        <a href="#sql-generation">SQL Generation</a>
+        <a href="#settings">Pipeline Settings</a>
+        <span class="toc-label">Tutorials</span>
+        <a href="#tutorial-1">1 — First Pipeline</a>
+        <a href="#tutorial-2">2 — Confluent Cloud</a>
+        <a href="#tutorial-3">3 — AI Fraud Scoring</a>
+        <a href="#tutorial-4">4 — UDF Pipeline</a>
+    </aside>
+
+    <main class="content">
+
+        <section class="doc-section" id="overview">
+            <h2><span class="si">◈</span> What is the Pipeline Manager?</h2>
+            <p>The Pipeline Manager is a visual canvas where you build Flink SQL pipelines without writing SQL by hand. Drop sources, transformations, and sinks, connect with typed edges, configure each node via a modal dialog, then click Submit to generate and run the complete Flink SQL.</p>
+            <div class="feature-grid">
+                <div class="feature-card"><span class="fci">🖱</span><h3>Drag &amp; Double-click</h3><p>Drag operators from the palette. <strong>Double-click any node</strong> to open its configuration modal. Modal opens next to the node, is draggable, and can be reopened any number of times.</p></div>
+                <div class="feature-card"><span class="fci">🔐</span><h3>Auth on All Connectors</h3><p>Kafka SASL/SSL, Schema Registry credentials, JDBC username/password, Elasticsearch basic auth — optional fields on every connector operator.</p></div>
+                <div class="feature-card"><span class="fci">🤖</span><h3>AI Model Operator</h3><p>Connect your pipeline to any hosted AI model — OpenAI, Anthropic, Bedrock, Vertex AI, Hugging Face — via a UDF or Flink 2.1+ ML_PREDICT.</p></div>
+                <div class="feature-card"><span class="fci">⨍</span><h3>My UDFs</h3><p>UDFs registered in UDF Manager appear in the My UDFs palette group and can be dropped as pipeline operators with a dropdown selector.</p></div>
+                <div class="feature-card"><span class="fci">⚡</span><h3>Live SQL Preview</h3><p>Right panel shows full generated SQL updating in real time, including SET statements, auth config, DDL, and INSERT INTO.</p></div>
+                <div class="feature-card"><span class="fci">▶</span><h3>Animation &amp; Errors</h3><p>Run simulates data flow with animated particles. Validation errors highlight nodes in red with a dismissable banner listing each problem.</p></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="opening">
+            <h2><span class="si">⊙</span> Opening &amp; Tabs</h2>
+            <p>Click <strong>◈ Pipeline</strong> in the topbar. Three tabs appear:</p>
+            <ul class="doc-ul">
+                <li><strong>◈ Builder</strong> — canvas, operator palette, live SQL preview.</li>
+                <li><strong>⟨/⟩ SQL</strong> — full generated SQL with Copy and Insert buttons.</li>
+                <li><strong>📁 Saved</strong> — saved pipelines with load, export, delete actions.</li>
+            </ul>
+            <div class="callout tip"><span class="callout-icon">💡</span><div class="callout-body"><strong>Fullscreen</strong> Click ⤢ top-right to expand to full screen. Click again to return.</div></div>
+        </section>
+
+        <section class="doc-section" id="palette">
+            <h2><span class="si">☰</span> Operator Palette</h2>
+            <p>The left sidebar lists all operators in collapsible groups. Badges:</p>
+            <ul class="doc-ul">
+                <li><strong>S</strong> (amber) — Stateful: requires checkpointing configuration.</li>
+                <li><strong>⚡</strong> (yellow) — Requires an external connector JAR on the Flink classpath.</li>
+            </ul>
+            <p>Below operators, the <strong>Edge Types</strong> section lets you pick the partitioning strategy before drawing a connection.</p>
+        </section>
+
+        <section class="doc-section" id="canvas-ops">
+            <h2><span class="si">🖱</span> Canvas Operations</h2>
+            <div class="table-wrap"><table><thead><tr><th>Action</th><th>How</th></tr></thead><tbody>
+            <tr><td>Add operator</td><td>Drag from palette → drop on canvas. Config modal opens automatically.</td></tr>
+            <tr><td>Pan canvas</td><td>Click and drag on empty canvas area</td></tr>
+            <tr><td>Zoom</td><td>Mouse wheel over canvas</td></tr>
+            <tr><td>Select node</td><td>Single click on a node</td></tr>
+            <tr><td><strong>Configure node</strong></td><td><strong>Double-click</strong> any node → config modal opens next to it</td></tr>
+            <tr><td>Close config modal</td><td>Click × or Cancel. Double-click the same node again also closes it.</td></tr>
+            <tr><td>Move config modal</td><td>Drag the modal header bar</td></tr>
+            <tr><td>Delete node</td><td>Click × on the node, or select + Delete/Backspace</td></tr>
+            <tr><td>Connect nodes</td><td>Drag from right port (●) to left port of target</td></tr>
+            <tr><td>Configure edge</td><td>Double-click any edge line</td></tr>
+            <tr><td>Auto-layout</td><td>Toolbar → Layout button</td></tr>
+            </tbody></table></div>
+            <div class="callout info"><span class="callout-icon">ℹ</span><div class="callout-body"><strong>Double-click always works.</strong> The config modal is a fixed overlay appended to <code>document.body</code> — it survives canvas re-renders and reliably opens every time you double-click, no matter how many times you have configured the node before.</div></div>
+        </section>
+
+        <section class="doc-section" id="configure">
+            <h2><span class="si">⚙</span> Configuring Nodes</h2>
+            <p>Double-click any node to open its modal. Two tabs:</p>
+            <ul class="doc-ul">
+                <li><strong>⚙ Parameters</strong> — connector banner (if Systems Manager has a matching connector), checkpointing (stateful ops), node label, description, colour, and all operator-specific fields. Auth fields are always optional.</li>
+                <li><strong>ℹ About</strong> — what the operator does, when to use it, tips.</li>
+            </ul>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Double-click the node</h4><p>Config modal opens positioned next to the node. Drag its header to move it.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Fill required fields</h4><p>Required fields have a red asterisk. Auth fields (SASL, passwords, API keys) are optional — leave blank for unauthenticated connections.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Click ✓ Apply</h4><p>Node saves, modal closes, status changes to "✓ ready". Live SQL panel updates immediately.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Reopen any time</h4><p>Double-click again to edit. All previously saved values are pre-filled.</p></div></div>
+            </div>
+            <div class="callout tip"><span class="callout-icon">💡</span><div class="callout-body"><strong>Schema format:</strong> Enter one column per line with no commas: <code>id BIGINT</code>, <code>amount DOUBLE</code>, <code>ts TIMESTAMP(3)</code>. The SQL generator adds commas automatically.</div></div>
+        </section>
+
+        <section class="doc-section" id="edges">
+            <h2><span class="si">→</span> Edges &amp; Connection Types</h2>
+            <p>Double-click any edge to configure it. The edge modal has <strong>Properties</strong> (label, type, colour) and <strong>About</strong> (explanation of each type).</p>
+            <div class="table-wrap"><table><thead><tr><th>Type</th><th>Color</th><th>Behaviour</th><th>Use when</th></tr></thead><tbody>
+            <tr><td><strong>FORWARD</strong></td><td><span class="color-dot" style="background:#4e9de8"></span>Blue</td><td>1-to-1, no shuffle</td><td>Stateless transforms at same parallelism</td></tr>
+            <tr><td><strong>HASH</strong></td><td><span class="color-dot" style="background:#57c764"></span>Green</td><td>Route by key hash</td><td>Aggregations, dedup, joins</td></tr>
+            <tr><td><strong>REBALANCE</strong></td><td><span class="color-dot" style="background:#f5a623"></span>Amber</td><td>Round-robin, all subtasks</td><td>Balancing an uneven source</td></tr>
+            <tr><td><strong>BROADCAST</strong></td><td><span class="color-dot" style="background:#b080e0"></span>Purple</td><td>Every record → every subtask</td><td>Small dimension tables</td></tr>
+            <tr><td><strong>RESCALE</strong></td><td><span class="color-dot" style="background:#f75464"></span>Red</td><td>Local round-robin, subset</td><td>Changing parallelism efficiently</td></tr>
+            </tbody></table></div>
+        </section>
+
+        <section class="doc-section" id="sources">
+            <h2><span class="si">↗</span> Sources</h2>
+            <div class="op-grid">
+                <div class="op-card" style="border-left-color:#1a6fa8"><h4>Kafka</h4><p>Reads a continuous stream from a Kafka topic. json, avro, avro-confluent, csv, raw, protobuf.</p><div class="tags"><span class="tag">⚡ JAR</span><span class="tag">🔐 SASL/SSL</span><span class="tag">Schema Registry</span></div></div>
+                <div class="op-card" style="border-left-color:#2d8a4e"><h4>Datagen</h4><p>Built-in synthetic data generator. Configurable rows/sec and schema. No JAR needed.</p><div class="tags"><span class="tag">Built-in</span></div></div>
+                <div class="op-card" style="border-left-color:#4a8fa8"><h4>JDBC Source</h4><p>Reads from PostgreSQL, MySQL, SQL Server, Oracle or any JDBC database.</p><div class="tags"><span class="tag">⚡ JAR</span><span class="tag">🔐 username/password</span></div></div>
+                <div class="op-card" style="border-left-color:#b07820"><h4>File / S3</h4><p>Reads parquet, orc, json, csv from filesystem or S3-compatible storage.</p><div class="tags"><span class="tag">⚡ JAR</span></div></div>
+                <div class="op-card" style="border-left-color:#6a2d8a"><h4>Pulsar</h4><p>Reads from Apache Pulsar topics.</p><div class="tags"><span class="tag">⚡ JAR</span></div></div>
+                <div class="op-card" style="border-left-color:#e8620a"><h4>Kinesis</h4><p>Reads from Amazon Kinesis Data Streams.</p><div class="tags"><span class="tag">⚡ JAR</span><span class="tag">🔐 AWS creds</span></div></div>
+            </div>
+
+            <h3 id="auth-kafka">Kafka Authentication &amp; Schema Registry</h3>
+            <p>All Kafka operators include optional auth fields. Leave blank for unauthenticated local Kafka.</p>
+            <div class="auth-box">
+                <strong>Auth fields on all Kafka operators:</strong>
+                <code>Security Protocol</code> — PLAINTEXT / SSL / SASL_PLAINTEXT / SASL_SSL<br>
+                <code>SASL Mechanism</code> — PLAIN / SCRAM-SHA-256 / SCRAM-SHA-512 / GSSAPI<br>
+                <code>SASL Username / API Key</code> — Confluent Cloud API key or LDAP username<br>
+                <code>SASL Password / Secret</code> — Confluent Cloud API secret or LDAP password<br>
+                <code>SSL Truststore Path</code> — Container path to JKS file e.g. <code>/etc/kafka/truststore.jks</code>
+            </div>
+            <div class="auth-box">
+                <strong>Schema Registry fields:</strong>
+                <code>Schema Registry URL</code> — e.g. <code>http://schema-registry:8081</code> or Confluent Cloud SR URL<br>
+                <code>Schema Registry User</code> — SR API key (Confluent Cloud only)<br>
+                <code>Schema Registry Pass</code> — SR API secret (Confluent Cloud only)
+            </div>
+            <div class="tab-group">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab(this,'k-local')">Local (no auth)</button>
+                    <button class="tab-btn" onclick="switchTab(this,'k-confluent')">Confluent Cloud</button>
+                    <button class="tab-btn" onclick="switchTab(this,'k-ssl')">SSL Only</button>
+                </div>
+                <div id="k-local" class="tab-pane active"><p style="font-size:13px;color:var(--text2);margin:10px 0 8px;">Leave all auth fields blank for local Kafka without authentication.</p><pre><code>Bootstrap Servers: kafka:9092
+Topic:            my-topic
+Format:           json
+(all auth fields empty)</code></pre></div>
+                <div id="k-confluent" class="tab-pane"><pre><code>Bootstrap Servers:    pkc-xxxxx.us-east-1.aws.confluent.cloud:9092
+Format:               avro-confluent
+Security Protocol:    SASL_SSL
+SASL Mechanism:       PLAIN
+SASL Username:        &lt;API_KEY&gt;
+SASL Password:        &lt;API_SECRET&gt;
+Schema Registry URL:  https://psrc-xxxxx.us-east-2.aws.confluent.cloud
+Schema Registry User: &lt;SR_API_KEY&gt;
+Schema Registry Pass: &lt;SR_API_SECRET&gt;</code></pre></div>
+                <div id="k-ssl" class="tab-pane"><pre><code>Bootstrap Servers: broker:9093
+Format:            json
+Security Protocol: SSL
+SSL Truststore:    /etc/kafka/truststore.jks</code></pre></div>
+            </div>
+
+            <h3 id="auth-jdbc">JDBC Authentication</h3>
+            <p>JDBC source and sink both include <code>Username</code>, <code>Password</code>, and optional <code>Driver Class</code> fields.</p>
+            <div class="table-wrap"><table><thead><tr><th>Database</th><th>JDBC URL Pattern</th></tr></thead><tbody>
+            <tr><td>PostgreSQL</td><td><code>jdbc:postgresql://host:5432/dbname</code></td></tr>
+            <tr><td>MySQL</td><td><code>jdbc:mysql://host:3306/dbname</code></td></tr>
+            <tr><td>SQL Server</td><td><code>jdbc:sqlserver://host:1433;database=dbname</code></td></tr>
+            <tr><td>Oracle</td><td><code>jdbc:oracle:thin:@host:1521:sid</code></td></tr>
+            </tbody></table></div>
+        </section>
+
+        <section class="doc-section" id="transforms">
+            <h2><span class="si">⇄</span> Transformations</h2>
+            <div class="op-grid">
+                <div class="op-card" style="border-left-color:#2a7a3a"><h4>Filter</h4><p>WHERE condition — drops non-matching rows. Stateless, per-row.</p></div>
+                <div class="op-card" style="border-left-color:#2a5a8a"><h4>Project</h4><p>SELECT list — rename, compute, CASE/WHEN, call UDFs.</p></div>
+                <div class="op-card" style="border-left-color:#5a3a8a"><h4>UDF Map</h4><p>Apply a registered scalar UDF to one column, emit as new column.</p></div>
+                <div class="op-card" style="border-left-color:#7a3a7a"><h4>Lookup Enrich</h4><p>Lookup join against a bounded dimension table.</p></div>
+                <div class="op-card" style="border-left-color:#5a7a2a"><h4>Union</h4><p>Combine two streams with identical schema (UNION / UNION ALL).</p></div>
+                <div class="op-card" style="border-left-color:#7a5a2a"><h4>Split / Route</h4><p>Fan-out routing to two output views based on WHERE conditions.</p></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="windows">
+            <h2><span class="si">▦</span> Windows</h2>
+            <p>All window operators are <strong>stateful</strong>. Source must have a watermark column.</p>
+            <div class="op-grid">
+                <div class="op-card" style="border-left-color:#8a6a00"><h4>Tumble</h4><p>Fixed-size, non-overlapping time windows.</p><div class="tags"><span class="tag">S</span></div></div>
+                <div class="op-card" style="border-left-color:#8a4a00"><h4>Hop</h4><p>Overlapping sliding windows — moving averages.</p><div class="tags"><span class="tag">S</span></div></div>
+                <div class="op-card" style="border-left-color:#8a0020"><h4>Session</h4><p>Activity-gap based — user sessions.</p><div class="tags"><span class="tag">S</span></div></div>
+                <div class="op-card" style="border-left-color:#4a6a00"><h4>Cumulate</h4><p>Grows incrementally from zero to a max size.</p><div class="tags"><span class="tag">S</span></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="aggregations">
+            <h2><span class="si">Σ</span> Aggregations</h2>
+            <div class="op-grid">
+                <div class="op-card" style="border-left-color:#6a0a9a"><h4>Group Agg</h4><p>GROUP BY with COUNT, SUM, MAX, MIN, AVG.</p><div class="tags"><span class="tag">S</span></div></div>
+                <div class="op-card" style="border-left-color:#0a6a8a"><h4>Dedup</h4><p>Remove duplicate rows per key, keeping first.</p><div class="tags"><span class="tag">S</span></div></div>
+                <div class="op-card" style="border-left-color:#0a8a4a"><h4>Top-N</h4><p>Keep top N rows per partition by rank column.</p><div class="tags"><span class="tag">S</span></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="joins">
+            <h2><span class="si">⋈</span> Joins</h2>
+            <div class="op-grid">
+                <div class="op-card" style="border-left-color:#8a4a00"><h4>Interval Join</h4><p>Two streams joined within a time interval.</p><div class="tags"><span class="tag">S</span></div></div>
+                <div class="op-card" style="border-left-color:#6a2a00"><h4>Temporal Join</h4><p>Join against dim table at each event's timestamp.</p></div>
+                <div class="op-card" style="border-left-color:#4a2a6a"><h4>Regular Join</h4><p>Standard INNER/LEFT/FULL OUTER join.</p><div class="tags"><span class="tag">S</span></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="cep">
+            <h2><span class="si">◉</span> CEP</h2>
+            <div class="op-grid">
+                <div class="op-card" style="border-left-color:#3a0a6a"><h4>MATCH_RECOGNIZE</h4><p>Detect complex event patterns. Fraud sequences, SLA breaches.</p><div class="tags"><span class="tag">S</span></div></div>
+                <div class="op-card" style="border-left-color:#6a0a2a"><h4>CEP Alert</h4><p>Alert when aggregate conditions are met within a window.</p><div class="tags"><span class="tag">S</span></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="sinks">
+            <h2><span class="si">↘</span> Sinks</h2>
+            <div class="op-grid">
+                <div class="op-card" style="border-left-color:#0a3a6a"><h4>Kafka Sink</h4><p>Writes to a Kafka topic. Full SASL/SSL + Schema Registry.</p><div class="tags"><span class="tag">⚡</span><span class="tag">🔐 SASL/SSL</span><span class="tag">Schema Registry</span></div></div>
+                <div class="op-card" style="border-left-color:#0a5a5a"><h4>JDBC Sink</h4><p>Upserts into PostgreSQL, MySQL, SQL Server. Username + password fields.</p><div class="tags"><span class="tag">⚡</span><span class="tag">🔐 username/password</span></div></div>
+                <div class="op-card" style="border-left-color:#5a4a00"><h4>File / S3 Sink</h4><p>Writes parquet, orc, json, csv.</p><div class="tags"><span class="tag">⚡</span></div></div>
+                <div class="op-card" style="border-left-color:#5a0a00"><h4>Elasticsearch</h4><p>Upserts to ES/OpenSearch. Username + password included.</p><div class="tags"><span class="tag">⚡</span><span class="tag">🔐 username/password</span></div></div>
+                <div class="op-card" style="border-left-color:#3a3a3a"><h4>Print (Debug)</h4><p>Prints rows to TaskManager stdout. Dev only.</p><div class="tags"><span class="tag">Built-in</span></div></div>
+                <div class="op-card" style="border-left-color:#1a1a2a"><h4>Blackhole</h4><p>Discards rows silently. Benchmarking only.</p><div class="tags"><span class="tag">Built-in</span></div></div>
+                <div class="op-card" style="border-left-color:#0a5a2a"><h4>MongoDB</h4><p>Writes documents to a MongoDB collection.</p><div class="tags"><span class="tag">⚡</span></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="output">
+            <h2><span class="si">⊞</span> Output Operators</h2>
+            <h3>Results Tab</h3>
+            <p>Creates a <code>CREATE TEMPORARY VIEW</code> and queries it in Studio's Results tab. Preview stream data without an external sink.</p>
+
+            <h3 id="ai-model">🤖 AI Model Operator</h3>
+            <p>The <strong>AI Model</strong> operator connects your Flink pipeline to any hosted AI or ML inference endpoint. It generates a <code>CREATE TEMPORARY VIEW</code> containing a UDF call (or <code>ML_PREDICT</code> on Flink 2.1+) that applies inference to each row in the stream.</p>
+            <div class="callout warn"><span class="callout-icon">⚠</span><div class="callout-body"><strong>Flink SQL cannot call HTTP APIs directly.</strong> You must register an inference UDF first — via <a href="index.html#otter-streams">Otter Streams</a> or a custom Java UDF. On Flink 2.1+, the native <code>ML_PREDICT</code> function is also available. Set API keys as Flink cluster environment variables — never hardcode secrets in SQL.</div></div>
+
+            <div class="table-wrap"><table><thead><tr><th>Field</th><th>Description</th><th>Example</th></tr></thead><tbody>
+            <tr><td><code>AI Provider</code></td><td>Target platform</td><td>OpenAI, Anthropic, AWS Bedrock, Vertex AI, Hugging Face, Custom HTTP, Otter Streams UDF</td></tr>
+            <tr><td><code>Model / Deployment</code></td><td>Model name or deployment ID</td><td><code>gpt-4o-mini</code>, <code>claude-3-5-sonnet-20241022</code>, <code>amazon.nova-pro-v1:0</code></td></tr>
+            <tr><td><code>Endpoint URL</code></td><td>Full API endpoint (informational)</td><td><code>https://api.openai.com/v1/chat/completions</code></td></tr>
+            <tr><td><code>API Key (env var)</code></td><td>Name of the env var holding the API key in the Flink cluster</td><td><code>OPENAI_API_KEY</code></td></tr>
+            <tr><td><code>Auth Type</code></td><td>Authentication method</td><td>Bearer Token, AWS SigV4, Azure AD, API Key Header, Basic Auth</td></tr>
+            <tr><td><code>Input Column</code></td><td>Column passed to the UDF as argument</td><td><code>event_payload</code></td></tr>
+            <tr><td><code>Output Alias</code></td><td>Name of the new column produced by inference</td><td><code>ai_result</code>, <code>fraud_score</code></td></tr>
+            <tr><td><code>Passthrough Cols</code></td><td>Other columns to include alongside the UDF output</td><td><code>id, ts, user_id</code></td></tr>
+            <tr><td><code>System Prompt</code></td><td>LLM system prompt baked into the UDF at build time</td><td><code>Classify as FRAUD or LEGITIMATE</code></td></tr>
+            <tr><td><code>UDF Name</code></td><td>Registered Flink UDF function name to call</td><td><code>fraud_score</code>, <code>classify_event</code></td></tr>
+            </tbody></table></div>
+
+            <div class="tab-group">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab(this,'ai-gen')">Generated SQL</button>
+                    <button class="tab-btn" onclick="switchTab(this,'ai-ml')">Flink 2.1 ML_PREDICT</button>
+                    <button class="tab-btn" onclick="switchTab(this,'ai-providers')">Provider Notes</button>
+                </div>
+                <div id="ai-gen" class="tab-pane active"><pre><code>-- AI Model: gpt-4o-mini via OpenAI
+-- Register UDF first:
+-- CREATE TEMPORARY FUNCTION fraud_score AS 'com.your.AIUdf' LANGUAGE JAVA;
+CREATE TEMPORARY VIEW ai_scored AS
+SELECT
+  id, ts,
+  fraud_score(event_payload) AS ai_result
+FROM source_table;</code></pre></div>
+                <div id="ai-ml" class="tab-pane"><pre><code>-- Flink 2.1+ native inference (no UDF required for supported models)
+CREATE MODEL my_model
+INPUT (payload STRING)
+OUTPUT (prediction STRING)
+WITH (
+  'task'           = 'classification',
+  'openai.endpoint'= 'https://api.openai.com/v1',
+  'openai.api_key' = '${env:OPENAI_API_KEY}'
+);
+
+SELECT id, ts,
+  ML_PREDICT('my_model', payload) AS prediction
+FROM events;</code></pre></div>
+                <div id="ai-providers" class="tab-pane">
+                    <ul class="doc-ul" style="margin-top:10px;">
+                        <li><strong>OpenAI / Anthropic / Cohere</strong> — Bearer token. Set API key as env var in Flink config. Use Otter Streams HTTP module or Flink 2.1+ ML_PREDICT.</li>
+                        <li><strong>AWS Bedrock</strong> — AWS SigV4 signing. Mount IAM credentials on TaskManager containers. Model IDs: <code>amazon.nova-pro-v1:0</code>, <code>anthropic.claude-3-5-sonnet-20241022-v2:0</code>.</li>
+                        <li><strong>Google Vertex AI</strong> — OAuth2 service account. Mount GCP credentials JSON. Model IDs: <code>gemini-1.5-flash-001</code>, <code>text-bison@002</code>.</li>
+                        <li><strong>Azure OpenAI</strong> — Azure AD token or API key. Per-deployment endpoint: <code>https://&lt;resource&gt;.openai.azure.com/deployments/&lt;name&gt;/chat/completions</code>.</li>
+                        <li><strong>Hugging Face</strong> — Bearer token from HF settings. Use Inference Endpoints URL for production (not the free shared API).</li>
+                        <li><strong>Otter Streams UDF</strong> — Upload shaded JAR via UDF Manager, register with CREATE TEMPORARY FUNCTION, select in the AI Model operator. Supports ONNX, TensorFlow, PyTorch, XGBoost, and HTTP remote inference.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="my-udfs">
+            <h2><span class="si">⨍</span> My UDFs Group</h2>
+            <p>Any UDF registered via ⨍ UDF Manager appears in the <strong>My UDFs</strong> palette group. Drag <strong>UDF Function</strong> onto the canvas, double-click it, and select your function from the dropdown. Configure input columns, output alias, and passthrough columns.</p>
+            <div class="callout tip"><span class="callout-icon">💡</span><div class="callout-body"><strong>No UDFs showing?</strong> Go to ⨍ UDF Manager → Upload JAR → complete Steps 1–3 (ADD JAR + CREATE FUNCTION). Return to Pipeline Manager — the UDF appears in the dropdown automatically.</div></div>
+        </section>
+
+        <section class="doc-section" id="animation">
+            <h2><span class="si">▶</span> Animation &amp; Error Handling</h2>
+            <p>Click <strong>Run</strong> in the toolbar to simulate data flow with animated particles. Validation runs first — all required params must be filled and all transform nodes must be connected.</p>
+            <p>When validation fails: a <strong>red error banner</strong> appears at the top of the canvas listing each error with node name and a <strong>Locate</strong> button. The floating <strong>⏹ STOP ANIMATION</strong> button at the top-center always stops particles immediately. Clicking <strong>✕ Clear &amp; Close</strong> on the banner clears all error highlights.</p>
+            <div class="callout tip"><span class="callout-icon">💡</span><div class="callout-body"><strong>Run becomes Stop while animating.</strong> The toolbar Run button changes to ⏹ Stop (red). The floating stop button is always available as a fallback.</div></div>
+        </section>
+
+        <section class="doc-section" id="sql-generation">
+            <h2><span class="si">⟨/⟩</span> SQL Generation</h2>
+            <p>The generator produces complete, runnable Flink SQL including SET statements, connector warnings, source DDL with auth config and Schema Registry settings, sink DDL, and INSERT INTO from the transform chain.</p>
+            <div class="callout warn"><span class="callout-icon">⚠</span><div class="callout-body"><strong>Auth in generated SQL.</strong> Passwords and API keys are written directly into the generated SQL. For production, consider Flink secrets management or environment variable substitution rather than hardcoding credentials.</div></div>
+        </section>
+
+        <section class="doc-section" id="settings">
+            <h2><span class="si">⚙</span> Pipeline Settings</h2>
+            <p>Click <strong>⚙ Settings</strong> at the bottom-left of the canvas. These override any node-level checkpointing.</p>
+            <div class="table-wrap"><table><thead><tr><th>Section</th><th>What it controls</th></tr></thead><tbody>
+            <tr><td>Job Name</td><td><code>pipeline.name</code> SET statement</td></tr>
+            <tr><td>Execution</td><td>Runtime mode, parallelism, max-parallelism, idle timeout</td></tr>
+            <tr><td>Checkpointing</td><td>Interval, mode, min-pause, timeout, state TTL, max concurrent</td></tr>
+            <tr><td>Table &amp; Optimizer</td><td>Mini-batch enabled, mini-batch interval</td></tr>
+            <tr><td>Custom SETs</td><td>Free-form key=value pairs, one per line</td></tr>
+            </tbody></table></div>
+        </section>
+
+        <!-- TUTORIALS -->
+        <section class="doc-section" id="tutorial-1">
+            <h2><span class="si">①</span> Tutorial 1 — Your First Pipeline</h2>
+            <p>Datagen source → Filter → Print sink.</p>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Open Pipeline Manager</h4><p>Click ◈ Pipeline in the topbar.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Add Datagen source</h4><p>Drag <strong>Datagen</strong> from Sources. The config modal opens automatically. Fill in: Table Name: <code>orders</code>, Rows/sec: <code>10</code>, Schema: <code>order_id BIGINT</code> / <code>amount DOUBLE</code> / <code>status STRING</code> / <code>ts TIMESTAMP(3)</code>. Click ✓ Apply.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Add Filter</h4><p>Drag <strong>Filter</strong>. Double-click, set Condition: <code>amount > 500.0</code>. Apply.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Add Print sink</h4><p>Drag <strong>Print (Debug)</strong>. Double-click, Table Name: <code>high_value_orders</code>. Apply.</p></div></div>
+                <div class="step"><div class="step-num">5</div><div class="step-body"><h4>Connect and Submit</h4><p>Drag Datagen right port → Filter left port → Print left port. Click <strong>Submit</strong>. Open Results tab to see filtered rows streaming in.</p></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="tutorial-2">
+            <h2><span class="si">②</span> Tutorial 2 — Confluent Cloud Kafka Pipeline</h2>
+            <p>Kafka source (Confluent Cloud, SASL_SSL + Schema Registry) → Filter → Kafka sink.</p>
+            <div class="tab-group">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab(this,'t2-cfg')">Node Config</button>
+                    <button class="tab-btn" onclick="switchTab(this,'t2-sql')">Generated SQL</button>
+                </div>
+                <div id="t2-cfg" class="tab-pane active">
+                    <h4>Kafka Source — double-click and fill in:</h4>
+                    <ul class="doc-ul">
+                        <li>Table Name: <code>cc_events</code>, Topic: <code>raw-events</code>, Format: <code>avro-confluent</code></li>
+                        <li>Bootstrap: <code>pkc-xxxxx.us-east-1.aws.confluent.cloud:9092</code></li>
+                        <li>Security Protocol: <code>SASL_SSL</code>, Mechanism: <code>PLAIN</code></li>
+                        <li>SASL Username: <code>&lt;API_KEY&gt;</code>, Password: <code>&lt;API_SECRET&gt;</code></li>
+                        <li>SR URL: <code>https://psrc-xxxxx.confluent.cloud</code>, SR User: <code>&lt;SR_KEY&gt;</code>, SR Pass: <code>&lt;SR_SECRET&gt;</code></li>
+                        <li>Schema: <code>user_id STRING</code> / <code>event STRING</code> / <code>ts TIMESTAMP(3)</code>, Watermark: <code>ts</code></li>
+                    </ul>
+                    <h4>Filter: <code>event != 'heartbeat'</code></h4>
+                    <h4>Kafka Sink: <code>cc_filtered</code> / topic <code>filtered-events</code> — same SASL_SSL fields.</h4>
+                </div>
+                <div id="t2-sql" class="tab-pane"><pre><code>CREATE TABLE IF NOT EXISTS cc_events (
+  user_id STRING,
+  event   STRING,
+  ts      TIMESTAMP(3),
+  WATERMARK FOR ts AS ts - INTERVAL '5' SECOND
+) WITH (
+  'connector'                           = 'kafka',
+  'topic'                               = 'raw-events',
+  'properties.bootstrap.servers'        = 'pkc-xxxxx.confluent.cloud:9092',
+  'properties.group.id'                 = 'flink-group',
+  'scan.startup.mode'                   = 'latest-offset',
+  'format'                              = 'avro-confluent',
+  'properties.security.protocol'        = 'SASL_SSL',
+  'properties.sasl.mechanism'           = 'PLAIN',
+  'properties.sasl.jaas.config'         = 'org.apache.kafka.common.security.plain.PlainLoginModule required username="API_KEY" password="API_SECRET";',
+  'schema-registry.url'                 = 'https://psrc-xxxxx.confluent.cloud',
+  'schema-registry.basic.auth.user.info'= 'SR_KEY:SR_SECRET'
+);</code></pre></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="tutorial-3">
+            <h2><span class="si">③</span> Tutorial 3 — Real-time AI Fraud Scoring</h2>
+            <p>Kafka source → Filter → AI Model (Otter Streams XGBoost) → Kafka sink.</p>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Register the inference UDF</h4><p>⨍ UDF Manager → Upload JAR (Otter Streams shaded JAR) → Register: name <code>fraud_score</code>, class <code>com.codedstreams.otter.MLInferenceUDF</code>, LANGUAGE JAVA. Confirm with SHOW USER FUNCTIONS.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Build the pipeline</h4><p>Kafka Source → Filter (amount > 50.0) → AI Model → Kafka Sink.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Configure AI Model</h4><p>Double-click AI Model: Provider = Otter Streams UDF, Model = <code>fraud-xgboost-v2</code>, Input Column = <code>amount</code>, Output Alias = <code>fraud_probability</code>, Passthrough = <code>tx_id, ts</code>, UDF Name = <code>fraud_score</code>. Apply.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Submit</h4><p>Click Submit. The generated SQL calls <code>fraud_score(amount) AS fraud_probability</code> inside a CREATE TEMPORARY VIEW and inserts results into the Kafka sink.</p></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="tutorial-4">
+            <h2><span class="si">④</span> Tutorial 4 — Custom UDF Pipeline</h2>
+            <p>Datagen → My UDF (classify_risk) → Print sink.</p>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Verify the UDF</h4><p>In the SQL editor: <code>SHOW USER FUNCTIONS;</code> — confirm <code>classify_risk</code> appears.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Build the pipeline</h4><p>Drag Datagen source (schema: <code>id BIGINT</code> / <code>score DOUBLE</code> / <code>ts TIMESTAMP(3)</code>) → UDF Function node (from My UDFs palette) → Print sink.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Configure UDF node</h4><p>Double-click UDF Function. Select <code>classify_risk</code> from the UDF dropdown. Input Column: <code>score</code>, Output Alias: <code>risk_tier</code>, Passthrough: <code>id, ts</code>. Apply.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Submit</h4><p>The INSERT INTO calls <code>classify_risk(score) AS risk_tier</code> alongside the passthrough columns.</p></div></div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<footer>
+    <p>Str:::lab Studio · Pipeline Manager v2.0 · <a href="index.html">Back to Overview</a></p>
+    <p>Created by <a href="https://www.linkedin.com/in/nestor-abiangang/" target="_blank">Nestor Martourez A. A</a> · MIT License</p>
+</footer>
+<script>
+    function switchTab(btn,id){const g=btn.closest('.tab-group');g.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));g.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById(id).classList.add('active');}
+    const obs=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting){document.querySelectorAll('.toc a').forEach(l=>l.classList.remove('active'));const lk=document.querySelector('.toc a[href="#'+en.target.id+'"]');if(lk)lk.classList.add('active');}});},{rootMargin:'-15% 0px -60% 0px'});
+    document.querySelectorAll('.doc-section').forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ function selectTheme(t) {
 }
 
 // ──────────────────────────────────────────────
-const THEMES = ['dark', 'light', 'monokai', 'dracula', 'nord', 'contrast'];
+const THEMES = ['dark', 'light', 'monokai', 'dracula', 'nord', 'contrast', 'stdark'];
 function toggleTheme() {
   const idx = THEMES.indexOf(state.theme);
   state.theme = THEMES[(idx + 1) % THEMES.length];
@@ -22,8 +22,8 @@ function applyTheme() {
   // Update toggle button
   const icon  = document.getElementById('theme-icon');
   const label = document.getElementById('theme-label');
-  const themeNames = { dark: 'Dark', light: 'Light', monokai: 'Monokai', dracula: 'Dracula', nord: 'Nord', contrast: 'Contrast' };
-  const themeIcons = { dark: '🌙', light: '☀️', monokai: '🎨', dracula: '🧛', nord: '❄️', contrast: '◑' };
+  const themeNames = { dark: 'Dark', light: 'Light', monokai: 'Monokai', dracula: 'Dracula', nord: 'Nord', contrast: 'Contrast', stdark: 'ST Dark' };
+  const themeIcons = { dark: '🌙', light: '☀️', monokai: '🎨', dracula: '🧛', nord: '❄️', contrast: '◑', stdark: '◈' };
   const isLight = state.theme === 'light';
   if (icon)  icon.textContent  = themeIcons[state.theme] || '🌙';
   if (label) label.textContent = themeNames[state.theme] || 'Dark';
@@ -32,7 +32,7 @@ function applyTheme() {
   if (sel) sel.value = state.theme;
   // Update connect screen logo border
   document.querySelectorAll('.connect-logo, .logo-mark').forEach(el => {
-    el.style.setProperty('--logo-border', isLight ? 'rgba(0,122,96,0.5)' : 'rgba(0,212,170,0.4)');
+    el.style.setProperty('--logo-border', isLight ? 'rgba(0,122,96,0.5)' : state.theme === 'stdark' ? 'rgba(78,157,232,0.4)' : 'rgba(0,212,170,0.4)');
   });
   // Propagate theme to meta color-scheme for native browser UI
   let meta = document.querySelector('meta[name="color-scheme"]');

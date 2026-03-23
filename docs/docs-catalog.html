@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Str:::lab Studio — Catalog Management</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23090c12'/%3E%3Cpolyline points='20 24 28 16 20 8' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpolyline points='12 8 4 16 12 24' fill='none' stroke='%2300d4aa' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg0:#090c12;--bg1:#0d1117;--bg2:#131920;--bg3:#1a2130;--border:#1e2d3d;--border2:#253348;--accent:#00d4aa;--accent3:#7ee8d0;--blue:#4fa3e0;--purple:#9b72cf;--orange:#f0a500;--red:#e05c5c;--green:#3fb950;--yellow:#f0a500;--text0:#f0f6fc;--text1:#c9d1d9;--text2:#8b949e;--text3:#4a5568;--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:8px;--nav-h:58px;}
+        *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}body{font-family:var(--sans);background:var(--bg1);color:var(--text1);line-height:1.7;font-size:15px}a{color:var(--accent);text-decoration:none}a:hover{color:var(--accent3);text-decoration:underline}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg1)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+        .nav{position:sticky;top:0;z-index:100;height:var(--nav-h);background:rgba(9,12,18,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0}
+        .nav-logo{display:flex;align-items:center;gap:10px;margin-right:36px;flex-shrink:0;text-decoration:none}.logo-mark{width:26px;height:26px;background:#0c1018;border:1px solid rgba(0,212,170,0.35);clip-path:polygon(0 0,80% 0,100% 20%,100% 100%,20% 100%,0 80%);display:flex;align-items:center;justify-content:center}.logo-text{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--text0)}.logo-ver{font-size:9px;color:var(--text3);margin-left:4px}
+        .nav-links{display:flex;align-items:center;gap:2px;list-style:none;flex:1;overflow-x:auto}.nav-links a{font-size:12px;color:var(--text2);padding:6px 9px;border-radius:5px;white-space:nowrap;transition:all .15s}.nav-links a:hover,.nav-links a.active{color:var(--text0);background:var(--bg3);text-decoration:none}.nav-links a.active{color:var(--accent)}
+        .nav-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}.nav-btn{font-family:var(--mono);font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--border2);background:var(--bg2);color:var(--text1);text-decoration:none;display:flex;align-items:center;gap:5px}.nav-btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+        .hero{background:var(--bg0);padding:64px 32px 48px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 30% 0%,rgba(155,114,207,0.07),transparent 70%);pointer-events:none}
+        .hero-eyebrow{font-family:var(--mono);font-size:11px;color:var(--purple);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+        .hero-title{font-family:var(--mono);font-size:36px;font-weight:700;color:var(--text0);letter-spacing:-1px;line-height:1.15;margin-bottom:14px}
+        .hero-sub{font-size:16px;color:var(--text2);max-width:640px;line-height:1.8;margin-bottom:24px}
+        .hero-badges{display:flex;gap:8px;flex-wrap:wrap}.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--mono)}.badge.purple{border:1px solid rgba(155,114,207,0.4);color:var(--purple);background:rgba(155,114,207,0.06)}.badge.teal{border:1px solid rgba(0,212,170,0.4);color:var(--accent);background:rgba(0,212,170,0.06)}.badge.blue{border:1px solid rgba(79,163,224,0.4);color:var(--blue);background:rgba(79,163,224,0.06)}
+        .page{display:flex;max-width:1280px;margin:0 auto}
+        .toc{width:216px;flex-shrink:0;position:sticky;top:var(--nav-h);height:calc(100vh - var(--nav-h));overflow-y:auto;padding:24px 0 24px 16px;border-right:1px solid var(--border)}.toc-label{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;padding:0 8px;margin-bottom:5px;display:block;margin-top:14px}.toc a{display:block;font-size:12px;color:var(--text2);padding:4px 8px;border-radius:4px;border-left:2px solid transparent;transition:all .12s}.toc a:hover{color:var(--text0);text-decoration:none}.toc a.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,170,0.05)}
+        .content{flex:1;min-width:0;padding:40px 48px 96px}
+        .doc-section{margin-bottom:60px}
+        h2{font-size:22px;font-weight:700;color:var(--text0);margin-bottom:8px;padding-bottom:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+        .si{width:28px;height:28px;border-radius:6px;background:rgba(155,114,207,0.1);border:1px solid rgba(155,114,207,0.2);display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+        h3{font-size:16px;font-weight:600;color:var(--text0);margin:26px 0 10px}h4{font-size:14px;font-weight:600;color:var(--text1);margin:18px 0 6px}
+        p{color:var(--text2);margin-bottom:12px;font-size:14px;line-height:1.8}
+        ul.doc-ul{margin:6px 0 14px 20px}ul.doc-ul li{font-size:14px;color:var(--text2);margin-bottom:6px;line-height:1.7}ul.doc-ul li strong{color:var(--text1)}
+        code{font-family:var(--mono);font-size:12px;color:var(--accent);background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.15);padding:1px 6px;border-radius:4px}
+        pre{background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:var(--radius);padding:16px 20px;overflow-x:auto;margin:12px 0}pre code{background:none;border:none;padding:0;font-size:12px;color:var(--text1);line-height:1.7}
+        .callout{border-radius:var(--radius);padding:12px 16px;margin:12px 0;font-size:13px;line-height:1.7;display:flex;gap:10px}.callout-icon{font-size:15px;flex-shrink:0}.callout-body{flex:1}.callout-body strong{display:block;margin-bottom:2px}.callout.tip{background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2)}.callout.tip strong{color:var(--accent)}.callout.warn{background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2)}.callout.warn strong{color:var(--orange)}.callout.info{background:rgba(79,163,224,0.06);border:1px solid rgba(79,163,224,0.2)}.callout.info strong{color:var(--blue)}.callout.danger{background:rgba(224,92,92,0.06);border:1px solid rgba(224,92,92,0.2)}.callout.danger strong{color:var(--red)}
+        .feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin:16px 0}
+        .feature-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;overflow:hidden;position:relative}.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--purple),transparent)}.fci{font-size:20px;margin-bottom:7px;display:block}.feature-card h3{margin:0 0 5px;color:var(--text0);font-size:13px}.feature-card p{font-size:12px;margin:0;color:var(--text2);line-height:1.6}
+        .table-wrap{overflow-x:auto;margin:12px 0;border-radius:var(--radius);border:1px solid var(--border)}table{width:100%;border-collapse:collapse;font-size:13px}thead tr{background:var(--bg2)}th{text-align:left;padding:8px 12px;color:var(--text0);font-weight:600;font-family:var(--mono);font-size:11px;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}tr:last-child td{border-bottom:none}td code{font-size:11px}
+        .steps{margin:16px 0}.step{display:flex;gap:14px;margin-bottom:22px;position:relative}.step::before{content:'';position:absolute;left:15px;top:36px;width:2px;bottom:-6px;background:var(--border)}.step:last-child::before{display:none}.step-num{width:32px;height:32px;border-radius:50%;background:var(--bg2);border:2px solid var(--purple);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--purple);flex-shrink:0;z-index:1}.step-body{flex:1;padding-top:4px}.step-body h4{margin:0 0 4px}
+        .tab-group{margin:16px 0}.tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:-1px}.tab-btn{font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:6px 6px 0 0;border:1px solid transparent;border-bottom:none;background:transparent;color:var(--text2);cursor:pointer}.tab-btn.active{background:var(--bg0);border-color:var(--border);color:var(--purple);border-bottom-color:var(--bg0)}.tab-pane{display:none}.tab-pane.active{display:block}
+        .catalog-tree{background:var(--bg0);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:var(--mono);font-size:12px;line-height:2;margin:12px 0;color:var(--text1)}.tree-cat{color:var(--purple);font-weight:600}.tree-db{color:var(--blue);margin-left:20px}.tree-tbl{color:var(--accent);margin-left:40px}.tree-col{color:var(--text2);margin-left:60px}
+        footer{border-top:1px solid var(--border);background:var(--bg0);padding:28px 32px;text-align:center}footer p{font-size:13px;color:var(--text3);margin-bottom:4px}footer a{color:var(--text2)}
+        @media(max-width:900px){.toc{display:none}.content{padding:24px 16px 64px}.hero-title{font-size:26px}}
+    </style>
+</head>
+<body>
+<nav class="nav">
+    <a href="index.html" class="nav-logo">
+        <div class="logo-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <span class="logo-text">Str:::lab<span class="logo-ver">Studio</span></span>
+    </a>
+    <ul class="nav-links">
+        <li><a href="index.html">Overview</a></li>
+        <li><a href="docs-pipeline.html">Pipeline Manager</a></li>
+        <li><a href="docs-systems.html">Systems Integration</a></li>
+        <li><a href="docs-catalog.html" class="active">Catalog Management</a></li>
+        <li><a href="index.html#udf-manager">UDF Manager</a></li>
+        <li><a href="index.html#changelog">Changelog</a></li>
+    </ul>
+    <div class="nav-right">
+        <a href="https://github.com/coded-streams/strlabstudio" target="_blank" class="nav-btn">GitHub</a>
+        <a href="../studio/index.html" target="_blank" class="nav-btn primary">Open IDE →</a>
+    </div>
+</nav>
+
+<div class="hero">
+    <div class="hero-eyebrow">Feature Reference</div>
+    <h1 class="hero-title">Catalog Management</h1>
+    <p class="hero-sub">Browse, create, and manage Flink SQL catalogs, databases, and tables. Register external catalogs (Hive Metastore, Iceberg, Paimon, JDBC), inspect schemas, and insert DDL snippets — all from the Studio sidebar and Catalog Manager.</p>
+    <div class="hero-badges">
+        <span class="badge purple">Catalog Browser</span>
+        <span class="badge teal">Hive Metastore</span>
+        <span class="badge blue">Iceberg</span>
+        <span class="badge purple">Paimon</span>
+        <span class="badge teal">JDBC Catalog</span>
+        <span class="badge blue">In-Memory</span>
+    </div>
+</div>
+
+<div class="page">
+    <aside class="toc">
+        <span class="toc-label">Concepts</span>
+        <a href="#concepts">Flink Catalog Model</a>
+        <a href="#default-catalog">Default Catalog</a>
+        <span class="toc-label">Catalog Browser</span>
+        <a href="#sidebar">Sidebar Browser</a>
+        <a href="#refresh">Refresh & Navigation</a>
+        <a href="#insert-ddl">Insert DDL Snippets</a>
+        <span class="toc-label">Catalog Manager</span>
+        <a href="#catalog-manager">Catalog Manager</a>
+        <a href="#register-catalog">Registering Catalogs</a>
+        <span class="toc-label">Catalog Types</span>
+        <a href="#in-memory">In-Memory</a>
+        <a href="#hive">Hive Metastore</a>
+        <a href="#iceberg">Iceberg</a>
+        <a href="#paimon">Paimon</a>
+        <a href="#jdbc-catalog">JDBC Catalog</a>
+        <a href="#glue">AWS Glue</a>
+        <span class="toc-label">Reference</span>
+        <a href="#sql-reference">SQL Reference</a>
+        <a href="#status-bar">Status Bar</a>
+        <span class="toc-label">Tutorials</span>
+        <a href="#tutorial-hive">Tutorial — Hive Catalog</a>
+        <a href="#tutorial-iceberg">Tutorial — Iceberg</a>
+    </aside>
+
+    <main class="content">
+
+        <section class="doc-section" id="concepts">
+            <h2><span class="si">⊟</span> Flink Catalog Model</h2>
+            <p>Apache Flink organizes metadata in a three-level hierarchy:</p>
+            <div class="catalog-tree">
+                <div class="tree-cat">📦 catalog_name</div>
+                <div class="tree-db">🗄 database_name</div>
+                <div class="tree-tbl">📋 table_name</div>
+                <div class="tree-col">🔹 column_name : TYPE</div>
+            </div>
+            <p>Every Flink SQL session has a <strong>current catalog</strong> and <strong>current database</strong>. Unqualified table references (e.g. <code>SELECT * FROM orders</code>) resolve against the current catalog and database. Fully qualified references (<code>my_catalog.my_db.orders</code>) always work regardless of current context.</p>
+            <div class="table-wrap"><table><thead><tr><th>Level</th><th>SQL</th><th>Description</th></tr></thead><tbody>
+            <tr><td>Catalog</td><td><code>SHOW CATALOGS</code></td><td>Top-level namespace. Multiple catalogs can coexist.</td></tr>
+            <tr><td>Database</td><td><code>SHOW DATABASES</code></td><td>Groups tables within a catalog.</td></tr>
+            <tr><td>Table/View</td><td><code>SHOW TABLES</code></td><td>Tables and views within a database.</td></tr>
+            <tr><td>Column</td><td><code>DESCRIBE table_name</code></td><td>Column names, types, nullability, computed columns, watermarks.</td></tr>
+            </tbody></table></div>
+        </section>
+
+        <section class="doc-section" id="default-catalog">
+            <h2><span class="si">⊕</span> Default Catalog</h2>
+            <p>Every Flink session starts with the <strong>default_catalog</strong> containing a single <strong>default</strong> database. Tables created without specifying a catalog live here. They are session-scoped (TEMPORARY) unless explicitly registered with a persistent catalog.</p>
+            <pre><code>-- Always available after connecting:
+SHOW CATALOGS;      -- returns: default_catalog
+SHOW DATABASES;     -- returns: default
+SHOW TABLES;        -- returns: tables created in this session
+
+-- Switch context:
+USE CATALOG default_catalog;
+USE `default`;
+
+-- Create a persistent database:
+CREATE DATABASE IF NOT EXISTS analytics;
+USE analytics;</code></pre>
+            <div class="callout info"><span class="callout-icon">ℹ</span><div class="callout-body"><strong>Session-scoped vs persistent</strong> <code>CREATE TEMPORARY TABLE</code> lives only for the current session. <code>CREATE TABLE</code> (without TEMPORARY) is registered in the current catalog — if that catalog is persistent (Hive, Iceberg, JDBC), the table survives session restarts.</div></div>
+        </section>
+
+        <section class="doc-section" id="sidebar">
+            <h2><span class="si">📂</span> Sidebar Browser</h2>
+            <p>The <strong>CATALOG</strong> tab in the left sidebar shows the live catalog tree for the connected Flink session. It displays:</p>
+            <ul class="doc-ul">
+                <li><strong>Catalogs</strong> — all registered catalogs (bold, catalog icon).</li>
+                <li><strong>Databases</strong> — expandable under each catalog.</li>
+                <li><strong>Tables and Views</strong> — listed under each database.</li>
+                <li><strong>Columns</strong> — click any table to expand and see its column names and types.</li>
+            </ul>
+            <p>Click any table or column name to insert it at the cursor position in the SQL editor.</p>
+        </section>
+
+        <section class="doc-section" id="refresh">
+            <h2><span class="si">⟳</span> Refresh & Navigation</h2>
+            <ul class="doc-ul">
+                <li><strong>⟳ Catalog</strong> button in the topbar — refreshes the sidebar catalog tree against the live session.</li>
+                <li><strong>⟳</strong> icon within the sidebar panel — same action.</li>
+                <li>The sidebar auto-refreshes after any DDL statement (CREATE TABLE, DROP TABLE, USE CATALOG, etc.).</li>
+            </ul>
+            <p>The <strong>status bar</strong> at the bottom shows the current <code>catalog.database</code> context, e.g. <code>catalog: default_catalog.default</code>. This updates automatically when you run <code>USE CATALOG</code> or <code>USE database</code>.</p>
+        </section>
+
+        <section class="doc-section" id="insert-ddl">
+            <h2><span class="si">✏</span> Insert DDL Snippets</h2>
+            <p>The sidebar has two quick-action buttons above the tree:</p>
+            <ul class="doc-ul">
+                <li><strong>＋ Catalog</strong> — inserts a <code>CREATE CATALOG</code> template at the cursor.</li>
+                <li><strong>＋ Database</strong> — inserts a <code>CREATE DATABASE IF NOT EXISTS</code> template at the cursor.</li>
+            </ul>
+            <p>Additionally, the <strong>Snippets</strong> library (✂ Snippets in the topbar → SETUP category) contains:</p>
+            <ul class="doc-ul">
+                <li><strong>Use Default Catalog</strong> — <code>USE CATALOG default_catalog; USE \`default\`;</code></li>
+                <li><strong>Create In-Memory Catalog</strong> — full template for a generic catalog.</li>
+                <li><strong>Use Hive Catalog</strong> — full Hive Metastore catalog creation template.</li>
+            </ul>
+        </section>
+
+        <section class="doc-section" id="catalog-manager">
+            <h2><span class="si">⊕</span> Catalog Manager</h2>
+            <p>The <strong>⊕ Catalogs</strong> button in the topbar opens the <strong>Catalog Manager</strong> — a guided modal for registering external catalogs without writing SQL by hand.</p>
+            <div class="feature-grid">
+                <div class="feature-card"><span class="fci">📦</span><h3>Register Catalog</h3><p>Select catalog type (Hive, Iceberg, Paimon, JDBC, Generic), fill in connection details, and click Register. The SQL is generated and executed automatically.</p></div>
+                <div class="feature-card"><span class="fci">📋</span><h3>Registered Catalogs</h3><p>Lists all catalogs currently registered in the session. Click any catalog to switch to it (<code>USE CATALOG</code>).</p></div>
+                <div class="feature-card"><span class="fci">🔍</span><h3>Browse</h3><p>After registering, the sidebar catalog tree updates automatically. Expand the new catalog to browse its databases and tables.</p></div>
+                <div class="feature-card"><span class="fci">🗑</span><h3>Drop Catalog</h3><p>Remove a registered catalog from the session with confirmation. This does not delete the underlying data.</p></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="register-catalog">
+            <h2><span class="si">＋</span> Registering Catalogs</h2>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Open Catalog Manager</h4><p>Click <strong>⊕ Catalogs</strong> in the topbar.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Select catalog type</h4><p>Choose from: In-Memory, Hive Metastore, Iceberg, Paimon, JDBC Catalog, or Generic.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Fill in connection details</h4><p>Each type shows the relevant fields — Metastore URI for Hive, warehouse path for Iceberg, JDBC URL for JDBC Catalog, etc.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Register</h4><p>Click <strong>Register Catalog</strong>. Studio generates the <code>CREATE CATALOG</code> SQL and executes it. The catalog appears in the sidebar immediately.</p></div></div>
+                <div class="step"><div class="step-num">5</div><div class="step-body"><h4>Switch context</h4><p>Click the new catalog in the list (or run <code>USE CATALOG catalog_name;</code>) to switch to it. All unqualified table references now resolve from this catalog.</p></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="in-memory">
+            <h2><span class="si">💾</span> In-Memory Catalog</h2>
+            <p>The built-in Generic In-Memory catalog stores table metadata in the Flink session's JVM memory. Useful for creating persistent aliases without a real Metastore — but data is lost when the session ends.</p>
+            <pre><code>CREATE CATALOG my_catalog WITH (
+  'type' = 'generic_in_memory'
+);
+USE CATALOG my_catalog;
+CREATE DATABASE analytics;
+USE analytics;</code></pre>
+        </section>
+
+        <section class="doc-section" id="hive">
+            <h2><span class="si">🐝</span> Hive Metastore</h2>
+            <p>Connect Flink to an existing Hive Metastore to read and write Hive tables, share metadata with Spark/Trino, and persist table definitions across sessions.</p>
+            <h3>Prerequisites</h3>
+            <ul class="doc-ul">
+                <li>Hive Metastore service running and reachable from Flink containers.</li>
+                <li><code>flink-sql-connector-hive-3.1.3_2.12-1.19.jar</code> in <code>/opt/flink/lib/</code> on all containers.</li>
+                <li><code>hive-exec-3.1.3.jar</code> in <code>/opt/flink/lib/</code>.</li>
+                <li><code>hive-site.xml</code> accessible from Flink containers (copy to <code>/opt/flink/conf/</code>).</li>
+            </ul>
+            <pre><code>CREATE CATALOG hive_catalog WITH (
+  'type'              = 'hive',
+  'hive-conf-dir'     = '/opt/flink/conf',      -- directory containing hive-site.xml
+  'hive-version'      = '3.1.3',
+  'default-database'  = 'default'
+);
+USE CATALOG hive_catalog;
+SHOW DATABASES;   -- shows Hive databases
+SHOW TABLES;      -- shows Hive tables</code></pre>
+            <div class="callout warn"><span class="callout-icon">⚠</span><div class="callout-body"><strong>hive-site.xml must be on the Flink container</strong> The Flink SQL Gateway (not your laptop or the Studio browser) needs to read <code>hive-site.xml</code>. Mount it as a ConfigMap in Kubernetes or copy it into the container at <code>/opt/flink/conf/hive-site.xml</code>.</div></div>
+        </section>
+
+        <section class="doc-section" id="iceberg">
+            <h2><span class="si">🧊</span> Iceberg</h2>
+            <p>Apache Iceberg provides ACID-compliant, schema-evolving tables stored in object storage. Flink can read and write Iceberg tables using the Iceberg Flink runtime JAR.</p>
+            <h3>Prerequisites</h3>
+            <ul class="doc-ul">
+                <li><code>iceberg-flink-runtime-1.19-1.6.1.jar</code> in <code>/opt/flink/lib/</code></li>
+                <li>Object storage (S3/MinIO/HDFS) accessible from Flink containers</li>
+                <li>Hadoop filesystem JARs if using S3A</li>
+            </ul>
+            <div class="tab-group">
+                <div class="tab-nav">
+                    <button class="tab-btn active" onclick="switchTab(this,'ice-s3')">S3 / MinIO</button>
+                    <button class="tab-btn" onclick="switchTab(this,'ice-hive')">Hive Catalog backend</button>
+                    <button class="tab-btn" onclick="switchTab(this,'ice-jdbc')">JDBC Catalog backend</button>
+                </div>
+                <div id="ice-s3" class="tab-pane active"><pre><code>CREATE CATALOG iceberg_catalog WITH (
+  'type'            = 'iceberg',
+  'catalog-type'    = 'hadoop',
+  'warehouse'       = 's3a://my-bucket/warehouse',
+  'property-version'= '1'
+);
+USE CATALOG iceberg_catalog;
+CREATE DATABASE analytics;
+USE analytics;
+
+CREATE TABLE events (
+  id     BIGINT,
+  payload STRING,
+  ts     TIMESTAMP(6)
+) WITH (
+  'format-version' = '2',
+  'write.upsert.enabled' = 'true'
+);</code></pre></div>
+                <div id="ice-hive" class="tab-pane"><pre><code>-- Iceberg using Hive Metastore as catalog backend
+CREATE CATALOG iceberg_hive WITH (
+  'type'         = 'iceberg',
+  'catalog-type' = 'hive',
+  'uri'          = 'thrift://hive-metastore:9083',
+  'warehouse'    = 's3a://my-bucket/warehouse'
+);</code></pre></div>
+                <div id="ice-jdbc" class="tab-pane"><pre><code>-- Iceberg using JDBC as catalog backend (PostgreSQL)
+CREATE CATALOG iceberg_jdbc WITH (
+  'type'         = 'iceberg',
+  'catalog-type' = 'jdbc',
+  'uri'          = 'jdbc:postgresql://postgres:5432/iceberg_catalog',
+  'jdbc.user'    = 'iceberg',
+  'jdbc.password'= 'secret',
+  'warehouse'    = 's3a://my-bucket/warehouse'
+);</code></pre></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="paimon">
+            <h2><span class="si">🗃</span> Apache Paimon</h2>
+            <p>Paimon is a streaming data lakehouse format with native Flink integration. It supports primary-key tables with upserts, partial updates, and changelog generation.</p>
+            <h3>Prerequisites</h3>
+            <ul class="doc-ul">
+                <li><code>paimon-flink-1.19-0.8.jar</code> in <code>/opt/flink/lib/</code></li>
+            </ul>
+            <pre><code>CREATE CATALOG paimon_catalog WITH (
+  'type'      = 'paimon',
+  'warehouse' = 's3://my-bucket/paimon'
+);
+USE CATALOG paimon_catalog;
+CREATE DATABASE IF NOT EXISTS ods;
+USE ods;
+
+-- Primary key table with changelog
+CREATE TABLE orders (
+  order_id BIGINT,
+  status   STRING,
+  amount   DECIMAL(18,2),
+  updated_at TIMESTAMP(3),
+  PRIMARY KEY (order_id) NOT ENFORCED
+) WITH (
+  'bucket'            = '4',
+  'changelog-producer'= 'lookup'
+);</code></pre>
+        </section>
+
+        <section class="doc-section" id="jdbc-catalog">
+            <h2><span class="si">🗄</span> JDBC Catalog</h2>
+            <p>The JDBC Catalog reads table metadata directly from a relational database's information schema. Table and column definitions stay in sync with the database automatically.</p>
+            <pre><code>CREATE CATALOG pg_catalog WITH (
+  'type'                 = 'jdbc',
+  'default-database'     = 'mydb',
+  'username'             = 'flink_user',
+  'password'             = 'secret',
+  'base-url'             = 'jdbc:postgresql://postgres:5432'
+);
+USE CATALOG pg_catalog;
+USE mydb;
+SHOW TABLES;   -- shows PostgreSQL tables in mydb</code></pre>
+            <div class="callout info"><span class="callout-icon">ℹ</span><div class="callout-body"><strong>JDBC Catalog vs JDBC connector</strong> The <em>JDBC Catalog</em> manages table <em>metadata</em> (CREATE TABLE definitions pulled from the DB). The <em>JDBC connector</em> manages data <em>reads and writes</em>. You need both the catalog JAR and the connector JAR for full read/write access.</div></div>
+        </section>
+
+        <section class="doc-section" id="glue">
+            <h2><span class="si">☁</span> AWS Glue Data Catalog</h2>
+            <p>On Amazon Managed Apache Flink (formerly Kinesis Data Analytics), the AWS Glue catalog is available as a Hive-compatible catalog.</p>
+            <pre><code>-- On Amazon Managed Apache Flink only
+CREATE CATALOG glue_catalog WITH (
+  'type'          = 'hive',
+  'hive-conf-dir' = '/glue/confs',
+  'default-database' = 'default'
+);</code></pre>
+            <div class="callout warn"><span class="callout-icon">⚠</span><div class="callout-body"><strong>Managed Flink specifics</strong> On Amazon Managed Apache Flink, the Glue connector is bundled. Refer to the <a href="https://docs.aws.amazon.com/managed-flink/" target="_blank">AWS documentation</a> for the exact configuration for your runtime version.</div></div>
+        </section>
+
+        <section class="doc-section" id="sql-reference">
+            <h2><span class="si">⟨/⟩</span> SQL Reference</h2>
+            <div class="table-wrap"><table><thead><tr><th>Statement</th><th>Description</th></tr></thead><tbody>
+            <tr><td><code>SHOW CATALOGS</code></td><td>List all registered catalogs in the session</td></tr>
+            <tr><td><code>SHOW CURRENT CATALOG</code></td><td>Display the currently active catalog</td></tr>
+            <tr><td><code>USE CATALOG name</code></td><td>Switch the current catalog</td></tr>
+            <tr><td><code>SHOW DATABASES</code></td><td>List databases in current catalog</td></tr>
+            <tr><td><code>CREATE DATABASE IF NOT EXISTS db</code></td><td>Create a new database</td></tr>
+            <tr><td><code>USE db</code></td><td>Switch the current database</td></tr>
+            <tr><td><code>SHOW TABLES</code></td><td>List tables in current catalog.database</td></tr>
+            <tr><td><code>SHOW VIEWS</code></td><td>List views in current catalog.database</td></tr>
+            <tr><td><code>DESCRIBE table_name</code></td><td>Show column names, types, and attributes</td></tr>
+            <tr><td><code>SHOW CREATE TABLE name</code></td><td>Show the DDL that created the table</td></tr>
+            <tr><td><code>DROP TABLE IF EXISTS name</code></td><td>Remove a table from the catalog</td></tr>
+            <tr><td><code>DROP CATALOG IF EXISTS name</code></td><td>Remove a registered catalog (does not delete data)</td></tr>
+            <tr><td><code>ALTER TABLE name RENAME TO new</code></td><td>Rename a table (persistent catalogs only)</td></tr>
+            </tbody></table></div>
+        </section>
+
+        <section class="doc-section" id="status-bar">
+            <h2><span class="si">⊞</span> Status Bar</h2>
+            <p>The bottom status bar always shows the current catalog and database context: <code>catalog: default_catalog.default</code>. This is updated automatically whenever you run <code>USE CATALOG</code> or <code>USE database_name</code>. It provides a constant reminder of where unqualified table references will resolve.</p>
+            <div class="callout tip"><span class="callout-icon">💡</span><div class="callout-body"><strong>Always confirm your context</strong> Before running DDL like CREATE TABLE, check the status bar to ensure you're in the correct catalog and database. A table created in the wrong context may not be visible to your pipeline queries.</div></div>
+        </section>
+
+        <section class="doc-section" id="tutorial-hive">
+            <h2><span class="si">①</span> Tutorial — Register a Hive Metastore Catalog</h2>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Deploy JARs</h4><p>Copy <code>flink-sql-connector-hive-3.1.3_2.12-1.19.jar</code> and <code>hive-exec-3.1.3.jar</code> to <code>/opt/flink/lib/</code> on all containers.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Mount hive-site.xml</h4><p>Copy your <code>hive-site.xml</code> to <code>/opt/flink/conf/hive-site.xml</code> on the SQL Gateway container. The key property is <code>hive.metastore.uris=thrift://hive-metastore:9083</code>.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Open Catalog Manager in Studio</h4><p>Click <strong>⊕ Catalogs</strong> → Register Catalog → Type: Hive Metastore. Enter name: <code>hive_catalog</code>, Hive conf dir: <code>/opt/flink/conf</code>, Hive version: <code>3.1.3</code>.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Click Register</h4><p>Studio generates and runs the <code>CREATE CATALOG</code> SQL. The sidebar refreshes and shows the Hive catalog with all its databases and tables.</p></div></div>
+                <div class="step"><div class="step-num">5</div><div class="step-body"><h4>Switch to the catalog</h4><p>Click <code>hive_catalog</code> in the list (or <code>USE CATALOG hive_catalog</code>) and then use the sidebar to browse Hive tables. Click any table name to insert it into the editor.</p></div></div>
+            </div>
+        </section>
+
+        <section class="doc-section" id="tutorial-iceberg">
+            <h2><span class="si">②</span> Tutorial — Create an Iceberg Table on MinIO</h2>
+            <div class="steps">
+                <div class="step"><div class="step-num">1</div><div class="step-body"><h4>Configure S3A for MinIO</h4><p>Add to your Flink <code>config.yaml</code>: <code>fs.s3a.endpoint: http://minio:9000</code>, <code>fs.s3a.access.key: minioadmin</code>, <code>fs.s3a.secret.key: minioadmin</code>, <code>fs.s3a.path.style.access: true</code>.</p></div></div>
+                <div class="step"><div class="step-num">2</div><div class="step-body"><h4>Add Iceberg JAR</h4><p>Copy <code>iceberg-flink-runtime-1.19-1.6.1.jar</code> to <code>/opt/flink/lib/</code> on all containers and restart.</p></div></div>
+                <div class="step"><div class="step-num">3</div><div class="step-body"><h4>Register catalog in Studio</h4><p>Open ⊕ Catalogs → Register Catalog → Type: Iceberg → Catalog type: hadoop, Warehouse: <code>s3a://my-bucket/warehouse</code>. Click Register.</p></div></div>
+                <div class="step"><div class="step-num">4</div><div class="step-body"><h4>Create a table</h4><p>In the SQL editor:<br><code>USE CATALOG iceberg_catalog;</code><br><code>CREATE DATABASE analytics;</code><br><code>USE analytics;</code><br><code>CREATE TABLE events (id BIGINT, payload STRING, ts TIMESTAMP(3)) WITH ('format-version'='2');</code></p></div></div>
+                <div class="step"><div class="step-num">5</div><div class="step-body"><h4>Write to the table</h4><p>Use a Pipeline Manager datagen → Iceberg sink pipeline or write directly: <code>INSERT INTO events SELECT * FROM source_table;</code>. Confirm: <code>SELECT * FROM events LIMIT 10;</code></p></div></div>
+            </div>
+        </section>
+
+    </main>
+</div>
+
+<footer>
+    <p>Str:::lab Studio · Catalog Management · <a href="index.html">Back to Overview</a></p>
+    <p>Created by <a href="https://www.linkedin.com/in/nestor-abiangang/" target="_blank">Nestor Martourez A. A</a> · MIT License</p>
+</footer>
+<script>function switchTab(btn,id){const g=btn.closest('.tab-group');g.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));g.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById(id).classList.add('active');}
+const obs=new IntersectionObserver(e=>{e.forEach(en=>{if(en.isIntersecting){document.querySelectorAll('.toc a').forEach(l=>l.classList.remove('active'));const lk=document.querySelector('.toc a[href="#'+en.target.id+'"]');if(lk)lk.classList.add('active');}});},{rootMargin:'-15% 0px -60% 0px'});document.querySelectorAll('.doc-section').forEach(s=>obs.observe(s));</script>
+</body>
+</html>
