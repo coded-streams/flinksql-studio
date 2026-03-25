@@ -124,14 +124,14 @@ SELECT my_python_fn(input_column) FROM your_table;`,
                 desc: 'No JAR, no ADD JAR, no registration. Works with any Flink version.',
                 lang: 'SQL',
                 sql: `SELECT
-  id,
-  score,
-  CASE
-    WHEN score >= 0.80 THEN 'HIGH'
-    WHEN score >= 0.40 THEN 'MEDIUM'
-    ELSE 'LOW'
-  END AS category
-FROM your_table;`,
+                          id,
+                          score,
+                          CASE
+                              WHEN score >= 0.80 THEN 'HIGH'
+                              WHEN score >= 0.40 THEN 'MEDIUM'
+                              ELSE 'LOW'
+                              END AS category
+                      FROM your_table;`,
             },
         ],
     },

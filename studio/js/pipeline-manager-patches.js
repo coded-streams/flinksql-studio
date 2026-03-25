@@ -161,36 +161,93 @@
     }
 
     // ── 4. CATALOG SIDEBAR REFRESH AFTER CREATE CATALOG ────────────────────
+    // Fix _catProbeViaFlink: state.gateway may be an object not a string
+    const _origProbe = window._catProbeViaFlink;
+    if (typeof _catProbeViaFlink === 'function') {
+        window._catProbeViaFlink = async function(host, port, label) {
+            try {
+                // state.gateway can be string or {baseUrl:...} object
+                const gwBase = (typeof state !== 'undefined' && state?.gateway)
+                    ? ((typeof state.gateway === 'string') ? state.gateway : (state.gateway.baseUrl || ''))
+                    : window.location.origin;
+                const cleanBase = gwBase.replace(/\/+$/, '').replace(/\/v1$/, '');
+                const r = await fetch(cleanBase + '/v1/info', { signal: AbortSignal.timeout(4000) });
+                if (r.ok || r.status < 500) {
+                    return {
+                            ok: true,
+                            msg: 'Flink cluster reachable ✓ — ' + label + ' probe sent',
+                            detail: 'Flink is up. Test ' + label + ' reachability from inside the container:
+                            '
+                        + 'docker exec <flink-container> bash -c "nc -zv ' + host + ' ' + port + ' && echo OPEN || echo CLOSED"'
+                };
+                }
+                return { ok: false, msg: 'Flink cluster returned HTTP ' + r.status };
+            } catch(e) {
+                return {
+                    ok: false,
+                    msg: 'Flink cluster unreachable: ' + (e.message || 'timeout'),
+                    detail: 'Test ' + label + ' from your terminal:
+                    nc -zv ' + host + ' ' + port
+                };
+            }
+        };
+        console.log('[PLM Patches] _catProbeViaFlink patched (gateway object fix)');
+    }
+
     // Patch _catExecute to call refreshCatalog + update topbar after success
-    const _origCatExec = window._catExecute;
-    if (typeof _origCatExec === 'function' && !_origCatExec._sidebarPatched) {
+    function _patchCatExecute() {
+        if (typeof window._catExecute !== 'function') return false;
+        if (window._catExecute._sidebarPatched) return true;
+        const _origCatExec = window._catExecute;
         window._catExecute = async function() {
             await _origCatExec.apply(this, arguments);
             // Give Flink a moment then refresh sidebar
             setTimeout(() => {
-                if (typeof refreshCatalog === 'function') refreshCatalog();
-                // Update catalog status bar if it exists
                 const name = (document.getElementById('cat-name-input')?.value || '').trim();
                 const switchAfter = document.getElementById('cat-switch-after')?.value || 'yes';
+                // Always refresh the catalog sidebar tree
+                if (typeof refreshCatalog === 'function') {
+                    refreshCatalog();
+                }
                 if (name && switchAfter === 'yes') {
-                    if (typeof updateCatalogStatus === 'function') updateCatalogStatus(name, 'default');
-                    // Update state
+                    // Update global state so topbar shows correct catalog
                     if (typeof state !== 'undefined') {
                         state.activeCatalog  = name;
                         state.activeDatabase = 'default';
                     }
-                    // Update any topbar catalog display elements
-                    const catDisplay = document.getElementById('active-catalog-display')
-                        || document.getElementById('catalog-status')
-                        || document.querySelector('[data-catalog-name]');
-                    if (catDisplay) {
-                        catDisplay.textContent = name;
-                        catDisplay.dataset.catalogName = name;
+                    // Try standard updateCatalogStatus function
+                    if (typeof updateCatalogStatus === 'function') {
+                        updateCatalogStatus(name, 'default');
                     }
+                    // Update topbar catalog text elements by common IDs/selectors
+                    const selectors = [
+                        '#active-catalog-display', '#catalog-status', '#topbar-catalog',
+                        '[data-catalog-name]', '.catalog-indicator', '#current-catalog'
+                    ];
+                    selectors.forEach(sel => {
+                        try {
+                            const el = document.querySelector(sel);
+                            if (el) {
+                                el.textContent = name;
+                                if (el.dataset) el.dataset.catalogName = name;
+                            }
+                        } catch(_) {}
+                    });
+                    // Force catalog browser sidebar refresh (alternate function names)
+                    ['refreshCatalogBrowser','loadCatalogTree','buildCatalogTree'].forEach(fn => {
+                        if (typeof window[fn] === 'function') {
+                            try { window[fn](); } catch(_) {}
+                        }
+                    });
                 }
-            }, 800);
+            }, 900);
         };
         window._catExecute._sidebarPatched = true;
+        return true;
+    }
+    if (!_patchCatExecute()) {
+        // catalog-manager.js may not be loaded yet — retry
+        const _catPatchTimer = setInterval(() => { if (_patchCatExecute()) clearInterval(_catPatchTimer); }, 400);
     }
 
     // ── INIT: retry until pipeline modal exists ─────────────────────────────

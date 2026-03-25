@@ -390,6 +390,23 @@ const PM_OPERATORS = [
       {id:'udf_function',label:'UDF Name (if Otter Streams)',type:'text',placeholder:'fraud_score'},
     ],
   },
+
+  { id:'feature_store', group:'My UDFs', label:'Feature Store', color:'#1a5c7a', textColor:'#fff', shape:'hexagon',
+    icon:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v4c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 10v4c0 1.7 3.6 3 8 3s8-1.3 8-3v-4"/></svg>`,
+    isSource:false, stateful:false, needsConnector:false,
+    params:[
+      {id:'table_name',label:'Output View Name',type:'text',required:true,placeholder:'enriched_with_features'},
+      {id:'store_type',label:'Feature Store Type',type:'select',options:['Feast','Hopsworks','Tecton','AWS SageMaker FS','Vertex AI FS','Redis (custom)','PostgreSQL (custom)'],value:'Feast'},
+      {id:'feature_service',label:'Feature Service / View',type:'text',required:true,placeholder:'user_fraud_features'},
+      {id:'entity_key',label:'Entity Key Column',type:'text',required:true,placeholder:'user_id'},
+      {id:'endpoint',label:'Store Endpoint / URL',type:'text',placeholder:'http://feast-server:6566'},
+      {id:'project',label:'Project / Namespace',type:'text',placeholder:'fraud_detection'},
+      {id:'features',label:'Features to Fetch (comma-sep)',type:'textarea',placeholder:'avg_tx_1h, tx_count_24h, risk_band'},
+      {id:'lookup_timeout',label:'Lookup Timeout (ms)',type:'text',placeholder:'200'},
+      {id:'cache_ttl',label:'Client-side Cache TTL (ms)',type:'text',placeholder:'60000'},
+      {id:'passthrough_cols',label:'Passthrough Columns',type:'text',placeholder:'id, ts, amount'},
+    ],
+  },
   { id:'udf_node', group:'My UDFs', label:'UDF Function', color:'#3a2a6a', textColor:'#fff', shape:'parallelogram',
     icon:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 17l6-6-6-6"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
     isSource:false, stateful:false, needsConnector:false,
@@ -515,11 +532,8 @@ function _plmBuildModal() {
       <button class="plm-toolbar-btn" onclick="_plmSaveAsProject()" title="Save as Project" style="color:var(--accent);border-color:rgba(0,212,170,0.3);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg> Save
       </button>
-      <!-- ★ NEW: AI Build button -->
-      <button class="plm-toolbar-btn" onclick="_plmOpenAiBuilder()" title="Build pipeline with AI" style="color:#b06dff;border-color:rgba(176,109,255,0.35);background:rgba(176,109,255,0.06);">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/><path d="M4 20a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="1" fill="currentColor"/></svg> AI Build
       </button>
-      <button class="plm-toolbar-btn" id="plm-run-btn" onclick="_plmToggleAnimation()" style="color:var(--green);border-color:rgba(87,198,100,0.3);">
+      <button id="plm-run-btn" class="plm-toolbar-btn" onclick="_plmToggleAnimation()" style="color:var(--green);border-color:rgba(57,199,80,0.3);font-weight:600;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run
       </button>
       <button class="plm-toolbar-btn" onclick="_plmValidateAndSubmit()" style="color:var(--blue);border-color:rgba(79,163,224,0.3);">
@@ -581,7 +595,6 @@ function _plmBuildModal() {
           <div>⟳ Drag port → connect</div>
           <div>↔ Dbl-click edge</div>
           <div>⌦ Del to remove</div>
-          <div style="margin-top:4px;color:#b06dff;">✦ AI Build → describe it</div>
         </div>
       </div>
     </div>
@@ -609,7 +622,6 @@ function _plmBuildModal() {
       <div id="plm-canvas-empty" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;gap:10px;color:var(--text3);">
         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.2"><circle cx="5" cy="12" r="3"/><circle cx="19" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><line x1="8" y1="11.5" x2="16" y2="6.5"/><line x1="8" y1="12.5" x2="16" y2="17.5"/></svg>
         <div style="font-size:13px;">Drag operators from the palette</div>
-        <div style="font-size:11px;">or click <span style="color:#b06dff;font-weight:600;">✦ AI Build</span> to describe your pipeline</div>
       </div>
       <button id="plm-float-stop-btn" onclick="_plmForceStop()"
         style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:30;
@@ -714,9 +726,6 @@ function _plmBuildModal() {
 .plm-cfg-header{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .plm-cfg-body{flex:1;overflow-y:auto;padding:14px;}
 .plm-cfg-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;background:var(--bg1);}
-/* AI Builder styles */
-.plm-ai-example-btn{font-size:10px;padding:4px 10px;border-radius:12px;background:rgba(176,109,255,0.08);border:1px solid rgba(176,109,255,0.25);color:#b06dff;cursor:pointer;transition:all 0.12s;text-align:left;line-height:1.4;}
-.plm-ai-example-btn:hover{background:rgba(176,109,255,0.18);border-color:rgba(176,109,255,0.5);}
     `;
     document.head.appendChild(s);
   }
@@ -733,410 +742,6 @@ function _plmBuildModal() {
 // ★ AI PIPELINE BUILDER — NEW IN v2.1
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function _plmOpenAiBuilder() {
-  const old = document.getElementById('plm-ai-modal');
-  if (old) { old._plmDragCleanup?.(); old.remove(); return; }
-
-  // Read saved API key
-  let savedKey = '';
-  try { savedKey = localStorage.getItem('strlabstudio_anthropic_key') || ''; } catch(_) {}
-
-  const modal = document.createElement('div');
-  modal.id = 'plm-ai-modal';
-  modal.style.cssText = [
-    'position:fixed','z-index:10004',
-    'background:var(--bg2)',
-    'border:1px solid rgba(176,109,255,0.45)',
-    'border-radius:10px',
-    'box-shadow:0 16px 60px rgba(176,109,255,0.18),0 4px 24px rgba(0,0,0,0.6)',
-    'width:540px','max-height:88vh',
-    'display:flex','flex-direction:column','overflow:hidden',
-    'left:50%','top:50%','transform:translate(-50%,-50%)',
-  ].join(';');
-
-  const examples = [
-    'Kafka source → filter high-value orders → tumble window 1 min SUM COUNT → Kafka sink',
-    'Datagen source → UDF fraud scorer → top-3 per user → Elasticsearch sink',
-    'Kafka → interval join with JDBC orders table → dedup by order_id → PostgreSQL sink',
-    'Kafka orders + Kafka payments → union → session window 30s → print sink',
-    'Datagen → MATCH_RECOGNIZE fraud pattern → CEP alert → Kafka sink',
-  ];
-
-  modal.innerHTML = `
-    <div class="plm-cfg-header" style="background:rgba(176,109,255,0.07);border-bottom:1px solid rgba(176,109,255,0.25);cursor:move;">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b06dff" stroke-width="2">
-        <path d="M12 2a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4z"/>
-        <path d="M4 20a8 8 0 0 1 16 0"/>
-        <circle cx="12" cy="10" r="1.5" fill="#b06dff"/>
-      </svg>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;color:var(--text0);">AI Pipeline Builder</div>
-        <div style="font-size:9px;color:#b06dff;letter-spacing:0.8px;text-transform:uppercase;">Powered by Claude · Describe → Generate → Build</div>
-      </div>
-      <button id="plm-ai-settings-toggle" onclick="_plmAiToggleSettings()" title="API Key Settings"
-        style="background:none;border:1px solid rgba(176,109,255,0.3);border-radius:4px;color:#b06dff;cursor:pointer;font-size:10px;padding:3px 8px;margin-right:6px;">⚙ API Key</button>
-      <button onclick="document.getElementById('plm-ai-modal')._plmDragCleanup?.();document.getElementById('plm-ai-modal').remove()"
-        style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;">×</button>
-    </div>
-
-    <!-- API Key panel (hidden by default if key already saved) -->
-    <div id="plm-ai-key-panel" style="display:${savedKey?'none':'block'};padding:12px 16px;background:rgba(176,109,255,0.04);border-bottom:1px solid rgba(176,109,255,0.2);">
-      <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:600;">
-        Anthropic API Key
-        <span style="font-weight:400;color:var(--text3);"> — stored locally in your browser only</span>
-      </div>
-      <div style="display:flex;gap:6px;">
-        <input id="plm-ai-key-input" type="password" class="field-input"
-          value="${savedKey}"
-          placeholder="sk-ant-api03-…"
-          style="flex:1;font-size:11px;font-family:var(--mono);" />
-        <button onclick="_plmAiSaveKey()"
-          style="padding:5px 12px;font-size:11px;font-weight:600;border-radius:4px;border:none;background:#b06dff;color:#fff;cursor:pointer;">Save</button>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.6;">
-        Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:#b06dff;">console.anthropic.com/settings/keys</a>
-      </div>
-    </div>
-
-    <div style="flex:1;overflow-y:auto;padding:16px;">
-
-      <!-- Example prompts -->
-      <div style="margin-bottom:14px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:7px;">✦ Example prompts — click to use</div>
-        <div style="display:flex;flex-direction:column;gap:5px;">
-          ${examples.map(ex => `
-            <button class="plm-ai-example-btn"
-              onclick="document.getElementById('plm-ai-prompt').value=this.dataset.ex;document.getElementById('plm-ai-prompt').focus();"
-              data-ex="${ex.replace(/"/g,'&quot;')}">
-              ${ex}
-            </button>`).join('')}
-        </div>
-      </div>
-
-      <!-- Main prompt -->
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:10px;color:var(--text2);margin-bottom:5px;font-weight:700;letter-spacing:0.3px;">
-          Describe your pipeline *
-        </label>
-        <textarea id="plm-ai-prompt" style="width:100%;box-sizing:border-box;min-height:100px;resize:vertical;
-          background:var(--bg0);border:1px solid rgba(176,109,255,0.3);border-radius:6px;
-          color:var(--text0);font-family:var(--mono);font-size:12px;padding:10px;outline:none;line-height:1.65;
-          transition:border-color 0.15s;"
-          onfocus="this.style.borderColor='rgba(176,109,255,0.7)'"
-          onblur="this.style.borderColor='rgba(176,109,255,0.3)'"
-          placeholder="e.g. Read from Kafka topic 'orders', filter orders above $500, apply a fraud scoring UDF called classify_risk, aggregate count and sum per user per minute using a tumble window, write results to PostgreSQL table public.results"></textarea>
-      </div>
-
-      <!-- Options row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-        <div>
-          <label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Kafka Bootstrap (optional)</label>
-          <input id="plm-ai-kafka" class="field-input" type="text" placeholder="kafka:9092" style="font-size:11px;font-family:var(--mono);" />
-        </div>
-        <div>
-          <label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Canvas Layout</label>
-          <select id="plm-ai-layout" class="field-input" style="font-size:11px;">
-            <option value="horizontal">Horizontal (left → right)</option>
-            <option value="vertical">Vertical (top → down)</option>
-          </select>
-        </div>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-        <input type="checkbox" id="plm-ai-clear" checked style="cursor:pointer;accent-color:#b06dff;" />
-        <label for="plm-ai-clear" style="font-size:11px;color:var(--text2);cursor:pointer;">Clear canvas before building</label>
-      </div>
-
-      <!-- Status output -->
-      <div id="plm-ai-status" style="display:none;padding:12px 14px;border-radius:6px;font-size:11px;
-        font-family:var(--mono);line-height:1.75;white-space:pre-wrap;word-break:break-word;"></div>
-    </div>
-
-    <div style="padding:12px 16px;border-top:1px solid rgba(176,109,255,0.2);display:flex;gap:8px;
-      justify-content:flex-end;background:var(--bg1);flex-shrink:0;">
-      <button onclick="document.getElementById('plm-ai-modal')._plmDragCleanup?.();document.getElementById('plm-ai-modal').remove()"
-        style="padding:7px 16px;font-size:12px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--text1);cursor:pointer;">Cancel</button>
-      <button id="plm-ai-build-btn" onclick="_plmAiBuild()"
-        style="padding:7px 22px;font-size:12px;font-weight:700;border-radius:5px;border:none;
-        background:linear-gradient(135deg,#b06dff,#7a3aff);color:#fff;cursor:pointer;
-        display:flex;align-items:center;gap:7px;box-shadow:0 2px 12px rgba(176,109,255,0.35);">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-        Build Pipeline
-      </button>
-    </div>`;
-
-  document.body.appendChild(modal);
-  _plmMakeDraggable(modal);
-  setTimeout(() => document.getElementById('plm-ai-prompt')?.focus(), 80);
-}
-
-function _plmAiToggleSettings() {
-  const panel = document.getElementById('plm-ai-key-panel');
-  if (panel) panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
-
-function _plmAiSaveKey() {
-  const key = (document.getElementById('plm-ai-key-input')?.value || '').trim();
-  if (!key) { toast('Enter your API key first', 'warn'); return; }
-  try { localStorage.setItem('strlabstudio_anthropic_key', key); } catch(_) {}
-  document.getElementById('plm-ai-key-panel').style.display = 'none';
-  toast('API key saved', 'ok');
-}
-
-function _plmAiSetStatus(type, msg) {
-  const el = document.getElementById('plm-ai-status'); if (!el) return;
-  el.style.display = 'block';
-  const styles = {
-    info:    'rgba(79,163,224,0.06)|rgba(79,163,224,0.25)|var(--blue)',
-    ok:      'rgba(57,211,83,0.06)|rgba(57,211,83,0.25)|var(--green)',
-    err:     'rgba(255,77,109,0.06)|rgba(255,77,109,0.25)|var(--red)',
-    loading: 'rgba(176,109,255,0.06)|rgba(176,109,255,0.25)|#b06dff',
-  };
-  const [bg, bd, col] = (styles[type] || styles.info).split('|');
-  el.style.cssText = `display:block;padding:12px 14px;border-radius:6px;font-size:11px;font-family:var(--mono);line-height:1.75;white-space:pre-wrap;word-break:break-word;background:${bg};border:1px solid ${bd};color:${col};`;
-  el.textContent = msg;
-}
-
-async function _plmAiBuild() {
-  const prompt = (document.getElementById('plm-ai-prompt')?.value || '').trim();
-  if (!prompt) { toast('Enter a pipeline description first', 'warn'); return; }
-
-  // Check API key
-  let apiKey = '';
-  try { apiKey = localStorage.getItem('strlabstudio_anthropic_key') || ''; } catch(_) {}
-  if (!apiKey) {
-    document.getElementById('plm-ai-key-panel').style.display = 'block';
-    _plmAiSetStatus('err', '✗ No API key set.\nEnter your Anthropic API key above and click Save, then try again.');
-    return;
-  }
-
-  const btn    = document.getElementById('plm-ai-build-btn');
-  const kafka  = (document.getElementById('plm-ai-kafka')?.value || 'kafka:9092').trim();
-  const layout = document.getElementById('plm-ai-layout')?.value || 'horizontal';
-  const clear  = document.getElementById('plm-ai-clear')?.checked !== false;
-
-  if (btn) { btn.disabled = true; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Building…'; }
-  _plmAiSetStatus('loading', '🤖  Analysing pipeline description…\n\nClaude is designing your operator graph. This usually takes 5–10 seconds.');
-
-  // Build operator catalogue for the AI
-  const opCatalogue = PM_OPERATORS.map(o =>
-      `${o.id}|${o.group}|isSource=${!!o.isSource}|isSink=${!!o.isSink}|stateful=${!!o.stateful}|params=[${(o.params||[]).map(p=>p.id+(p.required?'*':'')).join(',')}]`
-  ).join('\n');
-
-  const systemPrompt = `You are an expert Apache Flink SQL pipeline architect working inside Str:::lab Studio Pipeline Manager.
-
-Your job: convert a plain-English description into a complete JSON pipeline canvas definition.
-
-AVAILABLE OPERATORS (id|group|isSource|isSink|stateful|params — * = required):
-${opCatalogue}
-
-STRICT OUTPUT RULES:
-1. Return ONLY a single valid JSON object. No markdown. No backticks. No explanation. No trailing text.
-2. JSON shape:
-{
-  "name": "descriptive pipeline name",
-  "nodes": [
-    {
-      "uid": "n1",
-      "opId": "kafka_source",
-      "label": "Orders Source",
-      "x": 50,
-      "y": 150,
-      "configured": true,
-      "summary": "orders · orders_src",
-      "params": {
-        "table_name": "orders_src",
-        "topic": "orders",
-        "bootstrap_servers": "${kafka}",
-        "format": "json",
-        "schema": "id BIGINT\\nuser_id BIGINT\\namount DOUBLE\\nts TIMESTAMP(3)",
-        "watermark": "ts",
-        "watermark_delay": "5"
-      }
-    }
-  ],
-  "edges": [
-    { "uid": "e1", "fromUid": "n1", "toUid": "n2", "edgeType": "forward" }
-  ]
-}
-
-PLACEMENT RULES (${layout} layout):
-${layout === 'horizontal'
-      ? '- x increases by 220 per step. y=150 for single chain, stagger by 120 for parallel branches.'
-      : '- y increases by 130 per step. x=300 for single chain, stagger by 200 for parallel branches.'}
-- First node always at x=50,y=150 (horizontal) or x=300,y=50 (vertical).
-
-EDGE TYPE SELECTION:
-- "hash"      → upstream of aggregate/window/dedup/topn/join nodes
-- "forward"   → all other connections
-- "rebalance" → after a source when balancing uneven loads
-- "broadcast" → only for broadcast joins with small dimension tables
-
-PARAM RULES:
-- Always set table_name (snake_case, no spaces).
-- schema: use \\n between column definitions (e.g. "id BIGINT\\npayload STRING\\nts TIMESTAMP(3)").
-- For kafka: bootstrap_servers = "${kafka}" unless user specified otherwise.
-- For jdbc: use a plausible jdbc_url like "jdbc:postgresql://postgres:5432/mydb".
-- Fill ALL required params (*) with sensible defaults.
-- summary: short string of key params for display (e.g. "orders · kafka:9092").
-- configured: true if all required params are filled.
-
-TOPOLOGY RULES:
-- Source nodes have NO incoming edges.
-- Sink nodes have NO outgoing edges.
-- Every non-source, non-sink node must have at least one incoming AND one outgoing edge.
-- uid values: nodes = "n1","n2","n3"… edges = "e1","e2","e3"…
-- Build the FULL pipeline — include all intermediate transform/window/join nodes the user described.`;
-
-  const userMsg = `Build this Flink pipeline: "${prompt}"
-Kafka bootstrap: ${kafka}
-Layout: ${layout}
-Return ONLY the JSON object.`;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type':         'application/json',
-        'x-api-key':            apiKey,
-        'anthropic-version':    '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system:     systemPrompt,
-        messages:   [{ role: 'user', content: userMsg }],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      let errMsg = `API error ${response.status}`;
-      try {
-        const errJson = JSON.parse(errText);
-        errMsg = errJson?.error?.message || errMsg;
-      } catch(_) {}
-      throw new Error(errMsg);
-    }
-
-    const data = await response.json();
-    const raw  = (data.content || []).map(b => b.type === 'text' ? b.text : '').join('').trim();
-
-    // Strip any accidental markdown fences
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-
-    let pipeline;
-    try {
-      pipeline = JSON.parse(cleaned);
-    } catch(parseErr) {
-      // Try to extract JSON object from the response
-      const match = cleaned.match(/\{[\s\S]*\}/);
-      if (match) {
-        pipeline = JSON.parse(match[0]);
-      } else {
-        throw new Error('Claude returned invalid JSON. Response preview:\n' + cleaned.slice(0, 200));
-      }
-    }
-
-    if (!pipeline.nodes || !Array.isArray(pipeline.nodes)) {
-      throw new Error('Invalid pipeline structure — missing nodes array.');
-    }
-
-    // Apply to canvas
-    if (clear) {
-      window._plmState.canvas.nodes = [];
-      window._plmState.canvas.edges = [];
-      window._plmState.canvas.pan   = { x: 0, y: 0 };
-      window._plmState.canvas.scale = 1.0;
-      window._plmState.uidCounter   = 1;
-      _plmStopAnimation();
-      window._plmState.animating = false;
-    }
-
-    // Validate + remap UIDs to avoid collisions
-    const uidMap = {};
-    (pipeline.nodes || []).forEach(n => {
-      const newUid = _plmUID();
-      uidMap[n.uid] = newUid;
-      // Validate opId
-      if (!PM_OPERATORS.find(o => o.id === n.opId)) {
-        console.warn('[AI Builder] Unknown opId:', n.opId, '— defaulting to filter');
-        n.opId = 'filter';
-      }
-      window._plmState.canvas.nodes.push({
-        uid:         newUid,
-        opId:        n.opId,
-        label:       n.label || n.opId,
-        x:           typeof n.x === 'number' ? n.x : 50,
-        y:           typeof n.y === 'number' ? n.y : 150,
-        params:      n.params || {},
-        configured:  n.configured !== false,
-        summary:     n.summary || '',
-        selected:    false,
-        description: n.description || '',
-        customColor: n.customColor || null,
-      });
-    });
-
-    (pipeline.edges || []).forEach(e => {
-      const fromUid = uidMap[e.fromUid];
-      const toUid   = uidMap[e.toUid];
-      if (!fromUid || !toUid) return;
-      window._plmState.canvas.edges.push({
-        uid:         _plmEdgeUID(),
-        fromUid,
-        toUid,
-        edgeType:    e.edgeType || 'forward',
-        label:       e.label || '',
-        customColor: e.customColor || null,
-      });
-    });
-
-    // Update pipeline name
-    if (pipeline.name) {
-      window._plmState.activePipeline = window._plmState.activePipeline || { id: 'p' + Date.now() };
-      window._plmState.activePipeline.name = pipeline.name;
-      const nameEl = document.getElementById('plm-pipeline-name');
-      if (nameEl) nameEl.value = pipeline.name;
-    }
-
-    _plmRenderAll();
-    _plmUpdateStatus();
-    _plmDrawGrid();
-
-    const nodeCount = (pipeline.nodes || []).length;
-    const edgeCount = (pipeline.edges || []).length;
-    _plmAiSetStatus('ok',
-        `✓ Pipeline built successfully!\n\n` +
-        `  Name:    ${pipeline.name || 'Pipeline'}\n` +
-        `  Nodes:   ${nodeCount} operators\n` +
-        `  Edges:   ${edgeCount} connections\n\n` +
-        `Review each node (click ✏ edit) and fill in any\n` +
-        `credentials or custom values before submitting.`
-    );
-
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Build Another';
-    }
-    toast(`✓ AI built "${pipeline.name}" — ${nodeCount} nodes, ${edgeCount} edges`, 'ok');
-
-  } catch(err) {
-    const msg = err.message || 'Unknown error';
-    _plmAiSetStatus('err',
-        `✗ Build failed: ${msg}\n\n` +
-        (msg.includes('401') ? 'Check your API key — it may be invalid or expired.\nVisit console.anthropic.com/settings/keys to verify.' :
-            msg.includes('429') ? 'Rate limited — wait a moment and try again.' :
-                msg.includes('JSON') ? 'Claude returned unexpected output. Try rephrasing your prompt\nwith more specific operator names.' :
-                    'Check your internet connection and try again.')
-    );
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Retry Build';
-    }
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FULLSCREEN TOGGLE
@@ -1566,6 +1171,71 @@ function _plmDrawConnectingLine(e) {
 // NODE CONFIG MODAL
 // ═══════════════════════════════════════════════════════════════════════════════
 window._plmCfgModalUid = null;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OPERATOR ABOUT DESCRIPTIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+const PM_OP_ABOUT = {
+  kafka_source:   { what:'Reads a continuous stream of records from an Apache Kafka topic. Each message becomes a Flink row.', when:'Use when your data lives in Kafka — the standard choice for real-time event ingestion (payments, clicks, IoT, logs).', tips:['Set Watermark Column + Delay for time-based windows.','Use SASL/SSL fields for Confluent Cloud or MSK.','Schema Registry URL enables Avro/Protobuf schema evolution.'], sql:"CREATE TABLE t WITH ('connector'='kafka', 'topic'='...', 'format'='json', ...);" },
+  datagen_source: { what:'Generates synthetic random rows at a configurable rate. No external system required.', when:'Use for development, load testing, and demos when a live Kafka topic is unavailable.', tips:['Set rows_per_second to control throughput.','Set number_of_rows to emit a finite batch then stop.'], sql:"CREATE TABLE t WITH ('connector'='datagen', 'rows-per-second'='100', ...);" },
+  jdbc_source:    { what:'Reads rows from a relational database (PostgreSQL, MySQL) via JDBC. Supports full table scan.', when:'Use for dimension table lookups, initial data loads, or when the source is a database.', tips:['Requires flink-connector-jdbc JAR + JDBC driver JAR in /opt/flink/lib/.','For streaming lookups combine with a Temporal Join.'], sql:"CREATE TABLE t WITH ('connector'='jdbc', 'url'='jdbc:postgresql://...', 'table-name'='...', ...);" },
+  filesystem_source: { what:'Reads files from local filesystem, S3, GCS, or HDFS. Supports Parquet, ORC, JSON, CSV, Avro.', when:'Use for batch ingestion of historical data or S3-based data lakes.', tips:['Parquet is the most efficient format.','S3 paths require s3a:// prefix and Hadoop S3 libs.'], sql:"CREATE TABLE t WITH ('connector'='filesystem', 'path'='s3://...', 'format'='parquet', ...);" },
+  pulsar_source:  { what:'Reads from an Apache Pulsar topic. Supports persistent and partitioned subscriptions.', when:'Use when your organisation runs Pulsar instead of Kafka.', tips:['Requires flink-connector-pulsar JAR.','Use persistent://tenant/namespace/topic format.'], sql:"CREATE TABLE t WITH ('connector'='pulsar', 'service-url'='pulsar://...', ...);" },
+  kinesis_source: { what:'Reads from an Amazon Kinesis Data Stream.', when:'Use in AWS-native architectures where events land in Kinesis before processing.', tips:['Requires flink-connector-kinesis JAR.','Set AWS Region and credentials via environment or IAM role.'], sql:"CREATE TABLE t WITH ('connector'='kinesis', 'stream'='...', 'aws.region'='us-east-1', ...);" },
+  union_node:     { what:'Merges two or more input streams into a single output using UNION ALL semantics.', when:'Use to combine streams of identical schema — e.g. merging a live Kafka feed with a synthetic Datagen source.', tips:['All input schemas must be identical (same column names and types).','UNION ALL keeps duplicates — no DISTINCT in streaming.'], sql:'SELECT * FROM stream_a UNION ALL SELECT * FROM stream_b' },
+  filter_node:    { what:'Applies a SQL WHERE predicate to discard rows that do not match the condition.', when:'Use to reduce data volume early in the pipeline — filter before expensive joins or aggregations.', tips:['Place filters as close to the source as possible.','Complex predicates with UDFs are supported.'], sql:"SELECT * FROM upstream WHERE amount > 100 AND status = 'ACTIVE'" },
+  project_node:   { what:'The Project operator maps to a SQL SELECT statement — the most fundamental transformation in any pipeline. It selects specific columns, evaluates expressions, renames fields, casts types, and adds CASE WHEN computed columns. Think of it as reshaping a row before passing it to the next stage.', when:'Use any time you need to: (1) drop columns you do not need downstream to save bandwidth and memory, (2) add a derived column such as a risk tier from a CASE WHEN expression, (3) cast a STRING to a TIMESTAMP, (4) normalise field names for a downstream sink, or (5) mask PII fields such as replacing email with CONCAT(LEFT(email,2), \'****\').', tips:['Always project (select) only the columns needed by downstream operators — this reduces state and improves throughput.','CASE WHEN inside a Project is the no-JAR, no-UDF way to add classification columns.','Use CAST(ts AS TIMESTAMP(3)) here to fix type mismatches before a Window operator.','ROW_NUMBER() OVER() inside a Project is how you implement deduplication.'], sql:'SELECT id, user_id, UPPER(status) AS status, ROUND(amount, 2) AS amount,\n  CASE WHEN risk_score >= 0.80 THEN \'CRITICAL\' WHEN risk_score >= 0.55 THEN \'HIGH\' ELSE \'LOW\' END AS risk_tier\nFROM upstream' },
+  udf_node:       { what:'Calls a registered Flink UDF to compute a derived column per row.', when:'Use when business logic cannot be expressed in SQL alone — e.g. ML scoring, custom parsing.', tips:['Register the UDF in UDF Manager first — it then appears in the dropdown.','Java UDFs are fastest; Python UDFs add PyFlink overhead.','Input Columns: comma-separated column names passed to eval().'], sql:'SELECT my_udf(amount, status) AS risk_tier, * FROM upstream' },
+  tumble_window:  { what:'Groups events into fixed-size non-overlapping time windows. Emits one result per window per group.', when:'Use for per-minute / per-hour aggregations — count events, sum amounts over regular intervals.', tips:['Requires a watermark on the time column.','Window size: INTERVAL 1 MINUTE, INTERVAL 1 HOUR, etc.','Late events are dropped after the watermark passes.'], sql:"SELECT user_id, COUNT(*) FROM TABLE(TUMBLE(TABLE t, DESCRIPTOR(ts), INTERVAL '1' MINUTE)) GROUP BY user_id, window_start, window_end" },
+  hop_window:     { what:'Overlapping windows of fixed size that slide forward by a smaller step. Each event belongs to multiple windows.', when:'Use for rolling metrics — e.g. "total spend in last 5 minutes, updated every 1 minute".', tips:['Slide interval must be ≤ window size.','Higher slide frequency = more CPU cost.'], sql:"TABLE(HOP(TABLE t, DESCRIPTOR(ts), INTERVAL '1' MINUTE, INTERVAL '5' MINUTE))" },
+  session_window: { what:'Groups events separated by gaps of inactivity into a session. Window size is variable.', when:'Use for user session analysis — a session ends when a user is inactive longer than the gap duration.', tips:['Session gap: INTERVAL 30 MINUTE is common.','Sessions can span arbitrary time lengths.'], sql:"TABLE(SESSION(TABLE t, DESCRIPTOR(ts), DESCRIPTOR(user_id), INTERVAL '30' MINUTE))" },
+  cumulate_window:{ what:'Produces cumulative aggregations within a fixed period — results grow as more events arrive.', when:'Use for running totals within a day or hour — e.g. "transactions so far today".', tips:['Emits a result at each step interval — provides early partial aggregates.'], sql:"TABLE(CUMULATE(TABLE t, DESCRIPTOR(ts), INTERVAL '1' HOUR, INTERVAL '1' DAY))" },
+  interval_join:  { what:'Joins two streams where events are temporally correlated within a time range.', when:'Use to correlate events from two Kafka topics related by time — e.g. order placed + payment received.', tips:['Both sides require watermarks.','Define the interval with BETWEEN … AND.'], sql:"SELECT * FROM t1, t2 WHERE t1.id = t2.id AND t1.ts BETWEEN t2.ts - INTERVAL '5' MINUTE AND t2.ts" },
+  temporal_join:  { what:'Joins a fact stream with a dimension table at the time the fact event occurred.', when:'Use for enrichment — e.g. join payment events with the exchange rate valid at the time of payment.', tips:['Dimension side must be versioned with a primary key and rowtime.'], sql:'SELECT * FROM payments JOIN rates FOR SYSTEM_TIME AS OF payments.ts ON payments.currency = rates.currency' },
+  regular_join:   { what:'Standard SQL JOIN between two streams or a stream and a static table. Both sides are held in state.', when:'Use only for bounded datasets — for streaming prefer Interval Join or Temporal Join.', tips:['State can grow unboundedly — set state TTL.','Inner, Left, Right, Full joins are supported.'], sql:'SELECT * FROM stream_a JOIN stream_b ON stream_a.id = stream_b.id' },
+  match_recognize:{ what:'Detects complex event patterns (CEP) over a stream using MATCH_RECOGNIZE.', when:'Use for multi-step fraud detection, intrusion detection, SLA monitoring, or sequential event patterns.', tips:['Pattern letters (A B C) define event roles.','Use quantifiers: + (one+), * (zero+), ? (optional).','WITHIN clause prevents unbounded state.'], sql:"SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY user_id ORDER BY ts PATTERN (A B+ C) WITHIN INTERVAL '5' MINUTE ...) AS M" },
+  cep_alert:      { what:'Emits an alert row when a statistical threshold is breached on an incoming stream.', when:'Use downstream of MATCH_RECOGNIZE or aggregation windows to trigger alerts based on counts or sums.', tips:['Combine with MATCH_RECOGNIZE for full CEP pipelines.','Alert condition is a SQL WHERE predicate on the upstream result.'], sql:'SELECT * FROM upstream WHERE pattern_count >= 3' },
+  kafka_sink:     { what:'Writes processed rows to a Kafka topic in JSON, Avro, or other formats.', when:'Use as the primary output for downstream consumers — other microservices, ML inference, another Flink pipeline.', tips:['Leave schema blank to inherit from upstream.','BROADCAST edge replicates the same row to all Kafka partitions simultaneously.'], sql:"CREATE TABLE t WITH ('connector'='kafka', 'topic'='output', 'format'='json', ...); INSERT INTO t SELECT * FROM upstream;" },
+  jdbc_sink:      { what:'Writes rows to a relational database (PostgreSQL, MySQL) via JDBC.', when:'Use to persist aggregated results to a database for BI dashboards or operational queries.', tips:['Requires flink-connector-jdbc JAR + JDBC driver.','Use upsert mode with a primary key for idempotent writes.'], sql:"CREATE TABLE t WITH ('connector'='jdbc', 'url'='jdbc:postgresql://...'); INSERT INTO t SELECT ..." },
+  filesystem_sink:{ what:'Writes rows to files on local filesystem, S3, GCS, or HDFS.', when:'Use for data lake ingestion, archiving, and feeding downstream batch analytics.', tips:['Parquet is recommended for analytics workloads.','Partition by date: PARTITION BY (dt).'], sql:"CREATE TABLE t WITH ('connector'='filesystem', 'path'='s3://...', 'format'='parquet'); INSERT INTO t ..." },
+  elasticsearch_sink:{ what:'Writes rows to an Elasticsearch index. Supports dynamic index names using column values.', when:'Use for full-text search, Kibana dashboards, and real-time observability use cases.', tips:['Requires flink-sql-connector-elasticsearch7 JAR.'], sql:"CREATE TABLE t WITH ('connector'='elasticsearch-7', 'hosts'='http://es:9200', 'index'='...'); INSERT INTO t ..." },
+  print_sink:     { what:'Prints rows to the Flink TaskManager stdout. Visible in the Flink UI task logs.', when:'Use ONLY during development and debugging — never in production.', tips:['Set a print identifier to distinguish multiple print sinks.','Check logs in Flink UI → TaskManagers → stdout.'], sql:"CREATE TABLE t WITH ('connector'='print', 'print-identifier'='DEBUG'); INSERT INTO t ..." },
+  blackhole_sink: { what:'Discards all rows. Useful for benchmarking throughput without I/O bottlenecks.', when:'Use to measure maximum pipeline throughput independent of sink performance.', tips:['Combine with a Datagen source for pure throughput benchmarks.'], sql:"CREATE TABLE t WITH ('connector'='blackhole'); INSERT INTO t SELECT * FROM upstream;" },
+  mongodb_sink:   { what:'Writes rows to a MongoDB collection. Supports upsert by document key.', when:'Use when downstream consumers are MongoDB-backed APIs or when the schema is document-oriented.', tips:['Requires flink-connector-mongodb JAR.','Set primary-key for upsert semantics.'], sql:"CREATE TABLE t WITH ('connector'='mongodb', 'uri'='mongodb://...', 'collection'='...'); INSERT INTO t ..." },
+  ai_model:    { what:'The AI Model operator injects a call to an external AI/ML inference API into your Flink SQL pipeline. For every row that arrives, it sends a payload column to a configured endpoint (OpenAI, AWS Bedrock, Anthropic, Google Vertex AI, Azure OpenAI, Hugging Face, or a custom HTTP endpoint) and appends the response as a new column. This lets you enrich streaming data with LLM-based classification, summarisation, sentiment analysis, or fraud scoring without writing Java code.', when:'Use when you have a pre-trained model or an LLM API that cannot be expressed as a UDF — for example, calling GPT-4o-mini to classify customer complaint tickets in real time, or using a Bedrock endpoint to score transaction risk. For high-throughput pipelines, use the Otter Streams UDF option which calls a locally registered async UDF instead of an HTTP endpoint, avoiding network latency.', tips:['Set Temperature = 0.0 for deterministic classification tasks.','Keep Max Tokens small (32–128) for classification; larger for summarisation.','The AI Model operator is async — it does not block the pipeline waiting for a response. Flink processes other events while waiting.','For latency-sensitive pipelines: run the model as a Flink UDF (Otter Streams option) instead of HTTP for 10x better throughput.','Never put raw API keys in the config — use an environment variable name and inject secrets at deployment time.','Monitor the Timeout field carefully — a timed-out API call returns a NULL result, not an error.'], sql:'-- Generated pattern:\nSELECT id, ts, payload,\n  ai_score_fn(payload) AS ai_result  -- Otter Streams UDF mode\nFROM upstream;\n\n-- HTTP mode uses an async async lookup join to the AI endpoint' },
+  feature_store: { what:'The Feature Store operator enriches each streaming event with pre-computed ML features retrieved from an external feature store (Feast, Hopsworks, Tecton, SageMaker Feature Store, Vertex AI Feature Store, or a custom Redis/PostgreSQL store). Given an entity key column (e.g. user_id), it performs a low-latency point-in-time lookup to fetch features like avg_spend_7d or tx_count_1h that were computed by a batch or streaming feature pipeline. This means your real-time ML pipeline does not need to recompute features — it just fetches them.', when:'Use in ML inference pipelines where your model requires pre-computed features that change slowly. Classic examples: (1) fetch a user\'s spending profile features before passing to a fraud scoring model, (2) enrich a click event with precomputed user affinity scores before a recommendation model, (3) pull product inventory signals for a pricing model. Pair this operator with the AI Model operator — Feature Store enriches the row, then AI Model scores it.', tips:['Feature freshness is controlled by your batch/streaming feature pipeline — the Feature Store operator only reads, never writes.','Enable client-side cache (Cache TTL field) to avoid a lookup round-trip for the same entity key appearing multiple times in a short window.','The Entity Key column must be a stable identifier — user_id, account_id, device_id etc.','Lookup timeouts return NULL features — add a Filter downstream to handle NULL feature rows gracefully.','In production, use Feast Online Store (Redis backend) for sub-millisecond lookup latency.'], sql:'-- Generated pattern uses a Temporal Join against the feature view:\nSELECT e.*, f.avg_spend_7d, f.tx_count_24h, f.risk_band\nFROM events e\nLEFT JOIN feature_view FOR SYSTEM_TIME AS OF e.ts\n  ON e.user_id = f.user_id' },
+  results_tab:    { what:'Sends query results to the Studio Results Tab for interactive inspection. Uses a bounded SELECT.', when:'Use to preview data at any stage of the pipeline inside the Studio UI during development.', tips:['Row limit prevents memory overflow in the browser.','This does not produce a Flink job — it runs a bounded query.'], sql:'SELECT * FROM upstream LIMIT 100;' },
+};
+function _plmGetAbout(opId) {
+  const def = PM_OPERATORS.find(o => o.id === opId);
+  const fallbackLabel = def ? def.label : opId;
+  return PM_OP_ABOUT[opId] || {
+    what: fallbackLabel + ' is a pipeline operator. Click the ℹ About tab to learn more once the full description is available, or consult Apache Flink documentation for this connector type.',
+    when: 'Drag this operator onto the canvas, connect it to an upstream source or transformation, then open its config (⚙ Parameters tab) to fill in the required fields. Required fields are marked with a red asterisk.',
+    tips: ['Open ⚙ Parameters and fill all required fields (marked *) before running.', 'Connect an edge from the previous operator\'s output port to this operator\'s input port.', 'Check the Live SQL panel on the right to see the generated Flink SQL for this node.'],
+    sql: '-- See the Live SQL panel on the right side of the Pipeline Manager for generated SQL'
+  };
+}
+
+function _plmCfgSwitchTab(tab) {
+  const pp = document.getElementById('plm-cfg-pane-params');
+  const pa = document.getElementById('plm-cfg-pane-about');
+  const tb = document.getElementById('plm-cfg-tab-params');
+  const ta = document.getElementById('plm-cfg-tab-about');
+  if (!pp || !pa) return;
+  const nodeColor = pp.closest('#plm-cfg-modal')?.querySelector('.plm-cfg-header')?.style.background?.match(/#[0-9a-fA-F]{6}/) || ['var(--accent)'];
+  const c = Array.isArray(nodeColor) ? nodeColor[0] : 'var(--accent)';
+  if (tab === 'params') {
+    pp.style.display = 'block'; pa.style.display = 'none';
+    if (tb) { tb.style.borderBottomColor = c; tb.style.color = c; tb.style.fontWeight = '600'; }
+    if (ta) { ta.style.borderBottomColor = 'transparent'; ta.style.color = 'var(--text3)'; ta.style.fontWeight = '500'; }
+  } else {
+    pp.style.display = 'none'; pa.style.display = 'block';
+    if (ta) { ta.style.borderBottomColor = c; ta.style.color = c; ta.style.fontWeight = '600'; }
+    if (tb) { tb.style.borderBottomColor = 'transparent'; tb.style.color = 'var(--text3)'; tb.style.fontWeight = '500'; }
+  }
+}
+
 function _plmOpenCfgModal(uid) {
   const old = document.getElementById('plm-cfg-modal');
   if (old) { old._plmDragCleanup?.(); old.remove(); }
@@ -1591,23 +1261,13 @@ function _plmOpenCfgModal(uid) {
   const modal = document.createElement('div');
   modal.id = 'plm-cfg-modal';
   modal.style.cssText = 'position:fixed;z-index:10002;background:var(--bg2);border:1px solid var(--border2);border-radius:8px;box-shadow:0 12px 48px rgba(0,0,0,0.7);width:440px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;';
+  // Build About content
+  const _ab = _plmGetAbout(node.opId);
+  const _abTipsHtml = _ab.tips.length ? _ab.tips.map(t=>'<li style="margin-bottom:5px;">'+escHtml(t)+'</li>').join('') : '';
+  const _abSqlHtml  = _ab.sql ? '<div style="margin-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;">SQL Pattern</div><pre style="background:var(--bg0);border:1px solid var(--border);border-left:3px solid '+nodeColor+';border-radius:4px;padding:8px 10px;font-size:10px;font-family:var(--mono);color:var(--text2);white-space:pre-wrap;line-height:1.6;margin:0;">'+escHtml(_ab.sql)+'</pre></div>' : '';
+
   modal.innerHTML =
-      '<div class="plm-cfg-header" style="background:'+nodeColor+'18;border-bottom:1px solid var(--border);cursor:move;">'
-      +'<span style="color:'+nodeColor+';display:flex;flex-shrink:0;">'+opDef.icon+'</span>'
-      +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--text0);">'+escHtml(node.label||opDef.label)+'</div><div style="font-size:9px;color:var(--text3);">'+opDef.group+' · '+(opDef.stateful?'Stateful':'Stateless')+'</div></div>'
-      +'<button id="plm-cfg-modal-x" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px;flex-shrink:0;line-height:1;">×</button>'
-      +'</div>'
-      +'<div style="flex:1;overflow-y:auto;padding:14px;">'
-      +'<div style="margin-bottom:10px;"><label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Node Label</label><input id="plm-cfg-f-node-label" type="text" value="'+escHtml(node.label||opDef.label)+'" style="'+inputStyle+'"></div>'
-      +'<div style="margin-bottom:10px;"><label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Description</label><input id="plm-cfg-f-node-desc" type="text" value="'+escHtml(node.description||'')+'" placeholder="What this node does…" style="'+inputStyle+'"></div>'
-      +'<div style="margin-bottom:12px;"><label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Colour</label><div style="display:flex;gap:6px;align-items:center;"><input id="plm-cfg-f-color" type="color" value="'+(node.customColor||opDef.color)+'" style="width:32px;height:28px;border:none;border-radius:4px;cursor:pointer;"><input id="plm-cfg-f-color-hex" type="text" value="'+(node.customColor||opDef.color)+'" style="'+inputStyle+'width:80px;" oninput="document.getElementById(\'plm-cfg-f-color\').value=this.value"><button onclick="document.getElementById(\'plm-cfg-f-color\').value=\''+opDef.color+'\';document.getElementById(\'plm-cfg-f-color-hex\').value=\''+opDef.color+'\';" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;">Reset</button></div></div>'
-      +cpHtml
-      +(paramsHtml ? '<div style="border-top:1px solid var(--border);padding-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">Parameters</div>'+paramsHtml+'</div>' : '')
-      +'</div>'
-      +'<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--bg1);flex-shrink:0;">'
-      +'<button id="plm-cfg-btn-cancel" style="padding:6px 16px;font-size:12px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text1);cursor:pointer;">Cancel</button>'
-      +'<button onclick="_plmCfgSave(\''+uid+'\')" style="padding:6px 16px;font-size:12px;font-weight:600;border-radius:4px;border:none;background:var(--accent);color:#000;cursor:pointer;">✓ Apply</button>'
-      +'</div>';
+      '<div class="plm-cfg-header" style="background:'+nodeColor+'18;border-bottom:1px solid var(--border);cursor:move;">'    +'<span style="color:'+nodeColor+';display:flex;flex-shrink:0;">'+opDef.icon+'</span>'    +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--text0);">'+escHtml(node.label||opDef.label)+'</div><div style="font-size:9px;color:var(--text3);">'+opDef.group+' · '+(opDef.stateful?'Stateful':'Stateless')+'</div></div>'    +'<button id="plm-cfg-modal-x" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0 4px;flex-shrink:0;line-height:1;">×</button>'    +'</div>'    +'<div id="plm-cfg-tabs" style="display:flex;border-bottom:1px solid var(--border);background:var(--bg1);flex-shrink:0;">'    +'<button id="plm-cfg-tab-params" onclick="_plmCfgSwitchTab(\'params\')" style="padding:7px 14px;font-size:11px;font-weight:600;background:transparent;border:none;border-bottom:2px solid '+nodeColor+';color:'+nodeColor+';cursor:pointer;">⚙ Parameters</button>'    +'<button id="plm-cfg-tab-about" onclick="_plmCfgSwitchTab(\'about\')" style="padding:7px 14px;font-size:11px;font-weight:500;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer;">ℹ About</button>'    +'</div>'    +'<div id="plm-cfg-pane-params" style="flex:1;overflow-y:auto;padding:14px;">'    +'<div style="margin-bottom:10px;"><label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Node Label</label><input id="plm-cfg-f-node-label" type="text" value="'+escHtml(node.label||opDef.label)+'" style="'+inputStyle+'"></div>'    +'<div style="margin-bottom:10px;"><label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Description</label><input id="plm-cfg-f-node-desc" type="text" value="'+escHtml(node.description||'')+'" placeholder="What this node does…" style="'+inputStyle+'"></div>'    +'<div style="margin-bottom:12px;"><label style="display:block;font-size:10px;color:var(--text2);margin-bottom:3px;">Colour</label><div style="display:flex;gap:6px;align-items:center;"><input id="plm-cfg-f-color" type="color" value="'+(node.customColor||opDef.color)+'" style="width:32px;height:28px;border:none;border-radius:4px;cursor:pointer;"><input id="plm-cfg-f-color-hex" type="text" value="'+(node.customColor||opDef.color)+'" style="'+inputStyle+'width:80px;" oninput="document.getElementById(\'plm-cfg-f-color\').value=this.value"><button onclick="document.getElementById(\'plm-cfg-f-color\').value=\''+opDef.color+'\';document.getElementById(\'plm-cfg-f-color-hex\').value=\''+opDef.color+'\';" style="font-size:10px;padding:4px 8px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;">Reset</button></div></div>'    +cpHtml    +(paramsHtml ? '<div style="border-top:1px solid var(--border);padding-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;">Parameters</div>'+paramsHtml+'</div>' : '')    +'</div>'    +'<div id="plm-cfg-pane-about" style="flex:1;overflow-y:auto;padding:14px;display:none;">'    +'<div style="padding:10px 12px;background:'+nodeColor+'10;border:1px solid '+nodeColor+'30;border-radius:5px;margin-bottom:12px;">'    +'<div style="font-size:10px;font-weight:700;color:'+nodeColor+';letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;">What it does</div>'    +'<div style="font-size:12px;color:var(--text1);line-height:1.7;">'+escHtml(_ab.what)+'</div>'    +'</div>'    +'<div style="padding:10px 12px;background:var(--bg1);border:1px solid var(--border);border-radius:5px;margin-bottom:12px;">'    +'<div style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;">When to use</div>'    +'<div style="font-size:12px;color:var(--text1);line-height:1.7;">'+escHtml(_ab.when)+'</div>'    +'</div>'    +(_abTipsHtml ? '<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:7px;">Tips &amp; Gotchas</div><ul style="margin:0;padding-left:18px;font-size:11px;color:var(--text1);line-height:1.7;">'+_abTipsHtml+'</ul></div>' : '')    +_abSqlHtml    +'<div style="margin-top:12px;padding:8px 12px;background:var(--bg0);border:1px solid var(--border);border-radius:4px;font-size:10px;color:var(--text3);line-height:1.6;">'    +'<strong style="color:var(--text2);">Group:</strong> '+escHtml(opDef.group)+' &nbsp;·&nbsp; '    +'<strong style="color:var(--text2);">Stateful:</strong> '+(opDef.stateful?'<span style="color:#f5a623;">Yes — uses RocksDB state backend</span>':'<span style="color:var(--accent);">No</span>')+' &nbsp;·&nbsp; '    +(opDef.needsConnector ? '<strong style="color:#f5a623;">⚠ Connector JAR required in /opt/flink/lib/</strong>' : '<span style="color:var(--accent);">✓ Built-in — no JAR needed</span>')    +'</div>'    +'</div>'    +'<div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--bg1);flex-shrink:0;">'    +'<button id="plm-cfg-btn-cancel" style="padding:6px 16px;font-size:12px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text1);cursor:pointer;">Cancel</button>'    +'<button onclick="_plmCfgSave(\''+uid+'\')" style="padding:6px 16px;font-size:12px;font-weight:600;border-radius:4px;border:none;background:var(--accent);color:#000;cursor:pointer;">✓ Apply</button>'    +'</div>';
 
   modal.querySelector('#plm-cfg-f-color')?.addEventListener('input', function() { const h=modal.querySelector('#plm-cfg-f-color-hex'); if(h)h.value=this.value; });
   const closeFn = () => { modal._plmDragCleanup?.(); modal.remove(); window._plmCfgModalUid=null; };
