@@ -411,6 +411,26 @@ function initMiscPatches() {
     /* Performance jobs tab */
     #perf-job-list { min-height:44px; }
     .job-row:last-child { border-bottom:none !important; }
+    
+    /* UDF Manager — fix footer escaping modal bounds */
+    #modal-udf-manager .modal {
+      height:92vh !important;
+    }
+    #modal-udf-manager .modal-body {
+      flex:1 1 0 !important;
+      min-height:0 !important;
+      overflow-y:auto !important;
+      max-height:none !important;
+    }
+    #modal-udf-manager .modal-footer {
+      flex:0 0 auto !important;
+      display:flex !important;
+      border-top:1px solid var(--border) !important;
+      background:var(--bg2) !important;
+      padding:12px 20px !important;
+      position:relative !important;
+      z-index:10 !important;
+    }
     `;
     document.head.appendChild(style);
 }
