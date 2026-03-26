@@ -1,14 +1,58 @@
-/* Str:::lab Studio — Catalog Manager v1.1.0
+/* Str:::lab Studio — Catalog Manager v1.2.0
  * ═══════════════════════════════════════════════════════════════════════
  * Adds external catalog support to Str:::lab Studio.
- * v1.1.0: Added ⊙ Test Connectivity button on every catalog creation form.
- *
- * Catalog types: In-Memory, PostgreSQL JDBC, MySQL JDBC, Hive Metastore,
- *   Iceberg (Hive), Iceberg (REST), AWS Glue (Iceberg), Delta Lake
- *
- * Uses: api(), state, toast(), openModal(), closeModal(), addLog(), escHtml()
+ * v1.2.0 changes:
+ *  - JAR availability badges: each catalog type that needs a JAR now checks
+ *    the strlabstudio_connector_jars localStorage registry (written by
+ *    Systems Manager when JARs are uploaded). If the required JAR is found,
+ *    the yellow "JAR REQ" badge is replaced by a pulsing blue
+ *    "● JAR Available" badge — same pattern as Systems Manager connectors.
+ *  - _catProbeViaFlink: fixed state.gateway.replace crash when gateway is
+ *    an object {baseUrl:...} instead of a plain string.
+ *  - "⊙ Test Connectivity" on every catalog creation form.
  * ═══════════════════════════════════════════════════════════════════════
  */
+
+// ── JAR availability helpers (mirrors systems-manager.js) ─────────────────
+function _catGetUploadedJarNames() {
+    try {
+        const reg = JSON.parse(localStorage.getItem('strlabstudio_connector_jars') || '[]');
+        const udf = JSON.parse(localStorage.getItem('strlabstudio_uploaded_jars') || '[]');
+        return [...reg.map(e => (e.jarName || e).toLowerCase()), ...udf.map(e => (e.name || e).toLowerCase())];
+    } catch(_) { return []; }
+}
+
+// Fragment patterns that each catalog type's JAR file name must contain
+const CATALOG_JAR_FRAGMENTS = {
+    jdbc_postgresql: ['flink-connector-jdbc', 'postgresql'],
+    jdbc_mysql:      ['flink-connector-jdbc', 'mysql-connector'],
+    hive:            ['flink-connector-hive'],
+    iceberg_hive:    ['iceberg-flink-runtime', 'iceberg-flink'],
+    iceberg_rest:    ['iceberg-flink-runtime', 'iceberg-flink'],
+    iceberg_glue:    ['iceberg-flink-runtime', 'iceberg-aws'],
+    delta:           ['delta-flink', 'delta-standalone'],
+};
+
+function _catJarStatus(typeId) {
+    const frags = CATALOG_JAR_FRAGMENTS[typeId];
+    if (!frags) return 'builtin'; // no JAR needed
+    const uploaded = _catGetUploadedJarNames();
+    if (!uploaded.length) return 'unknown';
+    // All fragments must be satisfied (at least one uploaded jar matches each fragment)
+    const allFound = frags.every(frag => uploaded.some(name => name.includes(frag)));
+    return allFound ? 'available' : 'missing';
+}
+
+function _catJarBadgeHtml(typeId, requiresJar) {
+    if (!requiresJar) {
+        return '<span class="cat-badge-builtin">✓ No JAR needed</span>';
+    }
+    const status = _catJarStatus(typeId);
+    if (status === 'available') {
+        return '<span class="cat-badge-available">● JAR Available</span>';
+    }
+    return '<span class="cat-badge-jar-req">JAR REQ</span>';
+}
 
 // ── Catalog type definitions ───────────────────────────────────────────────
 const CATALOG_TYPES = [
@@ -190,7 +234,6 @@ const CATALOG_TYPES = [
             { id: 'glue_db',    label: 'Glue Database',      placeholder: 'my_glue_database', type: 'text', required: false },
         ],
         testFn: async (fields) => {
-            // Glue is AWS API — test via an HTTP probe to the Glue endpoint
             const region = (fields.aws_region || 'us-east-1').trim();
             const glueUrl = `https://glue.${region}.amazonaws.com`;
             return _catProbeHttp(glueUrl, 'AWS Glue (' + region + ')');
@@ -235,7 +278,7 @@ const CATALOG_TYPES = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CONNECTIVITY PROBE HELPERS (catalog-specific, mirror systems-manager)
+// CONNECTIVITY PROBE HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
 async function _catProbeHttp(url, label) {
     const cleanUrl = url.replace(/\/+$/, '');
@@ -256,10 +299,15 @@ async function _catProbeHttp(url, label) {
 
 async function _catProbeViaFlink(host, port, label) {
     try {
-        const flinkBase = (typeof state !== 'undefined' && state?.gateway)
-            ? state.gateway.replace(/\/+$/, '').replace('/v1','')
-            : window.location.origin;
-        const r = await fetch(flinkBase + '/v1/info', { signal: AbortSignal.timeout(4000) });
+        // FIX v1.2.0: state.gateway can be a string OR an object {baseUrl: '...'}
+        let gwBase = window.location.origin;
+        if (typeof state !== 'undefined' && state?.gateway) {
+            gwBase = (typeof state.gateway === 'string')
+                ? state.gateway
+                : (state.gateway.baseUrl || state.gateway.url || window.location.origin);
+        }
+        const cleanBase = gwBase.replace(/\/+$/, '').replace(/\/v1$/, '');
+        const r = await fetch(cleanBase + '/v1/info', { signal: AbortSignal.timeout(4000) });
         if (r.ok || r.status < 500) {
             return {
                 ok: true,
@@ -316,16 +364,18 @@ function openCatalogManager() {
 // BUILD MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 function _catBuildModal() {
+    // Refresh JAR badge HTML for all types
+    function jarBadge(t) { return _catJarBadgeHtml(t.id, t.requiresJar); }
+
     const m = document.createElement('div');
     m.id = 'modal-catalog-manager';
     m.className = 'modal-overlay';
     m.innerHTML = `
 <div class="modal" style="width:860px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;">
-
   <div class="modal-header" style="background:linear-gradient(135deg,rgba(0,212,170,0.08),rgba(0,0,0,0));border-bottom:1px solid rgba(0,212,170,0.2);flex-shrink:0;padding:14px 20px;">
     <div>
       <div style="font-size:14px;font-weight:700;color:var(--text0);"><span style="color:var(--accent);">⊕</span> Catalog Manager</div>
-      <div style="font-size:10px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">External Catalog Registration · v1.1.0</div>
+      <div style="font-size:10px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-top:2px;">External Catalog Registration · v1.2.0</div>
     </div>
     <button class="modal-close" onclick="closeModal('modal-catalog-manager')">×</button>
   </div>
@@ -342,7 +392,12 @@ function _catBuildModal() {
     <!-- CREATE CATALOG -->
     <div id="cat-pane-create" style="padding:18px;display:none;">
       <div style="margin-bottom:16px;">
-        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">Select Catalog Type</div>
+        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Select Catalog Type</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.7;">
+          Badges show JAR status: <span class="cat-badge-builtin">✓ No JAR needed</span> = built-in,
+          <span class="cat-badge-jar-req">JAR REQ</span> = need to upload JAR via Systems Manager,
+          <span class="cat-badge-available">● JAR Available</span> = JAR detected in your uploads.
+        </div>
         <div id="cat-type-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:7px;">
           ${CATALOG_TYPES.map(t => `
             <div id="cat-type-card-${t.id}" onclick="_catSelectType('${t.id}')"
@@ -350,11 +405,7 @@ function _catBuildModal() {
               <span style="font-size:18px;flex-shrink:0;">${t.icon}</span>
               <div style="min-width:0;">
                 <div style="font-size:11px;font-weight:700;color:var(--text0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.label}</div>
-                <div style="font-size:9px;margin-top:3px;">
-                  ${t.requiresJar
-        ? `<span style="background:rgba(245,166,35,0.15);color:#f5a623;padding:1px 5px;border-radius:2px;font-weight:700;">JAR REQ</span>`
-        : `<span style="background:rgba(0,212,170,0.12);color:var(--accent);padding:1px 5px;border-radius:2px;font-weight:700;">NO JAR</span>`}
-                </div>
+                <div style="font-size:9px;margin-top:4px;" id="cat-grid-badge-${t.id}">${jarBadge(t)}</div>
               </div>
             </div>`).join('')}
         </div>
@@ -460,11 +511,22 @@ function _catBuildModal() {
           <div style="font-size:11px;color:var(--text1);line-height:1.8;">
             The <strong style="color:var(--blue);">⊙ Test Connectivity</strong> button probes the external system before creating the catalog:
             <ul style="margin:8px 0 0 16px;line-height:2;">
-              <li><strong>HTTP systems</strong> (REST catalogs, AWS Glue, MinIO): direct browser fetch — checks HTTP status.</li>
-              <li><strong>TCP systems</strong> (Hive Metastore, PostgreSQL, MySQL): checks Flink cluster health first, then provides the exact <code>nc -zv host port</code> command to verify from within the Flink container network.</li>
+              <li><strong>HTTP systems</strong> (REST catalogs, AWS Glue): direct browser fetch — checks HTTP status.</li>
+              <li><strong>TCP systems</strong> (Hive Metastore, PostgreSQL, MySQL, MongoDB): checks Flink cluster health first, then provides the exact <code>nc -zv host port</code> command to verify from within the Flink container network.</li>
               <li><strong>Built-in</strong> (Generic In-Memory): always passes — no external service needed.</li>
-              <li><strong>CORS note</strong>: a "CORS restricted" response means the service IS running but blocks browser reads. This is normal behaviour.</li>
+              <li><strong>CORS note</strong>: a "CORS restricted" response means the service IS running but blocks browser reads.</li>
             </ul>
+          </div>
+        </div>
+        <div style="background:rgba(245,166,35,0.05);border:1px solid rgba(245,166,35,0.2);border-radius:var(--radius);padding:13px 15px;">
+          <div style="font-size:12px;font-weight:700;color:#f5a623;margin-bottom:8px;">● JAR Available — what does this mean?</div>
+          <div style="font-size:11px;color:var(--text1);line-height:1.8;">
+            The <span class="cat-badge-available" style="display:inline-flex;">● JAR Available</span> badge means Str:::lab Studio has detected
+            the required connector JAR in your upload registry (<code>strlabstudio_connector_jars</code> in localStorage).
+            This is populated when you upload JARs via <strong>⊙ Systems Manager → Upload JAR</strong>.<br><br>
+            Even if the badge shows Available, you still need to ensure the JAR is copied to <code>/opt/flink/lib/</code>
+            on your Flink cluster and the cluster has been restarted. The badge only confirms the file was uploaded to the
+            Studio container — not that Flink has loaded it.
           </div>
         </div>
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;">
@@ -472,7 +534,7 @@ function _catBuildModal() {
           <pre style="background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:10px 14px;font-size:11px;font-family:var(--mono);color:var(--text1);line-height:1.7;overflow-x:auto;white-space:pre;"># Catalog JARs go in /opt/flink/lib/ — not ADD JAR
 docker cp flink-connector-jdbc-3.2.0-1.19.jar flink-sql-gateway:/opt/flink/lib/
 docker cp postgresql-42.7.3.jar                flink-sql-gateway:/opt/flink/lib/
-docker restart flink-sql-gateway</pre>
+docker restart flink-sql-gateway flink-jobmanager flink-taskmanager</pre>
         </div>
       </div>
     </div>
@@ -502,10 +564,53 @@ docker restart flink-sql-gateway</pre>
 .cat-field-row > div { flex:1;min-width:140px; }
 .cat-active-card { display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);margin-bottom:6px;font-size:11px; }
 .cat-active-card.is-current { border-color:var(--accent);background:rgba(0,212,170,0.05); }
+
+/* JAR status badges - mirrors systems-manager.js */
+.cat-badge-jar-req {
+  background:rgba(245,166,35,0.18);color:#f5a623;
+  border:1px solid rgba(245,166,35,0.35);
+  padding:2px 7px;border-radius:2px;font-size:9px;font-weight:700;letter-spacing:.3px;
+  display:inline-block;
+}
+.cat-badge-available {
+  background:rgba(79,163,224,0.12);
+  border:1px solid rgba(79,163,224,0.45);
+  color:#4fa3e0;
+  padding:2px 7px;border-radius:2px;font-size:9px;font-weight:700;letter-spacing:.3px;
+  display:inline-flex;align-items:center;gap:4px;
+  box-shadow:0 0 6px rgba(79,163,224,0.2);
+}
+.cat-badge-available::before {
+  content:'';width:6px;height:6px;border-radius:50%;background:#4fa3e0;
+  box-shadow:0 0 5px #4fa3e0;
+  animation:cat-glow-pulse 1.8s ease-in-out infinite;
+  flex-shrink:0;
+}
+@keyframes cat-glow-pulse {
+  0%,100% { opacity:1;box-shadow:0 0 5px #4fa3e0; }
+  50%      { opacity:0.55;box-shadow:0 0 3px #4fa3e0; }
+}
+.cat-badge-builtin {
+  background:rgba(0,212,170,0.1);color:var(--accent,#00d4aa);
+  border:1px solid rgba(0,212,170,0.3);
+  padding:2px 7px;border-radius:2px;font-size:9px;font-weight:700;letter-spacing:.3px;
+  display:inline-block;
+}
 `;
         document.head.appendChild(s);
     }
+    // Refresh badges after modal builds (localStorage may have updated)
+    setTimeout(_catRefreshGridBadges, 200);
 }
+
+// Refresh all type-grid badges from current localStorage state
+function _catRefreshGridBadges() {
+    CATALOG_TYPES.forEach(t => {
+        const el = document.getElementById(`cat-grid-badge-${t.id}`);
+        if (el) el.innerHTML = _catJarBadgeHtml(t.id, t.requiresJar);
+    });
+}
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TAB SWITCHING
@@ -520,6 +625,7 @@ function _catSwitchTab(tab) {
     });
     if (tab === 'active')  _catLoadActive();
     if (tab === 'history') _catRenderHistory();
+    if (tab === 'create')  _catRefreshGridBadges();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -548,10 +654,21 @@ function _catSelectType(typeId) {
 
     if (jarNotice) {
         if (def.requiresJar) {
+            const jarSt = _catJarStatus(typeId);
+            const badgeHtml = jarSt === 'available'
+                ? `<span class="cat-badge-available">● JAR Available</span>`
+                : `<span class="cat-badge-jar-req">JAR REQ</span>`;
+            const extraMsg = jarSt === 'available'
+                ? `<div style="margin-top:6px;font-size:10px;color:var(--blue);">✓ A matching JAR was detected in your uploads. Ensure it is also in <code>/opt/flink/lib/</code> on your Flink cluster.</div>`
+                : `<div style="margin-top:6px;font-size:10px;color:var(--text3);">Upload via <strong>⊙ Systems Manager → Upload JAR</strong> then copy to <code>/opt/flink/lib/</code>.</div>`;
+
             jarNotice.style.display = 'block';
             jarNotice.innerHTML = `<div style="background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.3);border-radius:var(--radius);padding:11px 14px;font-size:11px;color:var(--text1);line-height:1.8;">
-              <div style="font-size:10px;font-weight:700;color:#f5a623;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;">⚠ JAR Required — place in /opt/flink/lib/</div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                <span style="color:#f5a623;">⚠ JAR Required</span> ${badgeHtml}
+              </div>
               <div>${def.jarNote}</div>
+              ${extraMsg}
               <div style="margin-top:6px;font-size:10px;color:var(--text3);">Unlike UDF JARs, catalog connector JARs cannot be loaded with <code>ADD JAR</code>. Restart the Gateway after copying.</div>
             </div>`;
         } else {
@@ -604,7 +721,6 @@ async function _catRunTest() {
     if (btn) { btn.disabled = true; btn.textContent = '⊙ Testing…'; }
     result.style.display = 'none';
 
-    // Collect field values
     const fields = {};
     (def.fields || []).forEach(f => { fields[f.id] = (document.getElementById(`cat-field-${f.id}`)?.value || '').trim(); });
     const authMode = window._catMgrState.authMode || 'none';
@@ -723,13 +839,11 @@ function _catGetSql() {
     const sql = document.getElementById('cat-sql-preview')?.textContent || '';
     return sql.startsWith('--') ? null : sql;
 }
-
 function _catCopySql() {
     const sql = _catGetSql();
     if (!sql) { toast('Fill in catalog name first', 'warn'); return; }
     navigator.clipboard.writeText(sql).then(() => toast('SQL copied', 'ok'));
 }
-
 function _catInsertSql() {
     const sql = _catGetSql();
     if (!sql) { toast('Fill in catalog name first', 'warn'); return; }
@@ -784,6 +898,10 @@ async function _catExecute() {
             try {
                 await _catRunQ(`USE CATALOG ${name}`);
                 if (state) { state.activeCatalog = name; if (typeof updateCatalogStatus === 'function') updateCatalogStatus(name, state.activeDatabase); }
+                // Refresh the catalog sidebar tree
+                ['refreshCatalog','refreshCatalogBrowser','loadCatalogTree','buildCatalogTree'].forEach(fn => {
+                    if (typeof window[fn] === 'function') { try { setTimeout(() => window[fn](), 500); } catch(_) {} }
+                });
             } catch(e) { addLog('WARN', `USE CATALOG ${name} failed: ${e.message}`); }
         }
 
