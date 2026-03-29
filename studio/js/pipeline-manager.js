@@ -726,7 +726,53 @@ function _plmBuildModal() {
 .plm-cfg-header{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .plm-cfg-body{flex:1;overflow-y:auto;padding:14px;}
 .plm-cfg-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0;background:var(--bg1);}
-    `;
+// Inside the existing CSS injection, add these styles:
+const scrollableSqlStyles = \`
+#plm-sql-preview,
+#plm-sql-full {
+  overflow: auto !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  white-space: pre !important;
+  word-wrap: normal !important;
+  word-break: normal !important;
+  max-height: 100% !important;
+  font-family: var(--mono) !important;
+  font-size: 10px !important;
+  line-height: 1.6 !important;
+}
+
+#plm-sql-side {
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+#plm-sql-side pre {
+  overflow: auto !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+
+#plm-pane-sql {
+  overflow: hidden !important;
+}
+
+#plm-pane-sql pre {
+  overflow: auto !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+}
+\`;
+
+// When setting the CSS, combine with existing styles:
+if (!document.getElementById('plm-css')) {
+  const s = document.createElement('style');
+  s.id = 'plm-css';
+  s.textContent = existingCSS + scrollableSqlStyles;
+  document.head.appendChild(s);
+} 
+   `;
     document.head.appendChild(s);
   }
 
@@ -1669,7 +1715,28 @@ function _plmNodeToSql(node) {
       return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'kafka\',\n  \'topic\' = \'' + (p.topic || 'output-topic') + '\',\n  \'properties.bootstrap.servers\' = \'' + (p.bootstrap_servers || 'kafka:9092') + '\',\n  \'format\' = \'' + (p.format || 'json') + '\'' + buildSaslProps(p) + '\n) LIKE ' + srcTbl + ' (EXCLUDING ALL);';
 
     case 'jdbc_sink':
-      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'jdbc\',\n  \'url\' = \'' + (p.jdbc_url || 'jdbc:postgresql://localhost/mydb') + '\',\n  \'table-name\' = \'' + (p.db_table || 'output_table') + '\'' + (p.username ? ',\n  \'username\' = \'' + p.username + '\'' : '') + (p.password ? ',\n  \'password\' = \'' + p.password + '\'' : '') + '\n);';
+      // Parse schema to check for id column
+      const schemaLinesForSink = (p.schema || '').split('\n').map(l => l.trim()).filter(Boolean);
+      const hasIdColumn = schemaLinesForSink.some(line => {
+        const colName = line.split(/\s+/)[0];
+        return colName === 'id';
+      });
+
+      // Get schema columns for building
+      const schemaColsForSink = (p.schema || '').split('\n')
+          .map(l => l.trim().split(/\s+/)[0])
+          .filter(Boolean);
+
+      // Ensure id column exists for primary key
+      let finalSchema = schema;
+      if (!hasIdColumn && schemaColsForSink.length > 0) {
+        finalSchema = schema + (schema ? ',\n  id BIGINT' : '  id BIGINT');
+      } else if (!hasIdColumn && schemaColsForSink.length === 0) {
+        finalSchema = '  id BIGINT\n' + schema;
+      }
+
+      // Build the table with proper primary key
+      return `-- Sink: ${tbl}\nCREATE TEMPORARY TABLE IF NOT EXISTS ${tbl} (\n${finalSchema},\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  'connector' = 'jdbc',\n  'url' = '${p.jdbc_url || 'jdbc:postgresql://localhost/mydb'}',\n  'table-name' = '${p.db_table || 'output_table'}'${p.username ? `,\n  'username' = '${p.username}'` : ''}${p.password ? `,\n  'password' = '${p.password}'` : ''}\n);`;
 
     case 'filesystem_sink':
       return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + '\n) WITH (\n  \'connector\' = \'filesystem\',\n  \'path\' = \'' + (p.path || 's3://bucket/output/') + '\',\n  \'format\' = \'' + (p.format || 'parquet') + '\'' + (p.rolling_interval ? ',\n  \'sink.rolling-policy.rollover-interval\' = \'' + p.rolling_interval + '\'' : '') + '\n);';
@@ -1678,11 +1745,14 @@ function _plmNodeToSql(node) {
       return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'elasticsearch-' + (p.es_version || '7') + '\',\n  \'hosts\' = \'' + (p.hosts || 'http://elasticsearch:9200') + '\',\n  \'index\' = \'' + (p.index || 'my-index') + '\'' + (p.username ? ',\n  \'username\' = \'' + p.username + '\'' : '') + (p.password ? ',\n  \'password\' = \'' + p.password + '\'' : '') + '\n);';
 
     case 'print_sink':
-      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'print\'' + (p.print_identifier ? ',\n  \'print-identifier\' = \'' + p.print_identifier + '\'' : '') + '\n) LIKE ' + srcTbl + ' (EXCLUDING ALL);';
+      const srcNodePrint = canvas?.nodes?.find(n => PM_OPERATORS.find(o => o.id === n.opId)?.isSource);
+      const srcTblPrint = srcNodePrint?.params?.table_name || srcNodePrint?.label?.toLowerCase().replace(/\s+/g, '_') || 'source_table';
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'print\'' + (p.print_identifier ? ',\n  \'print-identifier\' = \'' + p.print_identifier + '\'' : '') + '\n) LIKE ' + srcTblPrint + ' (EXCLUDING ALL);';
 
     case 'blackhole_sink':
-      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'blackhole\'\n) LIKE ' + srcTbl + ' (EXCLUDING ALL);';
-
+      const srcNodeBlack = canvas?.nodes?.find(n => PM_OPERATORS.find(o => o.id === n.opId)?.isSource);
+      const srcTblBlack = srcNodeBlack?.params?.table_name || srcNodeBlack?.label?.toLowerCase().replace(/\s+/g, '_') || 'source_table';
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'blackhole\'\n) LIKE ' + srcTblBlack + ' (EXCLUDING ALL);';
     case 'mongodb_sink':
       return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'mongodb\',\n  \'uri\' = \'' + (p.uri || 'mongodb://localhost:27017/mydb') + '\',\n  \'collection\' = \'' + (p.collection || 'my-collection') + '\'\n);';
 
@@ -1787,34 +1857,46 @@ function _plmBuildInsertSql(sources, sinks, nodes, edges) {
 
   const src = sources[0];
   const sink = sinks[0];
-  const srcName = src.params?.table_name || 'source_table';
-  const sinkName = sink.params?.table_name || 'sink_table';
+  const srcName = src.params?.table_name || src.label?.toLowerCase().replace(/\s+/g, '_') || 'source_table';
+  const sinkName = sink.params?.table_name || sink.label?.toLowerCase().replace(/\s+/g, '_') || 'sink_table';
 
-  // Get all transformation nodes (not sources, not sinks)
+  // Get all transformation nodes in topological order
   const transforms = nodes.filter(n => {
     const op = PM_OPERATORS.find(o => o.id === n.opId);
-    return op && !op.isSource && !op.isSink && n.opId !== 'catalog_context';
+    return op && !op.isSource && !op.isSink && n.opId !== 'catalog_context' && n.opId !== 'result_output';
   });
 
-  // Get schema columns from source
+  // Get source columns from schema
   const rawSchema = src.params?.schema || '';
-  const schemaCols = rawSchema.split('\n').map(l => l.trim().split(/\s+/)[0]).filter(Boolean);
-  const allCols = schemaCols.length ? schemaCols.join(', ') : '*';
+  const schemaLines = rawSchema.split('\n').map(l => l.trim()).filter(Boolean);
+  const schemaCols = schemaLines.map(l => l.split(/\s+/)[0]).filter(Boolean);
 
-  let selectCols = allCols;
+  let selectItems = [];
   let fromClause = srcName;
   let whereClauses = [];
   let groupBy = null;
+  let hasWindow = false;
 
+  // Process transforms in order
   transforms.forEach(node => {
     const np = node.params || {};
     switch (node.opId) {
       case 'filter':
-        if (np.condition) whereClauses.push(np.condition);
+        if (np.condition && np.condition.trim()) {
+          whereClauses.push('(' + np.condition + ')');
+        }
         break;
 
       case 'project':
-        if (np.columns) selectCols = np.columns.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+        if (np.columns && np.columns.trim()) {
+          selectItems = [];
+          const cols = np.columns.split('\n')
+              .map(l => l.trim())
+              .filter(Boolean);
+          cols.forEach(col => {
+            selectItems.push(col);
+          });
+        }
         break;
 
       case 'map_udf':
@@ -1823,8 +1905,7 @@ function _plmBuildInsertSql(sources, sinks, nodes, edges) {
         const ic = np.input_col || np.input_cols;
         const oa = np.output_alias;
         if (fn && ic && oa) {
-          const pc = np.extra_cols ? np.extra_cols.split(',').map(c => c.trim()).filter(Boolean).join(', ') : allCols;
-          selectCols = pc + ',\n  ' + fn + '(' + ic + ') AS ' + oa;
+          selectItems.push(`${fn}(${ic}) AS ${oa}`);
         }
         break;
 
@@ -1832,57 +1913,81 @@ function _plmBuildInsertSql(sources, sinks, nodes, edges) {
       case 'lookup_join':
         const dimTable = np.dim_table || np.lookup_table;
         const joinKey = np.join_key;
-        const extraCols = np.columns ? ',\n  ' + np.columns : '';
         if (dimTable && joinKey) {
-          selectCols = allCols + extraCols;
           fromClause = np.time_col
-              ? fromClause + ' JOIN ' + dimTable + ' FOR SYSTEM_TIME AS OF ' + srcName + '.' + np.time_col + ' ON ' + joinKey
-              : fromClause + ' LEFT JOIN ' + dimTable + ' ON ' + joinKey;
+              ? `${fromClause} JOIN ${dimTable} FOR SYSTEM_TIME AS OF ${srcName}.${np.time_col} ON ${joinKey}`
+              : `${fromClause} LEFT JOIN ${dimTable} ON ${joinKey}`;
         }
         break;
 
       case 'tumble_window':
-        fromClause = 'TABLE(TUMBLE(TABLE ' + fromClause + ', DESCRIPTOR(' + np.time_col + '), INTERVAL \'' + (np.window_size || '1 MINUTE') + '\'))';
+        fromClause = `TABLE(TUMBLE(TABLE ${fromClause}, DESCRIPTOR(${np.time_col}), INTERVAL '${np.window_size || '1 MINUTE'}'))`;
+        hasWindow = true;
         if (np.aggregations) {
-          selectCols = 'window_start, window_end,\n  ' + np.aggregations.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+          selectItems = ['window_start', 'window_end'];
+          const aggs = np.aggregations.split('\n')
+              .map(l => l.trim())
+              .filter(Boolean);
+          aggs.forEach(agg => selectItems.push(agg));
         }
         groupBy = 'window_start, window_end' + (np.group_by ? ', ' + np.group_by : '');
         break;
 
       case 'hop_window':
-        fromClause = 'TABLE(HOP(TABLE ' + fromClause + ', DESCRIPTOR(' + np.time_col + '), INTERVAL \'' + (np.slide || '1 MINUTE') + '\', INTERVAL \'' + (np.size || '5 MINUTE') + '\'))';
+        fromClause = `TABLE(HOP(TABLE ${fromClause}, DESCRIPTOR(${np.time_col}), INTERVAL '${np.slide || '1 MINUTE'}', INTERVAL '${np.size || '5 MINUTE'}'))`;
+        hasWindow = true;
         if (np.aggregations) {
-          selectCols = 'window_start, window_end,\n  ' + np.aggregations.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+          selectItems = ['window_start', 'window_end'];
+          const aggs = np.aggregations.split('\n')
+              .map(l => l.trim())
+              .filter(Boolean);
+          aggs.forEach(agg => selectItems.push(agg));
         }
         groupBy = 'window_start, window_end' + (np.group_by ? ', ' + np.group_by : '');
         break;
 
       case 'aggregate':
         if (np.aggregations) {
-          selectCols = (np.group_by ? np.group_by + ',\n  ' : '') + np.aggregations.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+          selectItems = [];
+          if (np.group_by) {
+            const groups = np.group_by.split(',').map(g => g.trim());
+            groups.forEach(g => selectItems.push(g));
+          }
+          const aggs = np.aggregations.split('\n')
+              .map(l => l.trim())
+              .filter(Boolean);
+          aggs.forEach(agg => selectItems.push(agg));
         }
         groupBy = np.group_by || null;
         break;
 
       case 'dedup':
-        fromClause = '(SELECT ' + allCols + ', ROW_NUMBER() OVER (PARTITION BY ' + (np.unique_key || 'id') + ' ORDER BY ' + (np.time_col || 'ts') + ') AS rn FROM ' + fromClause + ') t WHERE rn = 1';
-        selectCols = allCols;
-        break;
-
-      case 'ai_model':
-        // AI Model generates a comment but doesn't change SQL structure
-        // In practice, this would be a UDF call
-        break;
-
-      case 'feature_store':
-        // Feature Store is handled via lookup join in actual implementation
+        fromClause = `(SELECT *, ROW_NUMBER() OVER (PARTITION BY ${np.unique_key || 'id'} ORDER BY ${np.time_col || 'ts'}) AS rn FROM ${fromClause}) t WHERE rn = 1`;
         break;
     }
   });
 
-  let sql = 'INSERT INTO ' + sinkName + '\nSELECT\n  ' + selectCols + '\nFROM ' + fromClause;
-  if (whereClauses.length) sql += '\nWHERE ' + whereClauses.join(' AND ');
-  if (groupBy) sql += '\nGROUP BY ' + groupBy;
+  // If no select items defined, use all source columns
+  if (selectItems.length === 0 && schemaCols.length > 0) {
+    selectItems = [...schemaCols];
+  } else if (selectItems.length === 0) {
+    selectItems = ['*'];
+  }
+
+  // Build the SELECT clause with proper formatting (no trailing commas)
+  let selectClause = selectItems.join(',\n  ');
+
+  // Build the INSERT statement
+  let sql = `INSERT INTO ${sinkName}\nSELECT\n  ${selectClause}\nFROM ${fromClause}`;
+
+  if (whereClauses.length > 0) {
+    sql += '\nWHERE ' + whereClauses.join(' AND ');
+  }
+
+  if (groupBy && !hasWindow) {
+    sql += '\nGROUP BY ' + groupBy;
+  }
+
   sql += ';';
   return sql;
 }
