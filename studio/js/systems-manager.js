@@ -113,17 +113,17 @@ CREATE TEMPORARY TABLE pg_cdc_events (
         docUrl: 'https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/table/jdbc/',
         desc: 'JDBC connector for PostgreSQL, MySQL, MariaDB. Enables reading/writing relational tables from Flink SQL.',
         sqlExample: `CREATE TABLE pg_orders (
-  order_id BIGINT,
-  status   STRING,
-  amount   DOUBLE,
-  PRIMARY KEY (order_id) NOT ENFORCED
-) WITH (
-  'connector' = 'jdbc',
-  'url'       = 'jdbc:postgresql://postgres:5432/mydb',
-  'table-name'= 'orders',
-  'username'  = 'flink_user',
-  'password'  = 'secret'
-);`,
+                                                order_id BIGINT,
+                                                status   STRING,
+                                                amount   DOUBLE,
+                                                PRIMARY KEY (order_id) NOT ENFORCED
+                     ) WITH (
+                           'connector' = 'jdbc',
+                           'url'       = 'jdbc:postgresql://postgres:5432/mydb',
+                           'table-name'= 'orders',
+                           'username'  = 'flink_user',
+                           'password'  = 'secret'
+                           );`,
         noJarNeeded: false,
     },
     {
@@ -137,15 +137,15 @@ CREATE TEMPORARY TABLE pg_cdc_events (
         docUrl: 'https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/table/mongodb/',
         desc: 'MongoDB source and sink. Ideal for document-oriented storage, API enrichment, and flexible schema pipelines.',
         sqlExample: `CREATE TABLE mongo_sink (
-  _id     STRING,
-  user_id BIGINT,
-  event   STRING
-) WITH (
-  'connector'  = 'mongodb',
-  'uri'        = 'mongodb://mongo:27017',
-  'database'   = 'analytics',
-  'collection' = 'events'
-);`,
+                                                 _id     STRING,
+                                                 user_id BIGINT,
+                                                 event   STRING
+                     ) WITH (
+                           'connector'  = 'mongodb',
+                           'uri'        = 'mongodb://mongo:27017',
+                           'database'   = 'analytics',
+                           'collection' = 'events'
+                           );`,
         noJarNeeded: false,
     },
     // ── STORAGE ───────────────────────────────────────────────────────────
@@ -160,9 +160,9 @@ CREATE TEMPORARY TABLE pg_cdc_events (
         docUrl: 'https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/table/filesystem/',
         desc: 'Filesystem connector for S3, MinIO, GCS, HDFS, and local paths. Supports Parquet, ORC, JSON, CSV.',
         sqlExample: `CREATE TABLE s3_sink (
-  event_date STRING,
-  amount     DOUBLE
-) PARTITIONED BY (event_date)
+                                              event_date STRING,
+                                              amount     DOUBLE
+                     ) PARTITIONED BY (event_date)
 WITH (
   'connector' = 'filesystem',
   'path'      = 's3://my-bucket/events/',
@@ -182,14 +182,14 @@ WITH (
         docUrl: 'https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/table/elasticsearch/',
         desc: 'Elasticsearch 7/8 and OpenSearch sink. Stream aggregated or enriched records directly into search indices.',
         sqlExample: `CREATE TABLE es_metrics (
-  symbol  STRING,
-  price   DOUBLE,
-  PRIMARY KEY (symbol) NOT ENFORCED
-) WITH (
-  'connector' = 'elasticsearch-7',
-  'hosts'     = 'http://elasticsearch:9200',
-  'index'     = 'market-metrics'
-);`,
+                                                 symbol  STRING,
+                                                 price   DOUBLE,
+                                                 PRIMARY KEY (symbol) NOT ENFORCED
+                     ) WITH (
+                           'connector' = 'elasticsearch-7',
+                           'hosts'     = 'http://elasticsearch:9200',
+                           'index'     = 'market-metrics'
+                           );`,
         noJarNeeded: false,
     },
     // ── LAKEHOUSE ─────────────────────────────────────────────────────────
@@ -240,14 +240,14 @@ SHOW TABLES;`,
         docUrl: 'https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/table/datagen/',
         desc: 'Built-in synthetic data generator. No external dependency needed. Use for dev, load testing, and demos.',
         sqlExample: `CREATE TABLE orders_datagen (
-  order_id BIGINT,
-  amount   DOUBLE,
-  ts       TIMESTAMP(3),
-  WATERMARK FOR ts AS ts - INTERVAL '1' SECOND
-) WITH (
-  'connector'       = 'datagen',
-  'rows-per-second' = '100'
-);`,
+                                                     order_id BIGINT,
+                                                     amount   DOUBLE,
+                                                     ts       TIMESTAMP(3),
+                                                     WATERMARK FOR ts AS ts - INTERVAL '1' SECOND
+                     ) WITH (
+                           'connector'       = 'datagen',
+                           'rows-per-second' = '100'
+                           );`,
         noJarNeeded: true,
     },
     {
@@ -260,9 +260,9 @@ SHOW TABLES;`,
         docUrl: 'https://nightlies.apache.org/flink/flink-docs-stable/docs/connectors/table/print/',
         desc: 'Print sink writes rows to TaskManager stdout. Blackhole sink discards all records for benchmarking.',
         sqlExample: `CREATE TABLE debug_out WITH (
-  'connector'        = 'print',
-  'print-identifier' = 'DEBUG'
-) LIKE source_table (EXCLUDING ALL);`,
+                                                'connector'        = 'print',
+                                                'print-identifier' = 'DEBUG'
+                                                ) LIKE source_table (EXCLUDING ALL);`,
         noJarNeeded: true,
     },
 ];
@@ -616,117 +616,69 @@ function _sysBuildModal() {
 
     <!-- ══ UPLOAD JAR TAB ══ Quick download links include CDC JAR ═══════ -->
     <div id="sys-pane-upload" style="padding:20px;display:none;">
-        <div style="background:rgba(79,163,224,0.05);border:1px solid rgba(79,163,224,0.2);border-radius:var(--radius);padding:11px 14px;margin-bottom:14px;font-size:11px;color:var(--text1);line-height:1.8;">
-            <strong style="color:var(--blue,#4fa3e0);">Connector JARs must be in /opt/flink/lib/</strong> on all Flink containers at startup.<br>
-            After uploading, the system will automatically copy JARs to all Flink containers and restart the cluster.
+      <div style="background:rgba(79,163,224,0.05);border:1px solid rgba(79,163,224,0.2);border-radius:var(--radius);padding:11px 14px;margin-bottom:14px;font-size:11px;color:var(--text1);line-height:1.8;">
+        <strong style="color:var(--blue,#4fa3e0);">Connector JARs must be in /opt/flink/lib/</strong> on all TaskManagers and the SQL Gateway <em>at startup</em>.<br>
+        After uploading a JAR, use the <strong>Restart SQL Gateway session</strong> button below — no SSH needed.
+      </div>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;">Quick Download Links</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:5px;">
+          ${CONNECTOR_DEFS.filter(c => !c.noJarNeeded && c.downloadUrl).map(c => `
+            <a href="${c.downloadUrl}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;">
+              <span>${c.icon}</span>
+              <div style="min-width:0;flex:1;">
+                <div style="font-size:11px;font-weight:600;color:var(--text0);">${c.label}</div>
+                <div style="font-size:9px;color:var(--text3);margin-top:1px;">${c.versionNote}</div>
+              </div>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>`).join('')}
         </div>
-        
-        <!-- Quick Download Links -->
-        <div style="margin-bottom:14px;">
-            <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px;">Quick Download Links</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:5px;">
-                ${CONNECTOR_DEFS.filter(c => !c.noJarNeeded && c.downloadUrl).map(c => `
-                    <a href="${c.downloadUrl}" target="_blank" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);text-decoration:none;">
-                        <span>${c.icon}</span>
-                        <div style="min-width:0;flex:1;">
-                            <div style="font-size:11px;font-weight:600;color:var(--text0);">${c.label}</div>
-                            <div style="font-size:9px;color:var(--text3);margin-top:1px;">${c.versionNote}</div>
-                        </div>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                    </a>`).join('')}
-            </div>
+      </div>
+      <div id="sys-jar-dropzone"
+        style="border:2px dashed var(--border2);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;background:var(--bg1);margin-bottom:12px;transition:border-color 0.15s,background 0.15s;"
+        onclick="document.getElementById('sys-jar-input').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--blue,#4fa3e0)';this.style.background='rgba(79,163,224,0.04)'"
+        ondragleave="this.style.borderColor='var(--border2)';this.style.background='var(--bg1)'"
+        ondrop="_sysJarDrop(event)">
+        <div style="font-size:26px;margin-bottom:6px;">📦</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text0);">Drop connector JAR here or click to browse</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">Accepts <code>.jar</code> files · Max 256 MB</div>
+        <input type="file" id="sys-jar-input" accept=".jar" style="display:none;" onchange="_sysJarFileSelected(event)" />
+      </div>
+      <div id="sys-jar-file-info" style="display:none;background:var(--bg2);border:1px solid var(--border);padding:8px 12px;border-radius:var(--radius);margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span>📦</span>
+          <div style="flex:1;"><div id="sys-jar-fname" style="font-family:var(--mono);color:var(--text0);font-weight:600;font-size:12px;"></div><div id="sys-jar-fsize" style="color:var(--text3);font-size:11px;"></div></div>
+          <button onclick="_sysJarClear()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">✕</button>
         </div>
-        
-        <!-- Dropzone -->
-        <div id="sys-jar-dropzone"
-            style="border:2px dashed var(--border2);border-radius:var(--radius);padding:28px 20px;text-align:center;cursor:pointer;background:var(--bg1);margin-bottom:12px;transition:border-color 0.15s,background 0.15s;"
-            onclick="document.getElementById('sys-jar-input').click()"
-            ondragover="event.preventDefault();this.style.borderColor='var(--blue,#4fa3e0)';this.style.background='rgba(79,163,224,0.04)'"
-            ondragleave="this.style.borderColor='var(--border2)';this.style.background='var(--bg1)'"
-            ondrop="_sysJarDrop(event)">
-            <div style="font-size:26px;margin-bottom:6px;">📦</div>
-            <div style="font-size:13px;font-weight:600;color:var(--text0);">Drop connector JAR here or click to browse</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px;">Accepts <code>.jar</code> files · Max 256 MB</div>
-            <input type="file" id="sys-jar-input" accept=".jar" style="display:none;" onchange="_sysJarFileSelected(event)" />
+      </div>
+      <div id="sys-jar-status" style="font-size:12px;min-height:16px;margin-bottom:12px;line-height:1.8;"></div>
+      <button class="btn btn-primary" style="font-size:12px;width:100%;padding:10px;" onclick="_sysJarUpload()">⬆ Upload Connector JAR</button>
+      <div style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-weight:700;">JARs on Studio Container</span>
+          <button class="btn btn-secondary" style="font-size:10px;padding:3px 10px;" onclick="_sysJarLoadList()">⟳ Refresh</button>
         </div>
-        
-        <!-- Selected File Info -->
-        <div id="sys-jar-file-info" style="display:none;background:var(--bg2);border:1px solid var(--border);padding:8px 12px;border-radius:var(--radius);margin-bottom:12px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-                <span>📦</span>
-                <div style="flex:1;">
-                    <div id="sys-jar-fname" style="font-family:var(--mono);color:var(--text0);font-weight:600;font-size:12px;"></div>
-                    <div id="sys-jar-fsize" style="color:var(--text3);font-size:11px;"></div>
-                </div>
-                <button onclick="_sysJarClear()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;">✕</button>
-            </div>
+        <div id="sys-jar-list"><div style="font-size:11px;color:var(--text3);">Click ⟳ Refresh to list uploaded JARs.</div></div>
+      </div>
+      <!-- Restart Controls -->
+      <div style="margin-top:20px;border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">After Uploading JARs — Activate Without SSH</div>
+        <div style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:var(--radius);padding:11px 14px;font-size:11px;color:var(--text1);line-height:1.8;margin-bottom:12px;">
+          <strong style="color:var(--yellow);">⚠ Connector JARs require a Gateway restart to take effect.</strong><br>
+          Use the buttons below to trigger a graceful restart directly from the UI.
         </div>
-        
-        <!-- Progress Modal (Hidden by default) -->
-        <div id="sys-upload-progress-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:20000;align-items:center;justify-content:center;">
-            <div style="background:var(--bg2);border-radius:12px;padding:24px;width:480px;max-width:90%;border:1px solid var(--accent);box-shadow:0 8px 32px rgba(0,0,0,0.4);">
-                <div style="text-align:center;margin-bottom:20px;">
-                    <div id="sys-progress-spinner" style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sys-spin 0.8s linear infinite;margin:0 auto 16px;"></div>
-                    <div id="sys-progress-title" style="font-size:16px;font-weight:700;color:var(--text0);margin-bottom:8px;">Uploading JAR...</div>
-                    <div id="sys-progress-message" style="font-size:12px;color:var(--text2);line-height:1.6;"></div>
-                </div>
-                <div id="sys-progress-steps" style="margin:20px 0;">
-                    <div id="sys-step-upload" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-                        <div id="sys-step-upload-icon" style="width:20px;text-align:center;">⏳</div>
-                        <div style="flex:1;">1. Upload JAR to Studio</div>
-                        <div id="sys-step-upload-status" style="font-size:11px;color:var(--text3);">pending</div>
-                    </div>
-                    <div id="sys-step-copy" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-                        <div id="sys-step-copy-icon" style="width:20px;text-align:center;">⏳</div>
-                        <div style="flex:1;">2. Copy to Flink containers</div>
-                        <div id="sys-step-copy-status" style="font-size:11px;color:var(--text3);">pending</div>
-                    </div>
-                    <div id="sys-step-restart" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-                        <div id="sys-step-restart-icon" style="width:20px;text-align:center;">⏳</div>
-                        <div style="flex:1;">3. Restart Flink cluster</div>
-                        <div id="sys-step-restart-status" style="font-size:11px;color:var(--text3);">pending</div>
-                    </div>
-                    <div id="sys-step-reconnect" style="display:flex;align-items:center;gap:10px;padding:8px 0;">
-                        <div id="sys-step-reconnect-icon" style="width:20px;text-align:center;">⏳</div>
-                        <div style="flex:1;">4. Reconnect Studio session</div>
-                        <div id="sys-step-reconnect-status" style="font-size:11px;color:var(--text3);">pending</div>
-                    </div>
-                </div>
-                <div id="sys-progress-error" style="display:none;background:rgba(255,77,109,0.1);border:1px solid var(--red);border-radius:6px;padding:10px;margin-top:12px;font-size:11px;color:var(--red);"></div>
-                <div style="display:flex;gap:10px;margin-top:20px;">
-                    <button id="sys-progress-close" onclick="_sysCloseProgressModal()" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:none;">Close</button>
-                    <button id="sys-progress-retry" onclick="_sysRetryLastUpload()" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#000;cursor:pointer;font-weight:600;display:none;">Retry</button>
-                </div>
-            </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <button class="btn btn-secondary" style="font-size:11px;border-color:rgba(245,166,35,0.4);color:var(--yellow);" onclick="_sysRestartGateway()">⟳ Restart SQL Gateway session</button>
+          <button class="btn btn-secondary" style="font-size:11px;" onclick="_sysReconnectSession()">⟲ Reconnect Studio session</button>
         </div>
-        
-        <style>
-            @keyframes sys-spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            @keyframes sys-pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
-            }
-            .sys-step-complete { color: var(--green); }
-            .sys-step-error { color: var(--red); }
-            .sys-step-active { animation: sys-pulse 1s ease-in-out infinite; }
-        </style>
-        
-        <!-- JAR List -->
-        <div style="margin-top:20px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span style="font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;font-weight:700;">JARs on Studio Container</span>
-                <button class="btn btn-secondary" style="font-size:10px;padding:3px 10px;" onclick="_sysJarLoadList()">⟳ Refresh</button>
-            </div>
-            <div id="sys-jar-list"><div style="font-size:11px;color:var(--text3);">Click ⟳ Refresh to list uploaded JARs.</div></div>
+        <div id="sys-restart-status" style="font-size:11px;min-height:14px;font-family:var(--mono);"></div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.8;margin-top:8px;">
+          • <em>Restart SQL Gateway session</em> — closes current session, Flink reloads JARs from <code>/opt/flink/lib/</code>.<br>
+          • <em>Reconnect Studio session</em> — use after external restart (<code>docker restart flink-sql-gateway</code>).<br>
+          • Copy JARs first: <code>docker cp flink-studio:/var/www/udf-jars/&lt;jar&gt; flink-jobmanager:/opt/flink/lib/</code>
         </div>
-        
-        <!-- Upload Button -->
-        <button class="btn btn-primary" style="font-size:12px;width:100%;padding:10px;margin-top:16px;background:var(--accent);color:#000;font-weight:700;" onclick="_sysJarUpload()">
-            ⬆ Upload JAR & Auto-Restart Flink
-        </button>
+      </div>
     </div>
 
     <!-- ══ INTEGRATIONS TAB ══ includes CDC form card ═══════════════════ -->
@@ -1152,297 +1104,47 @@ function _sysSavedDelete(idx) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// JAR UPLOAD WITH PROGRESS SPINNER AND AUTO RESTART
+// JAR UPLOAD TAB FUNCTIONS
 // ─────────────────────────────────────────────────────────────────────────────
 let _sysSelJar = null;
-let _sysLastJarName = null;
 
-function _sysJarDrop(e) {
-    e.preventDefault();
-    const dz = document.getElementById('sys-jar-dropzone');
-    if (dz) { dz.style.borderColor='var(--border2)'; dz.style.background='var(--bg1)'; }
-    const f = e.dataTransfer?.files?.[0];
-    if (f) _sysJarSetFile(f);
-}
-
-function _sysJarFileSelected(e) {
-    const f = e.target?.files?.[0];
-    if (f) _sysJarSetFile(f);
-}
+function _sysJarDrop(e) { e.preventDefault(); const dz = document.getElementById('sys-jar-dropzone'); if (dz) { dz.style.borderColor='var(--border2)'; dz.style.background='var(--bg1)'; } const f = e.dataTransfer?.files?.[0]; if (f) _sysJarSetFile(f); }
+function _sysJarFileSelected(e) { const f = e.target?.files?.[0]; if (f) _sysJarSetFile(f); }
 
 function _sysJarSetFile(file) {
-    if (!file.name.endsWith('.jar')) {
-        const s = document.getElementById('sys-jar-status');
-        if (s) { s.style.color='var(--red)'; s.textContent='✗ Only .jar files accepted.'; }
-        return;
-    }
+    if (!file.name.endsWith('.jar')) { const s = document.getElementById('sys-jar-status'); if (s) { s.style.color='var(--red)'; s.textContent='✗ Only .jar files accepted.'; } return; }
     _sysSelJar = file;
-    const info  = document.getElementById('sys-jar-file-info');
-    if (info) info.style.display = 'block';
-    const fname = document.getElementById('sys-jar-fname');
-    if (fname) fname.textContent = file.name;
+    const info  = document.getElementById('sys-jar-file-info');  if (info) info.style.display = 'block';
+    const fname = document.getElementById('sys-jar-fname');       if (fname) fname.textContent = file.name;
     const fsize = document.getElementById('sys-jar-fsize');
     if (fsize) fsize.textContent = file.size > 1048576 ? (file.size/1048576).toFixed(1)+' MB' : (file.size/1024).toFixed(1)+' KB';
-    const status = document.getElementById('sys-jar-status');
-    if (status) status.textContent = '';
+    const status = document.getElementById('sys-jar-status'); if (status) status.textContent = '';
 }
 
-function _sysJarClear() {
-    _sysSelJar = null;
-    const info = document.getElementById('sys-jar-file-info');
-    if (info) info.style.display='none';
-    const inp = document.getElementById('sys-jar-input');
-    if (inp) inp.value='';
-}
-
-function _sysShowProgressModal() {
-    const modal = document.getElementById('sys-upload-progress-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        // Reset all steps
-        const steps = ['upload', 'copy', 'restart', 'reconnect'];
-        steps.forEach(step => {
-            const icon = document.getElementById(`sys-step-${step}-icon`);
-            const status = document.getElementById(`sys-step-${step}-status`);
-            if (icon) icon.innerHTML = '⏳';
-            if (status) {
-                status.innerHTML = 'pending';
-                status.style.color = 'var(--text3)';
-            }
-        });
-        document.getElementById('sys-progress-spinner').style.display = 'block';
-        document.getElementById('sys-progress-error').style.display = 'none';
-        document.getElementById('sys-progress-close').style.display = 'none';
-        document.getElementById('sys-progress-retry').style.display = 'none';
-    }
-}
-
-function _sysCloseProgressModal() {
-    const modal = document.getElementById('sys-upload-progress-modal');
-    if (modal) modal.style.display = 'none';
-}
-
-function _sysUpdateProgressStep(step, status, message = '') {
-    const iconEl = document.getElementById(`sys-step-${step}-icon`);
-    const statusEl = document.getElementById(`sys-step-${step}-status`);
-    const titleEl = document.getElementById('sys-progress-title');
-    const msgEl = document.getElementById('sys-progress-message');
-
-    if (iconEl) {
-        if (status === 'active') {
-            iconEl.innerHTML = '🔄';
-            iconEl.className = 'sys-step-active';
-        } else if (status === 'complete') {
-            iconEl.innerHTML = '✓';
-            iconEl.className = 'sys-step-complete';
-        } else if (status === 'error') {
-            iconEl.innerHTML = '✗';
-            iconEl.className = 'sys-step-error';
-        }
-    }
-
-    if (statusEl) {
-        statusEl.innerHTML = message || status;
-        if (status === 'complete') statusEl.style.color = 'var(--green)';
-        else if (status === 'error') statusEl.style.color = 'var(--red)';
-        else if (status === 'active') statusEl.style.color = 'var(--accent)';
-    }
-
-    if (titleEl && step === 'upload' && status === 'active') titleEl.innerHTML = 'Uploading JAR...';
-    if (msgEl && message) msgEl.innerHTML = message;
-}
-
-function _sysShowError(message) {
-    const errorEl = document.getElementById('sys-progress-error');
-    if (errorEl) {
-        errorEl.innerHTML = message;
-        errorEl.style.display = 'block';
-    }
-    document.getElementById('sys-progress-spinner').style.display = 'none';
-    document.getElementById('sys-progress-close').style.display = 'block';
-    document.getElementById('sys-progress-retry').style.display = 'block';
-}
-
-async function _sysJarUploadWithProgress() {
-    if (!_sysSelJar) {
-        toast('Select a JAR file first', 'warn');
-        return;
-    }
-
-    _sysShowProgressModal();
-    _sysUpdateProgressStep('upload', 'active', 'Uploading directly to Flink JobManager...');
-
-    const jarName = _sysSelJar.name;
-    _sysLastJarName = jarName;
-
-    try {
-        // Get Flink JobManager URL
-        const flinkJmUrl = _sysGatewayBase()
-            .replace('/flink-api', '')
-            .replace(':8083', ':8081')
-            .replace(/\/+$/, '');
-
-        const uploadUrl = `${flinkJmUrl}/jars/upload`;
-
-        // Upload directly to Flink
-        const formData = new FormData();
-        formData.append('jarfile', _sysSelJar);
-
-        const uploadResp = await fetch(uploadUrl, {
-            method: 'POST',
-            body: formData,
-            signal: AbortSignal.timeout(60000)
-        });
-
-        if (!uploadResp.ok) {
-            throw new Error(`HTTP ${uploadResp.status}`);
-        }
-
-        const result = await uploadResp.json();
-
-        _sysUpdateProgressStep('upload', 'complete', '✓ Uploaded to Flink');
-        _sysRecordJarUpload(jarName);
-
-        // Skip copy step - already on Flink!
-        _sysUpdateProgressStep('copy', 'complete', '✓ JAR is on Flink JobManager');
-
-        // No restart needed for most connectors!
-        _sysUpdateProgressStep('restart', 'complete', '✓ No restart needed');
-
-        // Reconnect session
-        _sysUpdateProgressStep('reconnect', 'active', 'Reconnecting session...');
-
-        if (typeof renewSession === 'function') {
-            await renewSession();
-            _sysUpdateProgressStep('reconnect', 'complete', '✓ Session reconnected');
-        } else {
-            _sysUpdateProgressStep('reconnect', 'complete', '✓ Ready to use');
-        }
-
-        // Success!
-        document.getElementById('sys-progress-title').innerHTML = '✓ Complete!';
-        document.getElementById('sys-progress-message').innerHTML = `JAR "${jarName}" successfully uploaded to Flink JobManager.<br><br>Connector is now available for your pipelines.`;
-        document.getElementById('sys-progress-spinner').style.display = 'none';
-        document.getElementById('sys-progress-close').style.display = 'block';
-
-        if (typeof toast === 'function') toast(`✓ ${jarName} uploaded to Flink`, 'ok');
-
-        _sysJarClear();
-        setTimeout(() => {
-            _sysJarLoadList();
-            _sysRefreshAvailability();
-        }, 1000);
-
-    } catch (error) {
-        console.error('Upload error:', error);
-        _sysUpdateProgressStep('upload', 'error');
-        _sysShowError(`
-            Failed to upload to Flink JobManager: ${error.message}<br><br>
-            <strong>Manual docker command:</strong><br>
-            <code style="font-size:10px;display:block;margin-top:8px;padding:8px;background:var(--bg1);border-radius:4px;">
-            docker cp ${jarName} flink-jobmanager:/opt/flink/lib/<br>
-            docker restart flink-jobmanager flink-taskmanager
-            </code>
-        `);
-        document.getElementById('sys-progress-spinner').style.display = 'none';
-    }
-}
+function _sysJarClear() { _sysSelJar = null; const info = document.getElementById('sys-jar-file-info'); if (info) info.style.display='none'; const inp = document.getElementById('sys-jar-input'); if (inp) inp.value=''; }
 
 async function _sysJarUpload() {
-    if (!_sysSelJar) {
-        toast('Select a JAR file first', 'warn');
-        return;
-    }
-
+    if (!_sysSelJar) { const s = document.getElementById('sys-jar-status'); if (s) { s.style.color='var(--red)'; s.textContent='✗ Select a JAR file first.'; } return; }
+    const status  = document.getElementById('sys-jar-status');
     const jarName = _sysSelJar.name;
-    const statusEl = document.getElementById('sys-jar-status');
-    const uploadBtn = document.querySelector('#sys-pane-upload .btn-primary');
-
-    if (statusEl) {
-        statusEl.style.color = 'var(--yellow)';
-        statusEl.innerHTML = `📦 Uploading ${jarName} directly to Flink JobManager...`;
-    }
-    if (uploadBtn) uploadBtn.disabled = true;
-
+    const url     = window.location.origin + '/udf-jars/' + encodeURIComponent(jarName);
+    const bytes   = await _sysSelJar.arrayBuffer();
+    if (status) { status.style.color='var(--text2)'; status.textContent=`Uploading ${jarName}…`; }
     try {
-        // Get Flink JobManager URL (typically port 8081)
-        const flinkJmUrl = _sysGatewayBase()
-            .replace('/flink-api', '')
-            .replace(':8083', ':8081')
-            .replace(/\/+$/, '');
-
-        const uploadUrl = `${flinkJmUrl}/jars/upload`;
-
-        // Upload directly to Flink using FormData
-        const formData = new FormData();
-        formData.append('jarfile', _sysSelJar);
-
-        const uploadResp = await fetch(uploadUrl, {
-            method: 'POST',
-            body: formData,
-            signal: AbortSignal.timeout(60000)
-        });
-
-        if (!uploadResp.ok) {
-            const errorText = await uploadResp.text();
-            throw new Error(`HTTP ${uploadResp.status}: ${errorText}`);
-        }
-
-        const result = await uploadResp.json();
-        const jarId = result.filename || result['jar-id'] || jarName;
-
-        _sysRecordJarUpload(jarName);
-
-        if (statusEl) {
-            statusEl.style.color = 'var(--green)';
-            statusEl.innerHTML = `✓ ${jarName} uploaded directly to Flink JobManager!<br>
-            <span style="font-size:10px;">JAR ID: ${jarId}</span><br>
-            <span style="font-size:10px;color:var(--text2);">The connector is now available. No restart needed!</span>`;
-        }
-
-        if (typeof toast === 'function') toast(`✓ ${jarName} uploaded to Flink`, 'ok');
-        if (typeof addLog === 'function') addLog('OK', `JAR ${jarName} uploaded directly to Flink JobManager`);
-
-        // Refresh the JAR list and availability
-        setTimeout(() => {
-            _sysJarLoadList();
-            _sysRefreshAvailability();
-        }, 1000);
-
-        // Clear the selected file
-        _sysJarClear();
-
-        // Close progress modal if open
-        _sysCloseProgressModal();
-
-    } catch (error) {
-        console.error('Upload error:', error);
-
-        if (statusEl) {
-            statusEl.style.color = 'var(--red)';
-            statusEl.innerHTML = `✗ Direct upload failed: ${error.message}<br><br>
-            <strong>📋 Manual Docker command:</strong><br>
-            <code style="font-size:10px;display:inline-block;background:var(--bg0);padding:6px 10px;border-radius:4px;margin-top:6px;">
-            docker cp ${jarName} flink-jobmanager:/opt/flink/lib/<br>
-            docker restart flink-jobmanager flink-taskmanager
-            </code><br>
-            <span style="font-size:10px;">Then click "Check JARs" button above to verify.</span>`;
-        }
-
-        if (typeof toast === 'function') toast(`Upload failed: ${error.message}`, 'err');
-    } finally {
-        if (uploadBtn) uploadBtn.disabled = false;
-    }
-}
-
-async function _sysRetryLastUpload() {
-    if (_sysLastJarName) {
-        toast('Please re-select the JAR file to retry', 'info');
-        _sysCloseProgressModal();
-    } else {
-        toast('No previous upload to retry', 'warn');
-        _sysCloseProgressModal();
-    }
+        const r = await fetch(url, { method:'PUT', headers:{'Content-Type':'application/java-archive'}, body: bytes });
+        if ([200,201,204].includes(r.status)) {
+            _sysRecordJarUpload(jarName);
+            const dockerCmd = `docker cp flink-studio:/var/www/udf-jars/${jarName} flink-jobmanager:/opt/flink/lib/\ndocker cp flink-studio:/var/www/udf-jars/${jarName} flink-taskmanager:/opt/flink/lib/`;
+            if (status) {
+                status.style.color = 'var(--green)';
+                status.innerHTML = `✓ <strong>${jarName}</strong> uploaded.<br><span style="color:var(--text2);">Now copy to Flink and restart:</span><pre style="background:var(--bg0);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:4px;padding:7px 10px;font-size:10px;font-family:var(--mono);color:var(--text1);white-space:pre;overflow-x:auto;margin:5px 0 0;">${escHtml(dockerCmd)}</pre><span style="color:var(--yellow);">Then click ⟳ Restart SQL Gateway session below.</span>`;
+            }
+            if (typeof addLog === 'function') addLog('OK', `Connector JAR uploaded: ${jarName}`);
+            if (typeof toast  === 'function') toast(`${jarName} uploaded`, 'ok');
+            _sysJarClear();
+            setTimeout(() => { _sysJarLoadList(); _sysRefreshAvailability(); }, 500);
+        } else { throw new Error(`HTTP ${r.status}`); }
+    } catch(e) { if (status) { status.style.color='var(--red)'; status.textContent=`✗ Upload failed: ${e.message}`; } }
 }
 
 async function _sysJarLoadList() {
