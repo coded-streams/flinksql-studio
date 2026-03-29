@@ -1596,55 +1596,294 @@ function _plmGenerateSql() {
   return lines.join('\n');
 }
 function escHtmlComment(s){return String(s||'').replace(/\n/g,' ');}
-function _plmNodeToSql(node){
-  const opDef=PM_OPERATORS.find(o=>o.id===node.opId);if(!opDef)return'-- Node: '+node.label;
-  const p=node.params||{};
-  const tbl=p.table_name||node.label.toLowerCase().replace(/\s+/g,'_');
-  const rawSchema=p.schema||'id BIGINT\npayload STRING\nts TIMESTAMP(3)';
-  const schemaCols=rawSchema.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>'  '+l);
-  const schema=schemaCols.join(',\n');
-  const wm=p.watermark;
-  const wmClause=wm?',\n  WATERMARK FOR '+wm+' AS '+wm+" - INTERVAL '"+(p.watermark_delay||'5')+"' SECOND":'';
-  const canvas=window._plmState?.canvas;
-  const srcNode=canvas?.nodes?.find(n=>PM_OPERATORS.find(o=>o.id===n.opId)?.isSource);
-  const srcTbl=srcNode?.params?.table_name||srcNode?.label?.toLowerCase().replace(/\s+/g,'_')||'source_table';
-  switch(node.opId){
-    case 'kafka_source':return'-- Source: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+wmClause+"\n) WITH (\n  'connector' = 'kafka',\n  'topic' = '"+(p.topic||'my-topic')+"',\n  'properties.bootstrap.servers' = '"+(p.bootstrap_servers||'kafka:9092')+"',\n  'properties.group.id' = '"+(p.group_id||'flink-group')+"',\n  'scan.startup.mode' = '"+(p.startup_mode||'latest-offset')+"',\n  'format' = '"+(p.format||'json')+"'\n);";
-    case 'datagen_source':return'-- Source: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+"\n) WITH (\n  'connector' = 'datagen',\n  'rows-per-second' = '"+(p.rows_per_second||'10')+"'\n);";
-    case 'jdbc_source':return'-- Source: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+"\n) WITH (\n  'connector' = 'jdbc',\n  'url' = '"+(p.jdbc_url||'jdbc:postgresql://localhost/mydb')+"',\n  'table-name' = '"+(p.db_table||'your_table')+"'"+(p.username?",\n  'username' = '"+p.username+"'":"")+"\n);";
-    case 'filesystem_source':return'-- Source: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+"\n) WITH (\n  'connector' = 'filesystem',\n  'path' = '"+(p.path||'s3://bucket/data/')+"',\n  'format' = '"+(p.format||'parquet')+"'\n);";
-    case 'kafka_sink':if(p.schema&&p.schema.trim()){const sc=p.schema.split('\n').map(l=>'  '+l.trim()).filter(Boolean).join(',\n');return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+sc+"\n) WITH (\n  'connector' = 'kafka',\n  'topic' = '"+(p.topic||'output-topic')+"',\n  'properties.bootstrap.servers' = '"+(p.bootstrap_servers||'kafka:9092')+"',\n  'format' = '"+(p.format||'json')+"',\n  'sink.partitioner' = 'round-robin'\n);";}return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+" WITH (\n  'connector' = 'kafka',\n  'topic' = '"+(p.topic||'output-topic')+"',\n  'properties.bootstrap.servers' = '"+(p.bootstrap_servers||'kafka:9092')+"',\n  'format' = '"+(p.format||'json')+"'\n) LIKE "+srcTbl+' (EXCLUDING ALL);';
-    case 'jdbc_sink':return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+",\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  'connector' = 'jdbc',\n  'url' = '"+(p.jdbc_url||'jdbc:postgresql://localhost/mydb')+"',\n  'table-name' = '"+(p.db_table||'output_table')+"'"+(p.username?",\n  'username' = '"+p.username+"'":"")+"\n);";
-    case 'filesystem_sink':return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+"\n) WITH (\n  'connector' = 'filesystem',\n  'path' = '"+(p.path||'s3://bucket/output/')+"',\n  'format' = '"+(p.format||'parquet')+"'\n);";
-    case 'elasticsearch_sink':return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+",\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  'connector' = 'elasticsearch-"+(p.es_version||'7')+"',\n  'hosts' = '"+(p.hosts||'http://elasticsearch:9200')+"',\n  'index' = '"+(p.index||'my-index')+"'\n);";
-    case 'print_sink':return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+" WITH (\n  'connector' = 'print'"+(p.print_identifier?",\n  'print-identifier' = '"+p.print_identifier+"'":"")+"\n) LIKE "+srcTbl+' (EXCLUDING ALL);';
-    case 'blackhole_sink':return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+" WITH (\n  'connector' = 'blackhole'\n) LIKE "+srcTbl+' (EXCLUDING ALL);';
-    case 'mongodb_sink':return'-- Sink: '+tbl+'\nCREATE TABLE IF NOT EXISTS '+tbl+' (\n'+schema+",\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  'connector' = 'mongodb',\n  'uri' = '"+(p.uri||'mongodb://localhost:27017/mydb')+"',\n  'collection' = '"+(p.collection||'my-collection')+"'\n);";
-    case 'result_output':return'-- Output: '+tbl+'\nCREATE TEMPORARY VIEW '+tbl+' AS\nSELECT * FROM '+srcTbl+(p.limit?'\nLIMIT '+p.limit:'')+';';
-    default:return'-- Operator: '+node.label+' ('+node.opId+')';
+function _plmNodeToSql(node) {
+  const opDef = PM_OPERATORS.find(o => o.id === node.opId);
+  if (!opDef) return '-- Node: ' + node.label + ' (unknown operator)';
+
+  const p = node.params || {};
+  const tbl = (p.table_name || node.label || '').toLowerCase().replace(/\s+/g, '_');
+  const rawSchema = p.schema || 'id BIGINT\npayload STRING\nts TIMESTAMP(3)';
+  const schemaCols = rawSchema.split('\n').map(l => l.trim()).filter(Boolean).map(l => '  ' + l);
+  const schema = schemaCols.join(',\n');
+  const wm = p.watermark;
+  const wmClause = wm ? ',\n  WATERMARK FOR ' + wm + ' AS ' + wm + " - INTERVAL '" + (p.watermark_delay || '5') + "' SECOND" : '';
+
+  const canvas = window._plmState?.canvas;
+  const srcNode = canvas?.nodes?.find(n => PM_OPERATORS.find(o => o.id === n.opId)?.isSource);
+  const srcTbl = srcNode?.params?.table_name || srcNode?.label?.toLowerCase().replace(/\s+/g, '_') || 'source_table';
+
+  // Helper for SASL props
+  const buildSaslProps = (p) => {
+    if (!p.security_protocol) return '';
+    let o = ',\n  \'properties.security.protocol\' = \'' + p.security_protocol + '\'';
+    if (p.sasl_mechanism) o += ',\n  \'properties.sasl.mechanism\' = \'' + p.sasl_mechanism + '\'';
+    if (p.sasl_username && p.sasl_password)
+      o += ',\n  \'properties.sasl.jaas.config\' = \'org.apache.kafka.common.security.plain.PlainLoginModule required username="' + p.sasl_username + '" password="' + p.sasl_password + '";\'';
+    if (p.schema_registry_url) o += ',\n  \'schema-registry.url\' = \'' + p.schema_registry_url + '\'';
+    return o;
+  };
+
+  switch (node.opId) {
+      // === SOURCES ===
+    case 'kafka_source':
+      return '-- Source: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + wmClause + '\n) WITH (\n  \'connector\' = \'kafka\',\n  \'topic\' = \'' + (p.topic || 'my-topic') + '\',\n  \'properties.bootstrap.servers\' = \'' + (p.bootstrap_servers || 'kafka:9092') + '\',\n  \'properties.group.id\' = \'' + (p.group_id || 'flink-group') + '\',\n  \'scan.startup.mode\' = \'' + (p.startup_mode || 'latest-offset') + '\',\n  \'format\' = \'' + (p.format || 'json') + '\'' + buildSaslProps(p) + '\n);';
+
+    case 'datagen_source':
+      return '-- Source: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + '\n) WITH (\n  \'connector\' = \'datagen\',\n  \'rows-per-second\' = \'' + (p.rows_per_second || '10') + '\'' + (p.number_of_rows ? ',\n  \'number-of-rows\' = \'' + p.number_of_rows + '\'' : '') + '\n);';
+
+    case 'jdbc_source':
+      return '-- Source: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + '\n) WITH (\n  \'connector\' = \'jdbc\',\n  \'url\' = \'' + (p.jdbc_url || 'jdbc:postgresql://localhost/mydb') + '\',\n  \'table-name\' = \'' + (p.db_table || 'your_table') + '\'' + (p.username ? ',\n  \'username\' = \'' + p.username + '\'' : '') + (p.password ? ',\n  \'password\' = \'' + p.password + '\'' : '') + '\n);';
+
+    case 'filesystem_source':
+      return '-- Source: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + '\n) WITH (\n  \'connector\' = \'filesystem\',\n  \'path\' = \'' + (p.path || 's3://bucket/data/') + '\',\n  \'format\' = \'' + (p.format || 'parquet') + '\'\n);';
+
+    case 'pulsar_source':
+      return '-- Source: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + '\n) WITH (\n  \'connector\' = \'pulsar\',\n  \'service-url\' = \'' + (p.service_url || 'pulsar://localhost:6650') + '\',\n  \'topic\' = \'' + (p.topic || 'persistent://public/default/my-topic') + '\',\n  \'format\' = \'' + (p.format || 'json') + '\'\n);';
+
+    case 'kinesis_source':
+      return '-- Source: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + '\n) WITH (\n  \'connector\' = \'kinesis\',\n  \'stream\' = \'' + (p.stream || 'my-stream') + '\',\n  \'aws.region\' = \'' + (p.region || 'us-east-1') + '\',\n  \'format\' = \'' + (p.format || 'json') + '\'\n);';
+
+    case 'cdc_source':
+      const ct = p.cdc_type || 'mysql-cdc';
+      const isPg = ct === 'postgres-cdc';
+      const port = p.port || (isPg ? '5432' : '3306');
+      const sid = !isPg ? ',\n  \'server-id\' = \'' + (p.server_id || '5401-5404') + '\'' : '';
+      const slot = isPg ? ',\n  \'slot.name\' = \'' + (p.slot_name || 'flink_slot') + '\'' : '';
+      const plug = isPg ? ',\n  \'decoding.plugin.name\' = \'' + (p.plugin_name || 'pgoutput') + '\'' : '';
+      const scm = (isPg && p.schema_name) ? ',\n  \'schema-name\' = \'' + p.schema_name + '\'' : '';
+      const pre = isPg ? '-- PG CDC: ALTER SYSTEM SET wal_level=logical; SELECT pg_create_logical_replication_slot(\'' + (p.slot_name || 'flink_slot') + '\',\'pgoutput\');' : '-- MySQL CDC: GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO \'' + (p.username || 'flink_user') + '\'@\'%\';';
+      return pre + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + wmClause + '\n) WITH (\n  \'connector\' = \'' + ct + '\',\n  \'hostname\' = \'' + (p.hostname || 'localhost') + '\',\n  \'port\' = \'' + port + '\',\n  \'username\' = \'' + (p.username || 'flink_user') + '\',\n  \'password\' = \'' + (p.password || '') + '\',\n  \'database-name\' = \'' + (p.database_name || 'mydb') + '\'' + scm + sid + slot + plug + ',\n  \'table-name\' = \'' + (p.db_table || 'orders') + '\'\n);';
+
+    case 'catalog_context':
+      const cat = (p.catalog_name || '').trim();
+      const db = (p.database_name || '').trim();
+      if (!cat && !db) return '-- Catalog Context: (select a catalog above)';
+      return (cat ? 'USE CATALOG `' + cat + '`;' : '') + (db ? '\nUSE `' + db + '`;' : '');
+
+      // === SINKS ===
+    case 'kafka_sink':
+      if (p.schema && p.schema.trim()) {
+        const sc = p.schema.split('\n').map(l => '  ' + l.trim()).filter(Boolean).join(',\n');
+        return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + sc + '\n) WITH (\n  \'connector\' = \'kafka\',\n  \'topic\' = \'' + (p.topic || 'output-topic') + '\',\n  \'properties.bootstrap.servers\' = \'' + (p.bootstrap_servers || 'kafka:9092') + '\',\n  \'format\' = \'' + (p.format || 'json') + '\'' + buildSaslProps(p) + '\n);';
+      }
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'kafka\',\n  \'topic\' = \'' + (p.topic || 'output-topic') + '\',\n  \'properties.bootstrap.servers\' = \'' + (p.bootstrap_servers || 'kafka:9092') + '\',\n  \'format\' = \'' + (p.format || 'json') + '\'' + buildSaslProps(p) + '\n) LIKE ' + srcTbl + ' (EXCLUDING ALL);';
+
+    case 'jdbc_sink':
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'jdbc\',\n  \'url\' = \'' + (p.jdbc_url || 'jdbc:postgresql://localhost/mydb') + '\',\n  \'table-name\' = \'' + (p.db_table || 'output_table') + '\'' + (p.username ? ',\n  \'username\' = \'' + p.username + '\'' : '') + (p.password ? ',\n  \'password\' = \'' + p.password + '\'' : '') + '\n);';
+
+    case 'filesystem_sink':
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + '\n) WITH (\n  \'connector\' = \'filesystem\',\n  \'path\' = \'' + (p.path || 's3://bucket/output/') + '\',\n  \'format\' = \'' + (p.format || 'parquet') + '\'' + (p.rolling_interval ? ',\n  \'sink.rolling-policy.rollover-interval\' = \'' + p.rolling_interval + '\'' : '') + '\n);';
+
+    case 'elasticsearch_sink':
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'elasticsearch-' + (p.es_version || '7') + '\',\n  \'hosts\' = \'' + (p.hosts || 'http://elasticsearch:9200') + '\',\n  \'index\' = \'' + (p.index || 'my-index') + '\'' + (p.username ? ',\n  \'username\' = \'' + p.username + '\'' : '') + (p.password ? ',\n  \'password\' = \'' + p.password + '\'' : '') + '\n);';
+
+    case 'print_sink':
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'print\'' + (p.print_identifier ? ',\n  \'print-identifier\' = \'' + p.print_identifier + '\'' : '') + '\n) LIKE ' + srcTbl + ' (EXCLUDING ALL);';
+
+    case 'blackhole_sink':
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' WITH (\n  \'connector\' = \'blackhole\'\n) LIKE ' + srcTbl + ' (EXCLUDING ALL);';
+
+    case 'mongodb_sink':
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'mongodb\',\n  \'uri\' = \'' + (p.uri || 'mongodb://localhost:27017/mydb') + '\',\n  \'collection\' = \'' + (p.collection || 'my-collection') + '\'\n);';
+
+    case 'cdc_sink':
+      if (p.sink_type === 'upsert-kafka')
+        return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'upsert-kafka\',\n  \'topic\' = \'' + (p.topic || 'cdc-output') + '\',\n  \'properties.bootstrap.servers\' = \'' + (p.bootstrap_servers || 'kafka:9092') + '\',\n  \'key.format\' = \'json\',\n  \'value.format\' = \'json\'\n);';
+      return '-- Sink: ' + tbl + '\nCREATE TEMPORARY TABLE IF NOT EXISTS ' + tbl + ' (\n' + schema + ',\n  PRIMARY KEY (id) NOT ENFORCED\n) WITH (\n  \'connector\' = \'jdbc\',\n  \'url\' = \'' + (p.jdbc_url || 'jdbc:postgresql://localhost/mydb') + '\',\n  \'table-name\' = \'' + (p.db_table || tbl) + '\'' + (p.username ? ',\n  \'username\' = \'' + p.username + '\'' : '') + (p.password ? ',\n  \'password\' = \'' + p.password + '\'' : '') + '\n);';
+
+    case 'result_output':
+      return '-- Output: ' + tbl + '\nCREATE TEMPORARY VIEW ' + tbl + ' AS\nSELECT * FROM ' + srcTbl + (p.limit ? '\nLIMIT ' + p.limit : '') + ';';
+
+      // === TRANSFORMATIONS ===
+    case 'filter':
+      return '-- Filter condition: ' + (p.condition || 'true');
+
+    case 'project':
+      return '-- Project columns:\n-- ' + (p.columns || '*');
+
+    case 'map_udf':
+    case 'udf_node':
+      const udfName = p.function_name || p.udf_name || 'udf_function';
+      const inputCols = p.input_col || p.input_cols || '';
+      const outputAlias = p.output_alias || 'result';
+      const extraCols = p.extra_cols ? p.extra_cols + ', ' : '';
+      return '-- UDF: ' + udfName + '(' + inputCols + ') AS ' + outputAlias + '\n-- Usage: SELECT ' + extraCols + udfName + '(' + inputCols + ') AS ' + outputAlias + ' FROM source';
+
+    case 'enrich':
+    case 'lookup_join':
+      const dimTable = p.dim_table || p.lookup_table || 'dim_table';
+      const joinKey = p.join_key || 'key = key';
+      const columns = p.columns ? ',\n  ' + p.columns : '';
+      return '-- Lookup Join: ' + dimTable + ' ON ' + joinKey + (p.time_col ? ' FOR SYSTEM_TIME AS OF ' + p.time_col : '');
+
+    case 'union':
+      const secondSource = p.second_source || 'other_source';
+      const unionType = p.union_type || 'UNION ALL';
+      return '-- Union: ' + unionType + ' with ' + secondSource;
+
+    case 'split':
+      return '-- Split/Routing:\n-- Route A: ' + (p.condition_a || 'true') + '\n-- Route B: ' + (p.condition_b || 'false');
+
+    case 'watermark_assigner':
+      return '-- Watermark: FOR ' + (p.time_col || 'ts') + ' AS ' + (p.time_col || 'ts') + ' - INTERVAL \'' + (p.watermark_delay || '5') + '\' SECOND\n-- Strategy: ' + (p.strategy || 'bounded_out_of_order');
+
+    case 'changelog_normalize':
+      return '-- Changelog Normalize: PRIMARY KEY(' + (p.primary_key || 'id') + ')\n-- Output Mode: ' + (p.output_mode || 'upsert');
+
+      // === WINDOWS ===
+    case 'tumble_window':
+      return '-- Tumble Window: ' + (p.window_size || '1 MINUTE') + ' on ' + (p.time_col || 'ts') + (p.group_by ? '\n-- GROUP BY: ' + p.group_by : '') + (p.aggregations ? '\n-- Aggregations:\n--   ' + p.aggregations.split('\n').join('\n--   ') : '');
+
+    case 'hop_window':
+      return '-- Hop Window: ' + (p.size || '5 MINUTE') + ' slide ' + (p.slide || '1 MINUTE') + ' on ' + (p.time_col || 'ts');
+
+    case 'session_window':
+      return '-- Session Window: gap ' + (p.gap || '30 SECOND') + ' partitioned by ' + (p.partition_by || 'user_id');
+
+    case 'cumulate_window':
+      return '-- Cumulate Window: step ' + (p.step || '1 MINUTE') + ' max ' + (p.max_size || '1 HOUR');
+
+      // === AGGREGATIONS ===
+    case 'aggregate':
+      return '-- Group Aggregation:\n-- GROUP BY: ' + (p.group_by || 'key') + '\n-- Aggregations:\n--   ' + (p.aggregations || 'COUNT(*) AS cnt') + (p.having ? '\n-- HAVING: ' + p.having : '');
+
+    case 'dedup':
+      return '-- Deduplication:\n-- PARTITION BY: ' + (p.unique_key || 'id') + '\n-- ORDER BY: ' + (p.time_col || 'ts ASC');
+
+    case 'topn':
+      return '-- Top-N: TOP ' + (p.n || '3') + ' by ' + (p.order_by || 'value DESC') + ' per ' + (p.partition_by || 'category');
+
+      // === JOINS ===
+    case 'interval_join':
+      return '-- Interval Join:\n-- Right Table: ' + (p.right_table || 'other_stream') + '\n-- Condition: ' + (p.join_condition || 'key = key') + '\n-- Interval: ' + (p.interval || 'ts BETWEEN ts - INTERVAL \'5\' MINUTE AND ts');
+
+    case 'temporal_join':
+      return '-- Temporal Join:\n-- Dimension Table: ' + (p.dim_table || 'dim_table') + '\n-- Time Column: ' + (p.time_col || 'event_time') + '\n-- Join Key: ' + (p.join_key || 'key = key');
+
+    case 'regular_join':
+      return '-- Regular Join: ' + (p.join_type || 'INNER') + ' JOIN ' + (p.right_table || 'other_table') + ' ON ' + (p.join_condition || 'key = key');
+
+      // === CEP ===
+    case 'match_recognize':
+      return '-- MATCH_RECOGNIZE:\n-- PARTITION BY: ' + (p.partition_by || 'key') + '\n-- ORDER BY: ' + (p.order_by || 'ts') + '\n-- PATTERN: ' + (p.pattern || '(A B C)') + (p.within ? '\n-- WITHIN: ' + p.within : '');
+
+    case 'cep_alert':
+      return '-- CEP Alert:\n-- Condition: ' + (p.alert_condition || 'count > threshold') + '\n-- Severity: ' + (p.severity || 'WARNING') + '\n-- PARTITION BY: ' + (p.partition_by || 'key');
+
+      // === AI & FEATURES ===
+    case 'ai_model':
+      return '-- AI Model: ' + (p.provider || 'OpenAI') + ' - ' + (p.model || 'gpt-4') + '\n-- Input: ' + (p.input_col || 'input') + ' → Output: ' + (p.output_alias || 'ai_result') + '\n-- Endpoint: ' + (p.endpoint_url || 'configured endpoint');
+
+    case 'feature_store':
+      return '-- Feature Store: ' + (p.store_type || 'Feast') + ' - ' + (p.feature_service || 'feature_view') + '\n-- Entity Key: ' + (p.entity_key || 'id') + '\n-- Features: ' + (p.features || 'all available features');
+
+    default:
+      return '-- ' + (opDef.label || node.label) + ' (' + node.opId + ')';
   }
 }
-function _plmBuildInsertSql(sources,sinks,nodes,edges){
-  if(!sources.length||!sinks.length)return'';
-  const src=sources[0],sink=sinks[0];
-  const srcName=src.params?.table_name||'source_table',sinkName=sink.params?.table_name||'sink_table';
-  const transforms=nodes.filter(n=>!PM_OPERATORS.find(o=>o.id===n.opId)?.isSource&&!PM_OPERATORS.find(o=>o.id===n.opId)?.isSink);
-  let selectCols='*',fromClause=srcName,whereClauses=[],groupBy=null;
-  transforms.forEach(node=>{
-    const np=node.params||{};
-    switch(node.opId){
-      case 'filter':if(np.condition)whereClauses.push(np.condition);break;
-      case 'project':if(np.columns)selectCols=np.columns.split('\n').map(l=>l.trim()).filter(Boolean).join(',\n  ');break;
-      case 'map_udf':if(np.function_name&&np.input_col&&np.output_alias){selectCols=(np.extra_cols?np.extra_cols+',\n  ':'*,\n  ')+np.function_name+'('+np.input_col+') AS '+np.output_alias;}break;
-      case 'udf_node':if(np.udf_name&&np.input_cols&&np.output_alias){selectCols=(np.extra_cols?np.extra_cols+',\n  ':'*,\n  ')+np.udf_name+'('+np.input_cols+') AS '+np.output_alias;}break;
-      case 'tumble_window':fromClause='TABLE(TUMBLE(TABLE '+fromClause+", DESCRIPTOR("+np.time_col+"), INTERVAL '"+(np.window_size||'1 MINUTE')+"'))";if(np.aggregations)selectCols='window_start, window_end,\n  '+np.aggregations.split('\n').map(l=>l.trim()).filter(Boolean).join(',\n  ');groupBy='window_start, window_end'+(np.group_by?', '+np.group_by:'');break;
-      case 'aggregate':if(np.aggregations)selectCols=(np.group_by?np.group_by+',\n  ':'')+np.aggregations.split('\n').map(l=>l.trim()).filter(Boolean).join(',\n  ');groupBy=np.group_by||null;break;
+
+function _plmBuildInsertSql(sources, sinks, nodes, edges) {
+  if (!sources.length || !sinks.length) return '';
+
+  const src = sources[0];
+  const sink = sinks[0];
+  const srcName = src.params?.table_name || 'source_table';
+  const sinkName = sink.params?.table_name || 'sink_table';
+
+  // Get all transformation nodes (not sources, not sinks)
+  const transforms = nodes.filter(n => {
+    const op = PM_OPERATORS.find(o => o.id === n.opId);
+    return op && !op.isSource && !op.isSink && n.opId !== 'catalog_context';
+  });
+
+  // Get schema columns from source
+  const rawSchema = src.params?.schema || '';
+  const schemaCols = rawSchema.split('\n').map(l => l.trim().split(/\s+/)[0]).filter(Boolean);
+  const allCols = schemaCols.length ? schemaCols.join(', ') : '*';
+
+  let selectCols = allCols;
+  let fromClause = srcName;
+  let whereClauses = [];
+  let groupBy = null;
+
+  transforms.forEach(node => {
+    const np = node.params || {};
+    switch (node.opId) {
+      case 'filter':
+        if (np.condition) whereClauses.push(np.condition);
+        break;
+
+      case 'project':
+        if (np.columns) selectCols = np.columns.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+        break;
+
+      case 'map_udf':
+      case 'udf_node':
+        const fn = np.function_name || np.udf_name;
+        const ic = np.input_col || np.input_cols;
+        const oa = np.output_alias;
+        if (fn && ic && oa) {
+          const pc = np.extra_cols ? np.extra_cols.split(',').map(c => c.trim()).filter(Boolean).join(', ') : allCols;
+          selectCols = pc + ',\n  ' + fn + '(' + ic + ') AS ' + oa;
+        }
+        break;
+
+      case 'enrich':
+      case 'lookup_join':
+        const dimTable = np.dim_table || np.lookup_table;
+        const joinKey = np.join_key;
+        const extraCols = np.columns ? ',\n  ' + np.columns : '';
+        if (dimTable && joinKey) {
+          selectCols = allCols + extraCols;
+          fromClause = np.time_col
+              ? fromClause + ' JOIN ' + dimTable + ' FOR SYSTEM_TIME AS OF ' + srcName + '.' + np.time_col + ' ON ' + joinKey
+              : fromClause + ' LEFT JOIN ' + dimTable + ' ON ' + joinKey;
+        }
+        break;
+
+      case 'tumble_window':
+        fromClause = 'TABLE(TUMBLE(TABLE ' + fromClause + ', DESCRIPTOR(' + np.time_col + '), INTERVAL \'' + (np.window_size || '1 MINUTE') + '\'))';
+        if (np.aggregations) {
+          selectCols = 'window_start, window_end,\n  ' + np.aggregations.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+        }
+        groupBy = 'window_start, window_end' + (np.group_by ? ', ' + np.group_by : '');
+        break;
+
+      case 'hop_window':
+        fromClause = 'TABLE(HOP(TABLE ' + fromClause + ', DESCRIPTOR(' + np.time_col + '), INTERVAL \'' + (np.slide || '1 MINUTE') + '\', INTERVAL \'' + (np.size || '5 MINUTE') + '\'))';
+        if (np.aggregations) {
+          selectCols = 'window_start, window_end,\n  ' + np.aggregations.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+        }
+        groupBy = 'window_start, window_end' + (np.group_by ? ', ' + np.group_by : '');
+        break;
+
+      case 'aggregate':
+        if (np.aggregations) {
+          selectCols = (np.group_by ? np.group_by + ',\n  ' : '') + np.aggregations.split('\n').map(l => l.trim()).filter(Boolean).join(',\n  ');
+        }
+        groupBy = np.group_by || null;
+        break;
+
+      case 'dedup':
+        fromClause = '(SELECT ' + allCols + ', ROW_NUMBER() OVER (PARTITION BY ' + (np.unique_key || 'id') + ' ORDER BY ' + (np.time_col || 'ts') + ') AS rn FROM ' + fromClause + ') t WHERE rn = 1';
+        selectCols = allCols;
+        break;
+
+      case 'ai_model':
+        // AI Model generates a comment but doesn't change SQL structure
+        // In practice, this would be a UDF call
+        break;
+
+      case 'feature_store':
+        // Feature Store is handled via lookup join in actual implementation
+        break;
     }
   });
-  let sql='INSERT INTO '+sinkName+'\nSELECT\n  '+selectCols+'\nFROM '+fromClause;
-  if(whereClauses.length)sql+='\nWHERE '+whereClauses.join(' AND ');
-  if(groupBy)sql+='\nGROUP BY '+groupBy;
-  sql+=';';
+
+  let sql = 'INSERT INTO ' + sinkName + '\nSELECT\n  ' + selectCols + '\nFROM ' + fromClause;
+  if (whereClauses.length) sql += '\nWHERE ' + whereClauses.join(' AND ');
+  if (groupBy) sql += '\nGROUP BY ' + groupBy;
+  sql += ';';
   return sql;
 }
 function _plmUpdateSqlPreview(){const sql=_plmGenerateSql();const prevEl=document.getElementById('plm-sql-preview');if(prevEl)prevEl.textContent=sql;const fullEl=document.getElementById('plm-sql-full');if(fullEl)fullEl.textContent=sql;}
